@@ -8,7 +8,8 @@ If an `AGENTS.local.md` file exists next to this one, read it first: it holds th
 
 - Rust workspace with dependencies in one direction only:
   - `cadcraft-model`: neutral project model; depends on no other project crate.
-  - `cadcraft-format` (native files and migrations), `cadcraft-render` (display list), `cadcraft-import` (other platforms) and `cadcraft-export` (PDF, DXF, lists) depend on the model; `export` also on `render`.
+  - `cadcraft-format` (native files and migrations), `cadcraft-render` (display list), `cadcraft-import` (other platforms), `cadcraft-export` (PDF, DXF, lists) and `cadcraft-assistant` (assistant core, no network) depend on the model; `export` also on `render`.
+  - Network access (ChatGPT sign-in and requests) exists only in `cadcraft-gui/src/assistant/`. Tests never use the network.
   - `cad-craft`: facade that re-exports the crates above with stable paths (`cad_craft::domain`, `::persistence`, `::interchange`…).
   - `cadcraft-gui`: the egui/eframe application (library `cad_gui`, executable `cad-gui`). No core crate depends on the GUI.
 - Methods of `Project` can only be declared in `cadcraft-model`; other crates extend it with traits (for example `PageDisplayList`).

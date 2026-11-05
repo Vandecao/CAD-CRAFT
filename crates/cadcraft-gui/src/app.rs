@@ -84,6 +84,8 @@ pub struct CadApp {
     pub checks: crate::checks_ui::CheckPanel,
     /// Etapa 25: importação de projeto do QElectroTech.
     pub qet: crate::qet_import_ui::QetImportPanel,
+    /// Etapa 27: assistente de IA e ajuda (aba ao lado do Centro de inserção).
+    pub assistant: crate::assistant::AssistantPanel,
     pub edz: crate::edz_import_ui::EdzImportPanel,
     pub reports: crate::reports_ui::ReportWindow,
     /// Pasta da biblioteca de símbolos já carregada (recarrega ao mudar).
@@ -135,6 +137,7 @@ impl Default for CadApp {
             pdf: crate::pdf_export::PdfWindow::default(),
             checks: crate::checks_ui::CheckPanel::default(),
             qet: crate::qet_import_ui::QetImportPanel::default(),
+            assistant: crate::assistant::AssistantPanel::default(),
             edz: crate::edz_import_ui::EdzImportPanel::default(),
             reports: crate::reports_ui::ReportWindow::default(),
             symbol_library_seen: None,
@@ -344,6 +347,7 @@ impl CadApp {
         self.numbering = numbering;
         self.reports.show(&mut self.session, &mut self.files, ctx);
         self.poll_qet(ctx);
+        self.poll_assistant(ctx);
         self.poll_edz(ctx);
         self.show_edz(ctx);
         self.show_checks(ctx);
@@ -818,6 +822,9 @@ impl CadApp {
             .unwrap_or_default()
     }
     pub fn execute(&mut self, id: CommandId, ctx: &Context) {
+        if self.assistant.highlight == Some(id) {
+            self.assistant.highlight = None;
+        }
         if let Some(reason) = self
             .commands
             .iter()
@@ -1255,7 +1262,7 @@ impl CadApp {
             if icon_only { "" } else { c.name },
             &tooltip,
             c.available(&self.session),
-            false,
+            self.assistant.highlight == Some(id),
             large,
         )
         .clicked()

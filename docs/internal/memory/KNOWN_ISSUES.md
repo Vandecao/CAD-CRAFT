@@ -1,5 +1,16 @@
 # Problemas conhecidos
 
+## Etapa 27 — assistente de IA e ajuda
+
+| ID | Estado | Evidência / limite | Continuidade |
+|---|---|---|---|
+| IA-L01 | Resolvido | Login e respostas reais testados no app em 2026-11-05 (relatório da Etapa 27) | — |
+| GUI-L01 | Pendente | O app parado usa CPU alta (~45% de um núcleo já no R1 minimizado; ~75% maximizado), provavelmente redesenho contínuo | Investigar o que pede repaint a cada quadro; corrigir num bloco próprio |
+| IA-L02 | Limite deliberado | Nada da conta é salvo: cada abertura do app pede login e faz um registro dinâmico novo na conta | Opção "manter conectado" no cofre do Windows, se o autor pedir |
+| IA-L03 | Limite | Propostas cobrem numeração, número de fio, documento e página; inserir símbolos, ligar fios ou corrigir regras VER específicas ainda não | Ampliar o catálogo de propostas por etapa |
+| IA-L04 | Limite | Escopo e sigilo dependem também do modelo; a defesa principal é estrutural (sem acesso a código, arquivos ou rede; ações validadas) | Conjunto de perguntas de teste no teste do app |
+| IA-L05 | Observação | Protocolo de ações em texto porque a documentação do fluxo não descreve o formato de chamada de ferramentas | Migrar para o formato nativo quando documentado |
+
 ## Bloco R0 — preparação para código aberto
 
 | ID | Estado | Evidência / limite | Continuidade |

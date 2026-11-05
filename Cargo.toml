@@ -5,6 +5,7 @@ members = [
     "crates/cadcraft-render",
     "crates/cadcraft-import",
     "crates/cadcraft-export",
+    "crates/cadcraft-assistant",
     "crates/cad-craft",
     "crates/cadcraft-gui",
 ]

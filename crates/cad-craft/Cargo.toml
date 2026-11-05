@@ -14,6 +14,7 @@ cadcraft-format = { path = "../cadcraft-format" }
 cadcraft-render = { path = "../cadcraft-render" }
 cadcraft-import = { path = "../cadcraft-import" }
 cadcraft-export = { path = "../cadcraft-export" }
+cadcraft-assistant = { path = "../cadcraft-assistant" }
 
 [dev-dependencies]
 # Usados diretamente pelos testes de integração (fachada).

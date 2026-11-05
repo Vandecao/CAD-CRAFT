@@ -7,6 +7,7 @@
 //! - [`interchange`]: importers for other platforms (`cadcraft-import`).
 //! - [`display`] and [`font`]: display list of a page (`cadcraft-render`).
 //! - [`pdf`], [`dxf_export`] and [`report_export`]: exporters (`cadcraft-export`).
+//! - [`assistant`]: help, queries and proposals of the AI assistant (`cadcraft-assistant`).
 //!
 //! Everything goes into the `Project` model and everything comes out of it.
 
@@ -16,6 +17,7 @@ pub mod domain {
     pub use cadcraft_model::domain::*;
     pub use cadcraft_render::display::PageDisplayList;
 }
+pub use cadcraft_assistant as assistant;
 pub use cadcraft_export::{dxf_export, pdf, report_export};
 pub use cadcraft_format as persistence;
 pub use cadcraft_import as interchange;

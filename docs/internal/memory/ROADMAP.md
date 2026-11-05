@@ -39,7 +39,7 @@ homologação geral de plataforma/hardware.
 | R0 | Preparação para código aberto: GPL-3.0-or-later, amostras fora do Git, saídas de referência, README, CI, AGENTS público/local, docs/internal (plano `docs/internal/plans/PLANO_REORGANIZACAO_R0-R6.md`) | Implementado | Sim | — | Fora do HEAD; commit + push após OK; publicação depois, com autorização |
 | Pub. | Publicação em repositório público novo, commit inicial limpo | Planejada | — | — | Requer o repositório criado pelo autor |
 | R1 | Divisão em crates (model, format, render, import, export; fachada cad-craft) | Planejada | — | — | Antes da Etapa 27 |
-| 27 | Fase E — assistente de IA (prompt aprovado `docs/internal/spec/ETAPA_27_ASSISTENTE_IA.md`; substitui `docs/internal/spec/ETAPA_17_ASSISTENTE_IA_OPENAI.md`, renumerada) | Planejada | Não | Final | Idem |
+| 27 | Fase E — assistente de IA e ajuda: implementado (crate cadcraft-assistant, ChatGPT por OAuth); teste com login real pendente (prompt aprovado `docs/internal/spec/ETAPA_27_ASSISTENTE_IA.md`; substitui `docs/internal/spec/ETAPA_17_ASSISTENTE_IA_OPENAI.md`, renumerada) | Planejada | Não | Final | Idem |
 | 28 | Fase F — desempenho, robustez, telas/escalas, correções e **homologação geral** | Planejada | Não | — | Idem |
 
 ### Plano Mestre aprovado (2026-11-03)

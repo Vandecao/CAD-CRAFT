@@ -26,6 +26,9 @@ allow = [
     "Ubuntu-font-1.0",
     "LGPL-2.1-or-later",
     "GPL-3.0-or-later",
+    # webpki-roots (via ureq/rustls, Etapa 27): the Mozilla root certificate
+    # list, a permissive data licence that only requires attribution.
+    "CDLA-Permissive-2.0",
 ]
 
 [[licenses.clarify]]

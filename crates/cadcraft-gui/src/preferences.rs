@@ -117,6 +117,9 @@ pub struct Preferences {
     pub dwg_converter: String,
     /// Etapa 17: escala de importação `.elmt` (mm por px do QElectroTech).
     pub elmt_mm_per_px: f64,
+    /// Etapa 27: identificador opaco desta instalação exigido pelo login
+    /// "Sign in with ChatGPT" (`urn:uuid:…`). Não identifica o usuário.
+    pub assistant_host_id: String,
 }
 impl Default for Preferences {
     fn default() -> Self {
@@ -141,6 +144,7 @@ impl Default for Preferences {
             macro_library: String::new(),
             dwg_converter: String::new(),
             elmt_mm_per_px: cad_craft::interchange::elmt::DEFAULT_MM_PER_PX,
+            assistant_host_id: String::new(),
         }
     }
 }

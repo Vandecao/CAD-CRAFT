@@ -56,6 +56,7 @@ fn crates_depend_in_one_direction_only() {
         ("cadcraft-format", set(&["cadcraft-model"])),
         ("cadcraft-render", set(&["cadcraft-model"])),
         ("cadcraft-import", set(&["cadcraft-model"])),
+        ("cadcraft-assistant", set(&["cadcraft-model"])),
         (
             "cadcraft-export",
             set(&["cadcraft-model", "cadcraft-render"]),
@@ -68,6 +69,7 @@ fn crates_depend_in_one_direction_only() {
                 "cadcraft-render",
                 "cadcraft-import",
                 "cadcraft-export",
+                "cadcraft-assistant",
             ]),
         ),
         ("cadcraft-gui", set(&["cad-craft"])),

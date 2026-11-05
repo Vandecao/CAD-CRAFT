@@ -1,3 +1,19 @@
+# Handoff — Etapa 27 (assistente de IA) testada no app; pronta para versionar (2026-11-05)
+
+Prompt `docs/internal/spec/ETAPA_27_ASSISTENTE_IA.md`, plano `docs/internal/plans/2026-11-05-etapa-27.md`, relatório `docs/internal/reports/ETAPA_27_ASSISTENTE_IA.md`, ADR-0030.
+
+- Crate `cadcraft-assistant` (sem rede) e painel "✦ Assistente" na GUI (OAuth ChatGPT, Responses API, propostas reversíveis).
+- Teste no app com o login do autor: ok; 2 defeitos corrigidos (proposta perdida, negrito com asteriscos). CPU alta parado é anterior (GUI-L01).
+- Validação: 689 Rust + 16 PowerShell, exit 0; Release 23.617.536 bytes.
+- O R1 já está versionado (`cdca6fc`); a Etapa 27 está fora do HEAD.
+
+Próximo:
+1. Teste no app: feito.
+2. OK para commit + push no privado (`CAD-CRAFT1`) e sincronização com o público.
+3. R2–R6 e Etapa 28.
+
+---
+
 # Handoff — Bloco R1 (crates) validado e testado no app; pronto para versionar (2026-11-05)
 
 Prompt `docs/internal/spec/R1_DIVISAO_CRATES.md` (aprovado), plano `docs/internal/plans/2026-11-05-r1.md`, relatório `docs/internal/reports/R1_DIVISAO_CRATES.md`.

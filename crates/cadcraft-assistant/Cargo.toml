@@ -1,0 +1,22 @@
+[package]
+name = "cadcraft-assistant"
+description = "CAD-CRAFT assistant core: help, project queries, proposals and the conversation loop (no network)."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+publish.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+
+[dependencies]
+cadcraft-model = { path = "../cadcraft-model" }
+serde = { version = "1", features = ["derive"] }
+serde_json = { version = "1", features = ["float_roundtrip"] }
+
+[dev-dependencies]
+# Tests load the versioned .cadcraft fixtures.
+cadcraft-format = { path = "../cadcraft-format" }
+
+[lints]
+workspace = true

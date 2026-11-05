@@ -59,6 +59,7 @@ Everything goes into the neutral `Project` model and everything comes out of it.
 - Page reports (index, devices, bill of materials, connections, terminals, cables) and CSV/XLSX lists.
 - Consistency checks with navigation to each problem.
 - Transactional undo/redo for every edit.
+- Built-in help and AI assistant (optional): sign in with your own ChatGPT account (OAuth in the browser; no password or API key is asked or stored). It answers only about the open project and how to use CAD-CRAFT, finds commands and items, and proposes changes that you review and apply (undoable). Project data is sent to OpenAI only when you ask a question.
 
 ## Build and run
 
@@ -96,6 +97,7 @@ files from other platforms ──► cadcraft-import ──► cadcraft-model �
 - `crates/cadcraft-import`: QElectroTech, EPLAN, DXF and CSV importers.
 - `crates/cadcraft-render`: display list shared by the screen, the PDF and the DXF.
 - `crates/cadcraft-export`: PDF, DXF and CSV/XLSX exporters.
+- `crates/cadcraft-assistant`: help, project queries and change proposals of the assistant (no network).
 - `crates/cad-craft`: facade that re-exports the crates above.
 - `crates/cadcraft-gui`: desktop application (egui/eframe).
 - `docs/adr`: architecture decision records.

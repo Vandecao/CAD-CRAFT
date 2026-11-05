@@ -18,6 +18,19 @@ pub(crate) use navigator::physical_tree;
 pub(crate) use navigator::{NavigatorState, NavigatorTab};
 pub(crate) use properties::Inspector;
 pub(crate) fn header(ui: &mut Ui, preferences: &mut Preferences, id: PanelId, title: &str) -> bool {
+    header_with(ui, preferences, id, |ui| {
+        ui.add(egui::Label::new(egui::RichText::new(title).size(11.0)).truncate());
+    })
+}
+
+/// Panel header whose left side is drawn by `left` (a title or tabs), so
+/// tabs share the header row and take no extra height.
+pub(crate) fn header_with(
+    ui: &mut Ui,
+    preferences: &mut Preferences,
+    id: PanelId,
+    left: impl FnOnce(&mut Ui),
+) -> bool {
     let compact = ui.available_width() < 200.0;
     ui.horizontal(|ui| {
         ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
@@ -64,9 +77,7 @@ pub(crate) fn header(ui: &mut Ui, preferences: &mut Preferences, id: PanelId, ti
                     ui.close();
                 }
             });
-            ui.with_layout(Layout::left_to_right(Align::Center), |ui| {
-                ui.add(egui::Label::new(egui::RichText::new(title).size(11.0)).truncate());
-            });
+            ui.with_layout(Layout::left_to_right(Align::Center), left);
         });
     });
     ui.painter().hline(

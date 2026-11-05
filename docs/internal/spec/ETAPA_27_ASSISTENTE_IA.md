@@ -10,6 +10,17 @@
 - Pela decisão 1, a implementação parou para a escolha do usuário entre:
   - publicar com licença aberta;
   - pedir acesso pelo formulário e implementar com o provedor real desligado até a aprovação.
+
+**Passo zero reconfirmado (2026-11-05, após a publicação):**
+- O CAD-CRAFT é código aberto (GPL-3.0, https://github.com/Vandecao/CAD-CRAFT) e roda localmente, o caso coberto por [plan usage for open-source and locally hosted apps](https://developers.openai.com/siwc/token-sharing-open-source).
+- O registro é dinâmico (`client_id=dynamic_agent_client`), sem etapa de aprovação.
+- Detalhes confirmados:
+  - modelos: `GET /v1/models` (`visibility == "list"`, `slug`);
+  - respostas: `POST /v1/responses` com `store: false` e `stream: true`; eventos `response.output_text.delta`, `response.completed` e `response.failed`;
+  - token de 1 h, renovado com `grant_type=refresh_token` (refresh token rotativo de 30 dias);
+  - escopo `chatgpt.tokens.use.direct` conferido após a troca.
+- **Ferramentas:** a documentação do fluxo não descreve o formato de chamada de ferramentas (só que exige namespaces ou `additional_tools`). O assistente usa um **protocolo próprio em texto**: blocos JSON delimitados que o CAD-CRAFT valida contra o catálogo fechado. Funciona com qualquer modelo e mantém toda a validação no CAD-CRAFT (ADR-0030).
+- **Nada salvo no disco**, pela regra do autor: o `client_id` emitido é ligado à conta do usuário, então fica só na memória, como o token. Cada abertura do app faz um registro dinâmico novo. Só o *host ID*, opaco e sem dado do usuário, é persistido.
 - Endereços confirmados (guia "Registration and sign-in"):
   - autorização: `https://auth.openai.com/api/accounts/authorize`;
   - token: `https://auth.openai.com/api/accounts/oauth/token`;

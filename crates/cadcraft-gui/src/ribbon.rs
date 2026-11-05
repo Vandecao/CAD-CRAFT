@@ -313,6 +313,13 @@ impl CadApp {
                         );
                     }
                     ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
+                        if ui
+                            .selectable_label(self.assistant.open, "✦ Assistente")
+                            .on_hover_text("Assistente de IA e ajuda do CAD-CRAFT")
+                            .clicked()
+                        {
+                            self.toggle_assistant();
+                        }
                         ui.menu_button("Painéis", |ui| {
                             for id in PanelId::ALL {
                                 ui.checkbox(

@@ -2,6 +2,7 @@
 // Copyright (C) 2026 Vanderlei Braga e colaboradores do CAD-CRAFT
 //! Desktop presentation over the independent CAD-CRAFT domain.
 pub mod app;
+pub mod assistant;
 mod backstage;
 pub mod camera;
 mod checks_ui;

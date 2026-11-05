@@ -59,6 +59,7 @@ Tudo entra no modelo neutro `Project` e tudo sai dele. Cada importação relata 
 - Relatórios em página (índice, dispositivos, materiais, ligações, bornes, cabos) e listas CSV/XLSX.
 - Verificações de consistência com navegação até cada problema.
 - Desfazer e refazer transacional em todas as edições.
+- Ajuda e assistente de IA integrados (opcional): entre com a sua conta ChatGPT (OAuth no navegador; nenhuma senha ou chave de API é pedida ou salva). Ele responde só sobre o projeto aberto e o uso do CAD-CRAFT, localiza comandos e itens e propõe alterações que você revisa e aplica (com Desfazer). Dados do projeto só vão para a OpenAI quando você faz uma pergunta.
 
 ## Compilar e rodar
 
@@ -96,6 +97,7 @@ arquivos de outras plataformas ──► cadcraft-import ──► cadcraft-mode
 - `crates/cadcraft-import`: importadores de QElectroTech, EPLAN, DXF e CSV.
 - `crates/cadcraft-render`: lista de exibição comum à tela, ao PDF e ao DXF.
 - `crates/cadcraft-export`: exportadores de PDF, DXF e CSV/XLSX.
+- `crates/cadcraft-assistant`: ajuda, consultas ao projeto e propostas do assistente (sem rede).
 - `crates/cad-craft`: fachada que reexporta as crates acima.
 - `crates/cadcraft-gui`: aplicativo (egui/eframe).
 - `docs/adr`: registros de decisões de arquitetura.

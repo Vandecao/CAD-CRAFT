@@ -100,12 +100,19 @@ impl CadApp {
         self.insertion.symbols.selected.clone()
     }
     pub(crate) fn show_insertion(&mut self, ui: &mut Ui) {
-        if !super::header(
-            ui,
-            &mut self.preferences,
-            PanelId::Insertion,
-            "Centro de inserção",
-        ) {
+        // Etapa 27: the "Assistente" tab shares the panel with the insertion
+        // centre; both tabs sit in the header row, taking no extra height.
+        let open = &mut self.assistant.open;
+        if !super::header_with(ui, &mut self.preferences, PanelId::Insertion, |ui| {
+            ui.spacing_mut().item_spacing.x = 2.0;
+            let tab = |text: &str| egui::RichText::new(text).size(11.0);
+            ui.selectable_value(open, false, tab("Centro de inserção"));
+            ui.selectable_value(open, true, tab("✦ Assistente"));
+        }) {
+            return;
+        }
+        if self.assistant.open {
+            self.show_assistant(ui);
             return;
         }
         if matches!(

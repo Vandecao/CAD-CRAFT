@@ -31,6 +31,7 @@
 | [0027](../../adr/0027-importacao-qet.md) | Implementado/testado automaticamente na Etapa 25; homologação na Etapa 28 | Importação `.qet` como projeto novo: folha pela grade e carimbo, mestre e escravos num dispositivo, fio travado, relatórios de folha como interrupções; `CreateRouteExact` preserva o percurso importado |
 | [0028](../../adr/0028-eplan-edz.md) | Implementado/testado automaticamente na Etapa 26; homologação pendente | EDZ ZIP/7z em memória, peças e macros inline/fallback; ESymLib com definições pendente de amostra, conforme ajuste aprovado |
 | [0029](../../adr/0029-codigo-aberto-gpl.md) | Implementado no bloco R0 (2026-11-05); publicação pendente | GPL-3.0-or-later, SPDX e deny.toml; amostras de terceiros fora do Git (CADCRAFT_SAMPLES); saídas de referência como garantia da reorganização; AGENTS público e local; docs/internal e docs/adr |
+| [0030](../../adr/0030-assistente-ia.md) | Implementado na Etapa 27; teste com login real pendente; homologação na Etapa 28 | Assistente e ajuda: ChatGPT por OAuth (PKCE, 127.0.0.1), nada da conta no disco; crate cadcraft-assistant sem rede; protocolo de ações em texto validado; consultas só de leitura; propostas com cartão e Desfazer; defesas de escopo, sigilo e injection |
 
 Decisões futuras devem registrar contexto, decisão e consequências; não substituir
 silenciosamente contratos definidos pelo usuário.

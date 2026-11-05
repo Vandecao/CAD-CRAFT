@@ -1,3 +1,16 @@
+# Estado — Etapa 27 (assistente de IA e ajuda) testada no app; pronta para versionar (2026-11-05)
+
+- Assistente no painel lateral (aba "✦ Assistente" e botão na barra de status), só ChatGPT por OAuth; nada da conta salvo.
+- Ajuda local de comandos e tarefas; consultas só de leitura; propostas validadas e aplicadas por operações reversíveis.
+- Rede só em `cadcraft-gui/src/assistant/`; núcleo em `cadcraft-assistant`.
+- Formato `.cadcraft` inalterado (9).
+
+Validação 2026-11-05: `scripts/validate.ps1` exit 0, **689 Rust + 16 PowerShell**; Release de 23.617.536 bytes. Teste no app com o login do autor feito (IA-L01 resolvido).
+
+Git: `main`, HEAD `cdca6fc` (R1). A Etapa 27 está fora do HEAD; commit + push aguardam o OK.
+
+---
+
 # Estado — Bloco R0 concluído; código pronto para publicação GPL-3.0 (2026-11-05)
 
 - Licença GPL-3.0-or-later, SPDX em todos os `.rs`, `deny.toml`, README bilíngue, `CONTRIBUTING`, `CODE_OF_CONDUCT`, `SECURITY` e CI.

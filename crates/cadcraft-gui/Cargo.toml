@@ -28,6 +28,13 @@ tempfile = "3"
 rfd = "0.17.2"
 # Etapa 14 (aprovado): leitura e validação de logotipos PNG/JPEG.
 image = { version = "0.25", default-features = false, features = ["png", "jpeg"] }
+# Etapa 27 (aprovado): HTTPS para o login "Sign in with ChatGPT" e a Responses API.
+ureq = { version = "=3.5.1", default-features = false, features = ["rustls"] }
+# Etapa 27: PKCE, valores aleatórios e navegador do sistema (já no Cargo.lock).
+sha2 = "=0.11.1"
+base64 = "=0.22.1"
+getrandom = "=0.3.4"
+webbrowser = "=1.2.5"
 
 [dev-dependencies]
 zip = { version = "9.3.0", default-features = false, features = ["deflate-flate2"] }
