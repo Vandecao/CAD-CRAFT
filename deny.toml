@@ -37,6 +37,10 @@ license-files = []
 [advisories]
 # Advisories need network access to the RustSec database; the CI runs them.
 yanked = "warn"
+# Vulnerabilities fail for every dependency. "Unmaintained" notices fail only
+# for direct dependencies: transitive ones (from egui/eframe) are tracked
+# upstream and cannot be replaced here.
+unmaintained = "workspace"
 
 [bans]
 multiple-versions = "allow"
