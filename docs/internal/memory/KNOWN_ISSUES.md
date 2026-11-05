@@ -1,5 +1,15 @@
 # Problemas conhecidos
 
+## R3 — modelo por assunto (2026-11-05)
+
+Sem novo problema funcional identificado; validação completa e Release aprovados. Comparações exatas de coordenadas/ângulos/topologia foram mantidas para não alterar contratos; inventário conservador em ../reports/R3_COMPARACOES_F64.md. Aplicação geral de tolerância fora dos contratos atuais exige etapa comportamental própria. Problemas anteriores permanecem abaixo.
+
+
+## R2 — documentação de entrada (2026-11-05)
+
+Sem novo problema funcional identificado. Os limites existentes (incluindo GUI-L01 e perdas dos importadores) permanecem registrados abaixo e em docs/FORMATS.md. Nenhum comportamento alterado; validação completa aprovada (692 Rust + 6 exemplos + 16 PowerShell, exit 0). Teste no app não se aplica ao bloco R2.
+
+
 ## Etapa 27 — assistente de IA e ajuda
 
 | ID | Estado | Evidência / limite | Continuidade |

@@ -536,3 +536,20 @@ fn instance_texts_and_report_traces_are_kept() {
     );
     p.validate().unwrap();
 }
+
+#[test]
+fn tutorial_fixture_reports_unsupported_shapes() {
+    let imported = import(include_bytes!("fixtures/synthetic/entry.qet"), &opts()).unwrap();
+    imported.project.validate().unwrap();
+    assert_eq!(imported.project.name().as_str(), "Synthetic entry example");
+    assert_eq!(imported.stats.pages, 1);
+    assert_eq!(imported.stats.texts, 1);
+    assert!(imported.report.count(NoteKind::Ignored) > 0);
+    assert!(
+        imported
+            .report
+            .lines()
+            .iter()
+            .any(|line| line.contains("shape") || line.contains("forma"))
+    );
+}

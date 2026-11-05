@@ -48,3 +48,11 @@ documenta e avisa que as alterações estão prontas; não faz commit ou push.
 O usuário revisa, versiona e sincroniza. Isso preserva rastreabilidade, reduz
 sobrescritas e mantém revisão antes de cada commit e proteção remota periódica.
 Detalhes, exceção específica e consequências no ADR-0002; ADR-0001 preservado.
+
+## R2 — decisões de documentação (2026-11-05)
+
+Prompt aprovado com decisões recomendadas: guias de entrada em inglês, glossário bilíngue e seis exemplos na fachada cad-craft. Execução dos exemplos incluída no validate.ps1 e no CI Linux; Windows usa o mesmo script. Não há decisão arquitetural nova nem ADR adicional: mantém os contratos dos ADRs existentes. Relatório: ../reports/R2_DOCUMENTACAO_ENTRADA.md.
+
+## R3 — organização do modelo (2026-11-05)
+
+Pastas por assunto em inglês, reexports planos mantidos e acesso interno preservado com ancestrais explícitos. Snapshot/integrity continuam ao lado de Project; frame, symbol e macros divididos por subassunto. Tolerância absoluta 1e-6 centraliza o valor existente de molduras; igualdade de identidade, ângulos canônicos e ortogonalidade não é relaxada. Sem mudança de contrato/Serde, portanto sem novo ADR comportamental. Autor autorizou versionar R2+R3 e publicar em privado e público, mantendo históricos separados. Relatório: ../reports/R3_MODELO_POR_ASSUNTO.md.

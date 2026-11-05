@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (C) 2026 Vanderlei Braga e colaboradores do CAD-CRAFT
+//! Domain validation errors and result alias; start with DomainError.
 use crate::domain::{
     CableCoreId, CableId, ConductorId, ConnectionId, ConnectionPointId, EntityRef,
     PhysicalTermination, ProjectId, RepresentationId, TerminalId,

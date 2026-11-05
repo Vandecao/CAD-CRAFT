@@ -1,12 +1,13 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (C) 2026 Vanderlei Braga e colaboradores do CAD-CRAFT
-//! Etapa 15: molduras de outros sistemas.
+//! External file conversion into the neutral model; start with ImportReport,
+//! then the qet, elmt, edz or frame reader modules for the source format.
 //!
-//! Importa `.fn1` (EPLAN, XML PXF), `.titleblock` (QElectroTech) e DXF ASCII
-//! para [`FramePackage`]; exporta molduras para DXF. Nenhum código desses
-//! programas é usado: os leitores seguem o conteúdo dos próprios arquivos.
-//! Tudo o que não é convertido entra no [`ImportReport`], nunca é descartado
-//! em silêncio. A importação no projeto usa `Project::frame_import_edits`.
+//! Frame readers handle FN1, titleblock and ASCII DXF; dxf also writes frames.
+//! QET imports projects, ELMT imports symbols, EDZ imports parts and 2D macros,
+//! and the re-exported CSV functions exchange parts and bill-of-materials rows.
+//! Conversions report ignored and approximated content. Importers return model
+//! data for callers to accept through validated project edits or library storage.
 use cadcraft_model::domain::{FramePackage, SpecialField, Text};
 use std::fmt;
 

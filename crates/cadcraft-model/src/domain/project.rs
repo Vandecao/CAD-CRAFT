@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (C) 2026 Vanderlei Braga e colaboradores do CAD-CRAFT
+//! Neutral project aggregate and entity storage; start with Project::new and validate.
 use super::*;
 use crate::document_index::DocumentIndex;
 use crate::error::{DomainError, Result};
@@ -9,63 +10,19 @@ use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 
 mod checks;
-mod clipboard;
-mod connection_drawing;
-mod connectivity;
-mod connectors;
-mod document_edit;
-mod document_queries;
-mod documentation;
-mod frames;
-mod function_edit;
-mod identification;
+mod document;
+mod electrical;
 mod integrity;
-mod macros;
-mod markers;
-mod numbering;
-mod parts;
-mod physical_edit;
-mod physical_integrity;
-mod physical_lists;
-mod physical_queries;
-mod physical_wiring;
-mod placement;
-mod reports;
-mod representations;
-mod route_clearance;
-mod sheet_references;
+mod physical;
 mod snapshot;
-mod symbol_texts;
 mod symbols;
 
-pub use checks::{CHECK_EXPORT_HEADERS, CheckSchemeDelta};
-pub use clipboard::{ClipItem, MAX_CLIPBOARD_ITEMS, SheetEditDelta};
-pub use connectors::ContactStatus;
-pub use document_edit::{DocumentDelta, DocumentEdit};
-pub use frames::{FrameDelta, FrameEdit, FramePackage};
-pub use function_edit::{FunctionPointDelta, FunctionPointEdit};
-pub use macros::{MacroInsertDelta, MacroPlacement, MacroReport};
-pub use numbering::{
-    ConnectionNumberDelta, ConnectionNumberPreview, ConnectionNumberRow, ConnectionNumberingDelta,
-    DeviceNumberDelta, DeviceNumberPreview, DeviceNumberRow,
-};
-pub use numbering::{PageNumberDelta, PageNumberPreview, PageNumberRow};
-pub use parts::{BomRow, PartAssignmentDelta, PartRemovalDelta, PartUpdateDelta};
-pub use physical_edit::{PhysicalDelta, PhysicalEdit};
-pub use physical_lists::{
-    CableListRow, ConductorListRow, ConnectorContactRow, ConnectorListRow, CoreListRow,
-    PhysicalLists, StripListRow, TerminalListRow, WiringAssignmentRow,
-};
-pub use placement::{
-    ExistingFunctionDelta, ExistingFunctionPlacement, PlacementDelta, PlacementDevice,
-    SymbolPlacement,
-};
-pub use representations::{RepresentationChange, RepresentationDelta};
-pub use sheet_references::{
-    SHEET_REFERENCE_HEIGHT, SheetReference, SheetReferenceKind, SheetReferenceSegment,
-    contact_kind_label,
-};
-pub use symbols::SymbolUpdateDelta;
+pub use checks::*;
+pub use document::*;
+use electrical::connection_drawing;
+pub use electrical::*;
+pub use physical::*;
+pub use symbols::*;
 
 /// Agregado com identidade estável e acesso imutável às entidades registradas.
 /// Inserções exigem alvos existentes. Páginas, representações e conexões têm remoção

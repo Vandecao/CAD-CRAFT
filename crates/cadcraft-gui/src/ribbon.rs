@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (C) 2026 Vanderlei Braga e colaboradores do CAD-CRAFT
+//! Ribbon tabs and command buttons; start with the ribbon renderer.
 use crate::{
     app::CadApp,
     commands::{CommandId, Icon},

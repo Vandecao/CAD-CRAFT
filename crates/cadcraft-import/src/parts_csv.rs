@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (C) 2026 Vanderlei Braga e colaboradores do CAD-CRAFT
+//! Part catalog CSV and BOM output; start with import_parts_csv and CsvPartReport.
 use cadcraft_model::domain::{BomRow, Part, PartFunction, TechnicalProperties};
 use std::collections::{BTreeMap, BTreeSet};
 

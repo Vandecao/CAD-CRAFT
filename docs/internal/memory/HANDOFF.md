@@ -1,3 +1,31 @@
+# R3 — modelo por assunto validado; publicação autorizada (2026-11-05)
+
+Especificação: docs/internal/spec/R3_MODELO_POR_ASSUNTO.md. Plano: docs/internal/plans/2026-11-05-r3.md. Relatórios: docs/internal/reports/R3_MODELO_POR_ASSUNTO.md e R3_COMPARACOES_F64.md.
+62 arquivos movidos por git mv, entidades e Project agrupados por assunto; frame/symbol/macros divididos. Maior arquivo do modelo: 781 linhas. API plana, Serde, dependências e formato 9 preservados. EPS_MM centraliza o mesmo 1e-6 de molduras; comparações exatas de identidade/topologia mantidas.
+Validação 2026-11-05: scripts/validate.ps1 exit 0; **694 testes Rust + 6 exemplos executados + 16 PowerShell = 716**, zero falhas/ignorados. fmt, check, Clippy -D warnings e diff checks aprovados; baselines e fixtures v0–v9 preservados. Release compilado (23609856 bytes), sem executar o app.
+Revisão independente: nenhum achado material. Não houve teste no app/homologação manual; nenhum R4 iniciado.
+Autor autorizou commit/push de R2+R3 no privado e sincronização do público por cópia de arquivos, sem enviar o histórico privado. Privado: C:/Dev/CAD-CRAFT, main, origin Vandecao/CAD-CRAFT1, HEAD pré-versionamento observado 06a6cbf1e3d37d1e7679ca55d98f41f43e7ee001 em 2026-11-05. Público: C:/Dev/CAD-CRAFT-public, main, origin Vandecao/CAD-CRAFT; HEAD inicial 79b1a48d6984d22440e31873eedfd1083f558ac8.
+Este registro é anterior ao versionamento da entrega, sem SHA futuro inventado. Resultado/SHAs reais: consultar .local/r3/PUBLICATION.md e git log nos dois checkouts. Regras e memória anteriores que diziam não iniciar R3 foram superadas pela autorização expressa desta sessão. Backup externo não criado/verificado.
+Próxima ação após publicação: revisão do autor; R4 somente em nova solicitação.
+
+---
+
+# R2 — documentação de entrada validada; pronta para revisão (2026-11-05)
+
+Escopo aprovado: docs/internal/spec/R2_DOCUMENTACAO_ENTRADA.md, decisões recomendadas.
+Plano: docs/internal/plans/2026-11-05-r2.md. Relatório: docs/internal/reports/R2_DOCUMENTACAO_ENTRADA.md.
+Quatro guias públicos em inglês (glossário bilíngue), seis exemplos executáveis na fachada,
+75 introduções novas e três atualizadas; teste de presença de //! em todos os 158 arquivos de src.
+Comportamento, dependências e formato 9 preservados. Exemplos e testes focados passaram.
+Validação 2026-11-05: pwsh -NoProfile -File scripts/validate.ps1 terminou com exit 0: **692 testes Rust do workspace + 6 exemplos executados + 16 PowerShell = 714**, zero falhas/ignorados. fmt, check de todos os targets, Clippy com -D warnings e diff checks passaram; saídas de referência idênticas.
+Sem teste no app neste bloco; nenhuma homologação manual declarada.
+Git: main, HEAD 06a6cbf1e3d37d1e7679ca55d98f41f43e7ee001, consultado em 2026-11-05 (America/Sao_Paulo).
+R1 e Etapa 27 já estão nesse HEAD; entradas históricas abaixo com esses blocos pendentes estão superadas.
+R2 fora do HEAD. Nenhum staging, commit, push, sincronização ou backup executado.
+Próximo: revisão do autor; versionamento/sincronização só com OK expresso. Não iniciar R3.
+
+---
+
 # Handoff — Etapa 27 (assistente de IA) testada no app; pronta para versionar (2026-11-05)
 
 Prompt `docs/internal/spec/ETAPA_27_ASSISTENTE_IA.md`, plano `docs/internal/plans/2026-11-05-etapa-27.md`, relatório `docs/internal/reports/ETAPA_27_ASSISTENTE_IA.md`, ADR-0030.
@@ -10,7 +38,7 @@ Prompt `docs/internal/spec/ETAPA_27_ASSISTENTE_IA.md`, plano `docs/internal/plan
 Próximo:
 1. Teste no app: feito.
 2. OK para commit + push no privado (`CAD-CRAFT1`) e sincronização com o público.
-3. R2–R6 e Etapa 28.
+3. R2–R6 e Etapa 28: prompts aprovados em 2026-11-05 com as decisões recomendadas (`docs/internal/spec/R2_…R6_…`, `ETAPA_28_FECHAMENTO_HOMOLOGACAO.md`). Implementação pelo Codex, um bloco por vez; teste no app pelo Claude Code ao fim do R5, do R6 e da Etapa 28.
 
 ---
 

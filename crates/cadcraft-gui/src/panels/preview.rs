@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (C) 2026 Vanderlei Braga e colaboradores do CAD-CRAFT
+//! Page thumbnail rendering; start with the preview panel renderer.
 use crate::{
     app::CadApp, camera::Camera, preferences::PanelId, state::Selection, theme, viewport::draw_page,
 };

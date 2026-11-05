@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (C) 2026 Vanderlei Braga e colaboradores do CAD-CRAFT
+//! File menu and project entry screen; start with the backstage renderer.
 use crate::{
     app::{CadApp, Level},
     commands::{CommandId, Icon},

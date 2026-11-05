@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (C) 2026 Vanderlei Braga e colaboradores do CAD-CRAFT
+//! Technical JSON snapshot I/O; start with the bounded reader and writer functions.
 use std::{
     io::{self, Read},
     path::Path,

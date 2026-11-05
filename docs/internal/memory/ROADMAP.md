@@ -38,8 +38,10 @@ homologação geral de plataforma/hardware.
 | 26 | Fase D — EDZ EPLAN: peças e macros 2D inline/fallback; definições ESymLib pendentes de amostra (ajuste aprovado); demais formatos em 26b | Implementada | Sim, 666 Rust + 15 PowerShell; Release; 46 amostras (45 convertidas, 1 recusada por referência ausente) | Teste no app feito em 2026-11-05 (Etapas 23–26); homologação geral na 28 | Fora do HEAD; commit + push após teste no app e OK expresso |
 | R0 | Preparação para código aberto: GPL-3.0-or-later, amostras fora do Git, saídas de referência, README, CI, AGENTS público/local, docs/internal (plano `docs/internal/plans/PLANO_REORGANIZACAO_R0-R6.md`) | Implementado | Sim | — | Fora do HEAD; commit + push após OK; publicação depois, com autorização |
 | Pub. | Publicação em repositório público novo, commit inicial limpo | Planejada | — | — | Requer o repositório criado pelo autor |
-| R1 | Divisão em crates (model, format, render, import, export; fachada cad-craft) | Planejada | — | — | Antes da Etapa 27 |
-| 27 | Fase E — assistente de IA e ajuda: implementado (crate cadcraft-assistant, ChatGPT por OAuth); teste com login real pendente (prompt aprovado `docs/internal/spec/ETAPA_27_ASSISTENTE_IA.md`; substitui `docs/internal/spec/ETAPA_17_ASSISTENTE_IA_OPENAI.md`, renumerada) | Planejada | Não | Final | Idem |
+| R1 | Divisão em crates (model, format, render, import, export; fachada cad-craft) | Implementada | Validação registrada no relatório R1 | Teste no app registrado no HANDOFF | Commit local cdca6fc, incluído no HEAD observado em 2026-11-05 |
+| R2 | Documentação de entrada: arquitetura, tour, glossário, formatos, seis exemplos e introduções de módulo | Implementado | 692 Rust + 6 exemplos + 16 PowerShell, exit 0 | Não se aplica; sem teste no app | Fora do HEAD; pronto para revisão/versionamento, sem commit/push |
+| R3 | Modelo por assunto, arquivos menores, tolerance.rs e inventário de comparações | Implementado | 694 Rust + 6 exemplos + 16 PowerShell, Release | Não se aplica; teste no app no R5 | Commit/push R2+R3 autorizados para privado e público; recibo .local/r3/PUBLICATION.md |
+| 27 | Fase E — assistente de IA e ajuda, cadcraft-assistant sem rede; OAuth na GUI | Implementada | 689 Rust + 16 PowerShell registrados na Etapa 27 | Teste com login registrado no HANDOFF; homologação geral na 28 | Commit local 06a6cbf, HEAD observado em 2026-11-05 |
 | 28 | Fase F — desempenho, robustez, telas/escalas, correções e **homologação geral** | Planejada | Não | — | Idem |
 
 ### Plano Mestre aprovado (2026-11-03)

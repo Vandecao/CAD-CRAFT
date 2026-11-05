@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (C) 2026 Vanderlei Braga e colaboradores do CAD-CRAFT
+//! Typed entity and library identifiers; start with the ID definitions below.
 use crate::error::{DomainError, Result};
 use serde::{Deserialize, Serialize};
 use std::{fmt, str::FromStr};

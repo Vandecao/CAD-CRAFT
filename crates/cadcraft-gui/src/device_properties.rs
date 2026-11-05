@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (C) 2026 Vanderlei Braga e colaboradores do CAD-CRAFT
+//! Device and function property edits; start with the Session editing methods.
 use crate::state::{Selection, Session};
 use cad_craft::{domain::*, error::Result};
 use eframe::egui::{self, Ui};

@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (C) 2026 Vanderlei Braga e colaboradores do CAD-CRAFT
+//! Derived document occurrence index; start with DocumentIndex.
 use crate::domain::{PageId, Representation, RepresentationId, RepresentationTarget};
 use std::collections::{BTreeMap, BTreeSet};
 

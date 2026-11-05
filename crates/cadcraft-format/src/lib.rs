@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (C) 2026 Vanderlei Braga e colaboradores do CAD-CRAFT
-//! Formato de arquivo `.cadcraft` (Etapa 12).
+//! Native project and reusable library packages; start with read_project,
+//! write_project and migrate, then the read_*_package / write_*_package sections.
 //!
-//! O formato v1 é um ZIP com `mimetype` (primeira entrada, sem compressão),
-//! `manifest.json` e `project.json`. `assets/` fica reservado para formatos
-//! futuros. O snapshot técnico JSON das Etapas 1–11 é lido como formato v0.
-//! Este módulo trabalha sobre leitores/escritores em memória ou arquivo e nunca
-//! extrai entradas para o disco; trava, gravação atômica e recuperação são
-//! responsabilidade da aplicação.
+//! The current project format is a versioned ZIP with mimetype, manifest.json,
+//! project.json and optional image bytes under assets/. Legacy technical JSON is
+//! read as format 0 and migrated. All decoded projects are validated. This crate
+//! uses bounded readers and writers and never extracts archive entries to disk;
+//! the application owns file locks, atomic saves and recovery.
 use cadcraft_model::domain::{
     AssetId, FramePackage, FrameTemplate, ImageAsset, MAX_IMAGE_BYTES, MacroDefinition, Part,
     Project, SymbolDefinition,

@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Synthetic CAD-CRAFT tutorial fixture; no third-party project data. -->
+<project title="Synthetic entry example" version="0.80">
+  <diagram order="1" title="Control" cols="4" colsize="60" rows="3" rowsize="80" displaycols="true" displayrows="true">
+    <elements/>
+    <conductors/>
+    <inputs><input x="40" y="60" text="Synthetic panel" size="9" rotation="0"/></inputs>
+    <shapes><shape type="Rectangle"/></shapes>
+  </diagram>
+</project>

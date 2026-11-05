@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (C) 2026 Vanderlei Braga e colaboradores do CAD-CRAFT
+//! Project serialization and validated reconstruction; start with ProjectData.
 use super::*;
 use serde::{Deserialize, Serialize, Serializer, ser::SerializeSeq};
 

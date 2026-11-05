@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (C) 2026 Vanderlei Braga e colaboradores do CAD-CRAFT
+//! Application dialogs and confirmations; start with the dialog rendering functions.
 use crate::{
     app::{CadApp, Level},
     editing::{Edit, GraphicEdit},

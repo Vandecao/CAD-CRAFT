@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (C) 2026 Vanderlei Braga e colaboradores do CAD-CRAFT
+//! Editor session and selection state; start with Session and its dispatch methods.
 use crate::{
     camera::Camera,
     editing::{Edit, GraphicEdit},

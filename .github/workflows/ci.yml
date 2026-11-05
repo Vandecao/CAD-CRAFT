@@ -41,6 +41,9 @@ jobs:
       - name: Tests (core crates)
         run: cargo test --workspace --exclude cadcraft-gui --locked
 
+      - name: Run facade examples
+        run: cargo test -p cad-craft --examples --locked
+
   dependencies:
     name: Licenses and advisories
     runs-on: ubuntu-latest

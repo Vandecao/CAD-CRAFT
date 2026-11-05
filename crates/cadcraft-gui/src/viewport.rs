@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (C) 2026 Vanderlei Braga e colaboradores do CAD-CRAFT
+//! Sheet rendering and pointer interaction; start with draw_page and the viewport renderer.
 use crate::{
     app::{CadApp, Level},
     camera::{Camera, SCALE_100, grid_points, snap},

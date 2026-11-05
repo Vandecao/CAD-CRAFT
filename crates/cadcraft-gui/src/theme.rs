@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (C) 2026 Vanderlei Braga e colaboradores do CAD-CRAFT
+//! Application colors, fonts and widget styling; start with the theme installation functions.
 use eframe::egui::{self, Color32, FontId, Stroke, TextStyle};
 pub const TITLE: Color32 = Color32::from_rgb(17, 18, 20);
 pub const PANEL: Color32 = Color32::from_rgb(43, 45, 48);

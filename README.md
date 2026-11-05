@@ -104,6 +104,10 @@ files from other platforms ──► cadcraft-import ──► cadcraft-model �
 - `docs/TESTES_COM_AMOSTRAS.md`: optional tests with your own real files.
 - `docs/internal`: specs, plans, reports and project memory of each stage.
 
+## Contributor entry documents
+
+[Architecture](docs/ARCHITECTURE.md) · [Source tour](docs/TOUR.md) · [Glossary (English / Portuguese)](docs/GLOSSARY.md) · [File formats](docs/FORMATS.md)
+
 ## Contributing and license
 
 Contributions are welcome. Read [CONTRIBUTING.md](CONTRIBUTING.md), the [code of conduct](CODE_OF_CONDUCT.md) and the [security policy](SECURITY.md).

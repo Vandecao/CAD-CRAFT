@@ -1,9 +1,11 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (C) 2026 Vanderlei Braga e colaboradores do CAD-CRAFT
-//! Etapa 21: lista de exibição de uma página, em milímetros (origem inferior
-//! esquerda, Y para cima). Reproduz o que a folha mostra na tela, sem os
-//! auxílios de edição (grade, âncoras, portas, seleção). É a fonte do PDF e
-//! será a do DXF (Etapa 22). Não depende de GUI.
+//! Exportable page display lists; start with DisplayItem, DisplayList and
+//! PageDisplayList, then follow the builder for frames, symbols and references.
+//!
+//! Coordinates are millimetres, origin bottom left, Y up. Shared sheet content
+//! feeds PDF and page DXF without GUI dependencies. Editing aids such as the grid,
+//! port handles, snap hints and selection are excluded.
 use crate::font;
 use cadcraft_model::domain::*;
 use cadcraft_model::error::Result;

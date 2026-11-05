@@ -104,6 +104,10 @@ arquivos de outras plataformas ──► cadcraft-import ──► cadcraft-mode
 - `docs/TESTES_COM_AMOSTRAS.md`: testes opcionais com os seus próprios arquivos reais.
 - `docs/internal`: especificações, planos, relatórios e memória de cada etapa.
 
+## Documentação para começar
+
+[Arquitetura](docs/ARCHITECTURE.md) · [Tour pelo código](docs/TOUR.md) · [Glossário (inglês / português)](docs/GLOSSARY.md) · [Formatos de arquivo](docs/FORMATS.md)
+
 ## Contribuir e licença
 
 Contribuições são bem-vindas. Leia o [CONTRIBUTING.md](CONTRIBUTING.md), o [código de conduta](CODE_OF_CONDUCT.md) e a [política de segurança](SECURITY.md).

@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (C) 2026 Vanderlei Braga e colaboradores do CAD-CRAFT
+//! Occurrence reference property controls; start with the reference inspector renderer.
 use crate::{
     app::{CadApp, Level},
     device_properties::DeviceInspector,

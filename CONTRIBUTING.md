@@ -10,7 +10,7 @@ Windows 10/11 x64 with [Rustup](https://rustup.rs) and the Microsoft C++ Build T
 pwsh -NoProfile -File scripts/validate.ps1
 ```
 
-The script runs, in order and stopping at the first failure: `cargo fmt --check`, `cargo check --workspace --all-targets --locked`, `cargo test --workspace --locked`, `cargo clippy --workspace --all-targets --locked -- -D warnings`, `git diff --check` and the PowerShell tests. The CI runs the same checks plus `cargo deny check`.
+The script runs, in order and stopping at the first failure: `cargo fmt --check`, `cargo check --workspace --all-targets --locked`, `cargo test --workspace --locked`, `cargo test -p cad-craft --examples --locked`, `cargo clippy --workspace --all-targets --locked -- -D warnings`, the PowerShell tests and `git diff --check` (working tree and index). The CI runs the same checks plus `cargo deny check`.
 
 Rules for tests:
 

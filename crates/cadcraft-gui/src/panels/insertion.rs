@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (C) 2026 Vanderlei Braga e colaboradores do CAD-CRAFT
+//! Insertion catalog and placement controls; start with the insertion panel renderer.
 use crate::{app::CadApp, commands::Icon, icons, preferences::PanelId, state::Selection};
 use cad_craft::domain::*;
 use eframe::egui::{self, Ui};

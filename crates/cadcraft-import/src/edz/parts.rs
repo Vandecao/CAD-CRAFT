@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (C) 2026 Vanderlei Braga e colaboradores do CAD-CRAFT
+//! EDZ part records and function templates; start with the part conversion functions.
 use super::super::{ImportReport, ImportResult, fail, xml::Element};
 use cadcraft_model::domain::*;
 use std::collections::BTreeMap;
