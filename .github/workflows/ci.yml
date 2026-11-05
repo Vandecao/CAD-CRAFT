@@ -27,7 +27,7 @@ jobs:
         run: pwsh -NoProfile -File scripts/validate.ps1
 
   linux:
-    name: Linux (core crate)
+    name: Linux (core crates)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -36,10 +36,10 @@ jobs:
       - name: Format
         run: cargo fmt --all --check
       # The GUI needs desktop window libraries; the core has no GUI dependency.
-      - name: Clippy (core)
-        run: cargo clippy -p cad-craft --all-targets --locked -- -D warnings
-      - name: Tests (core)
-        run: cargo test -p cad-craft --locked
+      - name: Clippy (core crates)
+        run: cargo clippy --workspace --exclude cadcraft-gui --all-targets --locked -- -D warnings
+      - name: Tests (core crates)
+        run: cargo test --workspace --exclude cadcraft-gui --locked
 
   dependencies:
     name: Licenses and advisories

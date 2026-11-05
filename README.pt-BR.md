@@ -65,7 +65,7 @@ Tudo entra no modelo neutro `Project` e tudo sai dele. Cada importação relata 
 Requisitos: Windows 10/11 x64, [Rustup](https://rustup.rs) e Microsoft C++ Build Tools (carga Desktop C++ com o Windows SDK). A versão do Rust está fixada em `rust-toolchain.toml` e o Rustup a instala sozinho.
 
 ```powershell
-cargo build --release --locked -p cad-gui
+cargo build --release --locked -p cadcraft-gui
 .\target\release\cad-gui.exe
 ```
 
@@ -75,7 +75,7 @@ Validação completa (formatação, compilação, testes, Clippy, espaços e os 
 pwsh -NoProfile -File scripts/validate.ps1
 ```
 
-O Core (`crates/cad-craft`) não depende da interface e também compila e passa nos testes no Linux.
+As crates do Core não dependem da interface e também compilam e passam nos testes no Linux: `cargo test --workspace --exclude cadcraft-gui`.
 
 ## Estado do projeto
 
@@ -83,8 +83,21 @@ Alfa. O formato `.cadcraft` ainda pode mudar, sempre com migração das versões
 
 ## Organização do repositório
 
-- `crates/cad-craft`: Core. Modelo de domínio, persistência, importadores, exportadores, lista de exibição, relatórios e verificações.
-- `crates/cad-gui`: aplicativo (egui/eframe).
+Tudo entra no modelo neutro e tudo sai dele:
+
+```
+arquivos de outras plataformas ──► cadcraft-import ──► cadcraft-model ◄──► cadcraft-format (.cadcraft)
+                                                            │
+                                                            └──► cadcraft-render ──► tela, cadcraft-export (PDF, DXF)
+```
+
+- `crates/cadcraft-model`: modelo de projeto neutro (entidades, conectividade, documentos, símbolos, numeração, relatórios, verificações).
+- `crates/cadcraft-format`: arquivos próprios e migrações.
+- `crates/cadcraft-import`: importadores de QElectroTech, EPLAN, DXF e CSV.
+- `crates/cadcraft-render`: lista de exibição comum à tela, ao PDF e ao DXF.
+- `crates/cadcraft-export`: exportadores de PDF, DXF e CSV/XLSX.
+- `crates/cad-craft`: fachada que reexporta as crates acima.
+- `crates/cadcraft-gui`: aplicativo (egui/eframe).
 - `docs/adr`: registros de decisões de arquitetura.
 - `docs/TESTES_COM_AMOSTRAS.md`: testes opcionais com os seus próprios arquivos reais.
 - `docs/internal`: especificações, planos, relatórios e memória de cada etapa.

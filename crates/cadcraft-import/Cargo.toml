@@ -1,0 +1,30 @@
+[package]
+name = "cadcraft-import"
+description = "CAD-CRAFT importers: QElectroTech, EPLAN, DXF and CSV into the neutral project model."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+publish.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+
+[dependencies]
+cadcraft-model = { path = "../cadcraft-model" }
+serde = { version = "1", features = ["derive"] }
+serde_json = { version = "1", features = ["float_roundtrip"] }
+zip = { version = "9.3.0", default-features = false, features = ["deflate-flate2"] }
+# Somente seleciona o backend Rust (miniz_oxide) exigido por deflate-flate2.
+flate2 = { version = "1.1.10", default-features = false, features = ["rust_backend"] }
+# Leitura de molduras XML (.fn1 do EPLAN, .titleblock e .qet do QElectroTech).
+quick-xml = { version = "0.42", default-features = false }
+csv = "1.3"
+# Leitor 7z aprovado (Apache-2.0).
+sevenz-rust2 = { version = "=0.24.2", default-features = false }
+
+[dev-dependencies]
+# Encoder 7z somente para fixtures sintéticas.
+sevenz-rust2 = { version = "=0.24.2", default-features = false, features = ["compress"] }
+
+[lints]
+workspace = true

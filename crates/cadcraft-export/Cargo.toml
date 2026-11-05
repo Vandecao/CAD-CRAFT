@@ -1,0 +1,25 @@
+[package]
+name = "cadcraft-export"
+description = "CAD-CRAFT exporters: vector PDF, DXF R12 and CSV/XLSX lists."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+publish.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+
+[dependencies]
+cadcraft-model = { path = "../cadcraft-model" }
+cadcraft-render = { path = "../cadcraft-render" }
+pdf-writer = "=0.15.0"
+# Decodificar PNG da moldura para o PDF.
+image = { version = "0.25", default-features = false, features = ["png"] }
+# Listas XLSX (versão aprovada e fixada).
+rust_xlsxwriter = "=0.102.0"
+csv = "1.3"
+# Somente seleciona o backend Rust (miniz_oxide) exigido por deflate-flate2.
+flate2 = { version = "1.1.10", default-features = false, features = ["rust_backend"] }
+
+[lints]
+workspace = true

@@ -1,5 +1,13 @@
 [workspace]
-members = ["crates/cad-craft", "crates/cad-gui"]
+members = [
+    "crates/cadcraft-model",
+    "crates/cadcraft-format",
+    "crates/cadcraft-render",
+    "crates/cadcraft-import",
+    "crates/cadcraft-export",
+    "crates/cad-craft",
+    "crates/cadcraft-gui",
+]
 resolver = "3"
 
 [workspace.package]

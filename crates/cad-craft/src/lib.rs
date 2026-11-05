@@ -1,25 +1,23 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (C) 2026 Vanderlei Braga e colaboradores do CAD-CRAFT
-//! Core de engenharia do CAD-CRAFT, independente da interface.
+//! CAD-CRAFT core as one dependency: a facade that re-exports the crates.
 //!
-//! Modelo elétrico em milímetros. O agregado [`domain::Project`] protege relações
-//! entre entidades e conectividade lógica; não contém renderização. O formato
-//! `.cadcraft` ([`persistence`]) trabalha sobre bytes, sem trava ou recuperação.
+//! - [`domain`] and [`error`]: neutral project model (`cadcraft-model`).
+//! - [`persistence`]: native file formats and migrations (`cadcraft-format`).
+//! - [`interchange`]: importers for other platforms (`cadcraft-import`).
+//! - [`display`] and [`font`]: display list of a page (`cadcraft-render`).
+//! - [`pdf`], [`dxf_export`] and [`report_export`]: exporters (`cadcraft-export`).
+//!
+//! Everything goes into the `Project` model and everything comes out of it.
 
-/// Etapa 21: lista de exibição da página (fonte do PDF e do DXF).
-pub mod display;
-mod document_index;
-pub mod domain;
-/// Etapa 22: DXF R12 de página (lista de exibição).
-pub mod dxf_export;
-pub mod error;
-/// Etapa 21: métricas da Helvetica (WinAnsi).
-pub mod font;
-mod graph;
-/// Etapa 15: molduras de outros sistemas (.fn1, .titleblock, DXF).
-pub mod interchange;
-/// Etapa 21: PDF vetorial multipágina com links e marcadores.
-pub mod pdf;
-pub mod persistence;
-mod physical_index;
-pub mod report_export;
+/// Neutral project model; also brings [`display::PageDisplayList`] into scope,
+/// so `project.page_display_list(page)` works with `use cad_craft::domain::*`.
+pub mod domain {
+    pub use cadcraft_model::domain::*;
+    pub use cadcraft_render::display::PageDisplayList;
+}
+pub use cadcraft_export::{dxf_export, pdf, report_export};
+pub use cadcraft_format as persistence;
+pub use cadcraft_import as interchange;
+pub use cadcraft_model::error;
+pub use cadcraft_render::{display, font};

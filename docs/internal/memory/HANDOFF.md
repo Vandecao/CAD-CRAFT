@@ -1,3 +1,41 @@
+# Handoff — Bloco R1 (crates) validado e testado no app; pronto para versionar (2026-11-05)
+
+Prompt `docs/internal/spec/R1_DIVISAO_CRATES.md` (aprovado), plano `docs/internal/plans/2026-11-05-r1.md`, relatório `docs/internal/reports/R1_DIVISAO_CRATES.md`.
+
+- **Core dividido em crates:** `cadcraft-model`, `-format`, `-render`, `-import` e `-export`.
+- **Fachada `cad-craft`:** mantém os caminhos de antes.
+- **GUI:** passa a `crates/cadcraft-gui` (pacote `cadcraft-gui`, executável `cad-gui.exe`). Compilar com `-p cadcraft-gui`.
+- **Validação:** 674 Rust + 16 PowerShell; saídas de referência idênticas.
+- **Disco:** `cargo clean` foi necessário (`target` com 112 GB). Vale repetir periodicamente.
+
+Próximo:
+1. Teste rápido no app: feito e ok (importação .qet e PDF de 50 páginas).
+2. OK para commit + push no privado (`CAD-CRAFT1`).
+3. Sincronização com o público (`C:\Dev\CAD-CRAFT-public`), com OK.
+4. Etapa 27.
+
+---
+
+# Handoff — CAD-CRAFT publicado como código aberto (2026-11-05)
+
+- **Público:** https://github.com/Vandecao/CAD-CRAFT (GPL-3.0-or-later).
+  - Histórico novo: `eb9f805` "Initial public release" e `ea24a73` (correção do `deny.toml`).
+  - Publicado a partir da pasta separada `C:\Dev\CAD-CRAFT-public` (cópia limpa, com o próprio `.git`).
+- **Privado, com o histórico completo:** renomeado para `Vandecao/CAD-CRAFT1`.
+  - O `origin` local aponta para ele: R0 em `7b444a4`, correção do `deny.toml` em `3be39ab`.
+  - **Nunca enviar o `main` local para o público:** os commits antigos têm molduras do EPLAN.
+- **Primeiro CI (privado):** Windows completo, Core no Linux e licenças passaram. Só os avisos de "sem manutenção" em dependências indiretas do egui falharam, e já foram corrigidos no `deny.toml`. O CI do público estava rodando na hora do registro.
+- **Sincronizar os dois repositórios:**
+  - publicar no público as mudanças versionadas no privado é um passo por bloco ou etapa, com o OK do autor;
+  - copiar os arquivos para `C:\Dev\CAD-CRAFT-public`;
+  - fazer o commit com `-s`, em inglês;
+  - enviar o push para `Vandecao/CAD-CRAFT`.
+- **Próximo:**
+  - R1 (crates), com prompt próprio;
+  - Etapa 27: o CAD-CRAFT agora é código aberto, então o login "Sign in with ChatGPT" para apps abertos passa a se aplicar. Confirmar na implementação.
+
+---
+
 # Handoff — Bloco R0 (preparação para código aberto) pronto para versionar (2026-11-05)
 
 Prompt `docs/internal/spec/R0_PREPARACAO_PUBLICACAO.md` (aprovado), plano `docs/internal/plans/2026-11-05-r0.md`, ADR-0029, relatório `docs/internal/reports/R0_PREPARACAO_PUBLICACAO.md`. Validação: `scripts/validate.ps1` (2026-11-05) terminou com exit 0: **673 Rust + 16 PowerShell**, zero falhas; saídas de referência idênticas; Release de 20.088.832 bytes (mesmo tamanho de antes do bloco), não executado.

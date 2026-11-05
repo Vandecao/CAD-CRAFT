@@ -65,7 +65,7 @@ Everything goes into the neutral `Project` model and everything comes out of it.
 Requirements: Windows 10/11 x64, [Rustup](https://rustup.rs) and the Microsoft C++ Build Tools (Desktop C++ workload with the Windows SDK). The toolchain version is pinned in `rust-toolchain.toml` and installed by Rustup automatically.
 
 ```powershell
-cargo build --release --locked -p cad-gui
+cargo build --release --locked -p cadcraft-gui
 .\target\release\cad-gui.exe
 ```
 
@@ -75,7 +75,7 @@ Full validation (format, check, tests, Clippy, whitespace and the PowerShell tes
 pwsh -NoProfile -File scripts/validate.ps1
 ```
 
-The core crate (`crates/cad-craft`) has no GUI dependency and also builds and tests on Linux.
+The core crates have no GUI dependency and also build and test on Linux: `cargo test --workspace --exclude cadcraft-gui`.
 
 ## Project status
 
@@ -83,8 +83,21 @@ Alpha. The `.cadcraft` format may still change, always with a migration from ear
 
 ## Repository layout
 
-- `crates/cad-craft`: core. Domain model, persistence, importers, exporters, display list, reports and checks.
-- `crates/cad-gui`: desktop application (egui/eframe).
+Everything goes into the neutral model and everything comes out of it:
+
+```
+files from other platforms ──► cadcraft-import ──► cadcraft-model ◄──► cadcraft-format (.cadcraft)
+                                                        │
+                                                        └──► cadcraft-render ──► screen, cadcraft-export (PDF, DXF)
+```
+
+- `crates/cadcraft-model`: neutral project model (entities, connectivity, documents, symbols, numbering, reports, checks).
+- `crates/cadcraft-format`: native files and migrations.
+- `crates/cadcraft-import`: QElectroTech, EPLAN, DXF and CSV importers.
+- `crates/cadcraft-render`: display list shared by the screen, the PDF and the DXF.
+- `crates/cadcraft-export`: PDF, DXF and CSV/XLSX exporters.
+- `crates/cad-craft`: facade that re-exports the crates above.
+- `crates/cadcraft-gui`: desktop application (egui/eframe).
 - `docs/adr`: architecture decision records.
 - `docs/TESTES_COM_AMOSTRAS.md`: optional tests with your own real files.
 - `docs/internal`: specs, plans, reports and project memory of each stage.

@@ -545,14 +545,13 @@ checksum = "fc652a48c352aef3ea3aed32080501cf3ef6ed5da78602a020c991775b0aff04"
 name = "cad-craft"
 version = "0.1.0"
 dependencies = [
- "csv",
- "flate2",
+ "cadcraft-export",
+ "cadcraft-format",
+ "cadcraft-import",
+ "cadcraft-model",
+ "cadcraft-render",
  "image",
  "lopdf",
- "pdf-writer",
- "quick-xml 0.42.0",
- "rust_xlsxwriter",
- "serde",
  "serde_json",
  "sevenz-rust2",
  "uuid",
@@ -560,7 +559,31 @@ dependencies = [
 ]
 
 [[package]]
-name = "cad-gui"
+name = "cadcraft-export"
+version = "0.1.0"
+dependencies = [
+ "cadcraft-model",
+ "cadcraft-render",
+ "csv",
+ "flate2",
+ "image",
+ "pdf-writer",
+ "rust_xlsxwriter",
+]
+
+[[package]]
+name = "cadcraft-format"
+version = "0.1.0"
+dependencies = [
+ "cadcraft-model",
+ "flate2",
+ "serde",
+ "serde_json",
+ "zip",
+]
+
+[[package]]
+name = "cadcraft-gui"
 version = "0.1.0"
 dependencies = [
  "cad-craft",
@@ -571,6 +594,36 @@ dependencies = [
  "serde_json",
  "tempfile",
  "zip",
+]
+
+[[package]]
+name = "cadcraft-import"
+version = "0.1.0"
+dependencies = [
+ "cadcraft-model",
+ "csv",
+ "flate2",
+ "quick-xml 0.42.0",
+ "serde",
+ "serde_json",
+ "sevenz-rust2",
+ "zip",
+]
+
+[[package]]
+name = "cadcraft-model"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "serde_json",
+ "uuid",
+]
+
+[[package]]
+name = "cadcraft-render"
+version = "0.1.0"
+dependencies = [
+ "cadcraft-model",
 ]
 
 [[package]]

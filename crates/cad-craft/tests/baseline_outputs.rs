@@ -10,6 +10,7 @@
 //!
 //! Mudança intencional de saída: regravar com `CAD_CRAFT_WRITE_BASELINE=1`
 //! e justificar no relatório da etapa.
+use cad_craft::display::PageDisplayList;
 use cad_craft::dxf_export;
 use cad_craft::pdf::{self, PdfOptions, PdfScope};
 use cad_craft::persistence;

@@ -6,7 +6,12 @@ If an `AGENTS.local.md` file exists next to this one, read it first: it holds th
 
 ## Architecture
 
-- Rust workspace. `crates/cad-craft` is the core and never depends on the GUI; `crates/cad-gui` is the egui/eframe application that uses the core.
+- Rust workspace with dependencies in one direction only:
+  - `cadcraft-model`: neutral project model; depends on no other project crate.
+  - `cadcraft-format` (native files and migrations), `cadcraft-render` (display list), `cadcraft-import` (other platforms) and `cadcraft-export` (PDF, DXF, lists) depend on the model; `export` also on `render`.
+  - `cad-craft`: facade that re-exports the crates above with stable paths (`cad_craft::domain`, `::persistence`, `::interchange`…).
+  - `cadcraft-gui`: the egui/eframe application (library `cad_gui`, executable `cad-gui`). No core crate depends on the GUI.
+- Methods of `Project` can only be declared in `cadcraft-model`; other crates extend it with traits (for example `PageDisplayList`).
 - Internal units are millimetres; origin at the bottom left; X to the right and Y up.
 - Typed IDs with UUID v7 where applicable.
 - Components, devices and representations are separate; logical connections and physical conductors are separate; networks are derived from connectivity.

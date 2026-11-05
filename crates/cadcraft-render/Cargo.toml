@@ -1,0 +1,16 @@
+[package]
+name = "cadcraft-render"
+description = "CAD-CRAFT display list: what is drawn on screen, in PDF and in DXF."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+publish.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+
+[dependencies]
+cadcraft-model = { path = "../cadcraft-model" }
+
+[lints]
+workspace = true
