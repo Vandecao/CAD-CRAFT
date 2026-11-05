@@ -1,0 +1,511 @@
+{
+  "id": "01a1a19c-c3dd-7530-9068-9221a813a273",
+  "name": "Fixture Etapa 12",
+  "description": "",
+  "identification": null,
+  "metadata": {},
+  "properties": {
+    "known": {},
+    "custom": {}
+  },
+  "documents": [
+    {
+      "id": "01a1a19c-c3dd-7530-9068-9222dc01d7a0",
+      "project_id": "01a1a19c-c3dd-7530-9068-9221a813a273",
+      "name": "Esquema",
+      "metadata": {},
+      "properties": {
+        "known": {},
+        "custom": {}
+      }
+    }
+  ],
+  "pages": [
+    {
+      "id": "01a1a19c-c3dd-7530-9068-9223041d01d2",
+      "project_id": "01a1a19c-c3dd-7530-9068-9221a813a273",
+      "document_id": "01a1a19c-c3dd-7530-9068-9222dc01d7a0",
+      "name": "Comando",
+      "number": "1",
+      "kind": "MultiLine",
+      "size": {
+        "width": 420.0,
+        "height": 297.0
+      },
+      "order": null,
+      "structure": {
+        "functional_path": [],
+        "location_path": []
+      },
+      "metadata": {},
+      "elements": [],
+      "properties": {
+        "known": {},
+        "custom": {}
+      }
+    }
+  ],
+  "devices": [
+    {
+      "id": "01a1a19c-c3df-7643-89c7-8da02811a2cc",
+      "project_id": "01a1a19c-c3dd-7530-9068-9221a813a273",
+      "designation": {
+        "functional_path": [],
+        "location_path": [],
+        "device": "K1",
+        "terminal": null
+      },
+      "classification": "Relé",
+      "properties": {
+        "known": {},
+        "custom": {}
+      }
+    },
+    {
+      "id": "01a1a19c-c3df-7643-89c7-8da51ec9d17f",
+      "project_id": "01a1a19c-c3dd-7530-9068-9221a813a273",
+      "designation": {
+        "functional_path": [],
+        "location_path": [],
+        "device": "K2",
+        "terminal": null
+      },
+      "classification": "Relé",
+      "properties": {
+        "known": {},
+        "custom": {}
+      }
+    }
+  ],
+  "functions": [
+    {
+      "id": "01a1a19c-c3df-7643-89c7-8da1279c02d1",
+      "project_id": "01a1a19c-c3dd-7530-9068-9221a813a273",
+      "device_id": "01a1a19c-c3df-7643-89c7-8da02811a2cc",
+      "designation": {
+        "functional_path": [],
+        "location_path": [],
+        "device": "K1",
+        "terminal": null
+      },
+      "kind": "Coil",
+      "role": "Main",
+      "properties": {
+        "known": {},
+        "custom": {}
+      }
+    },
+    {
+      "id": "01a1a19c-c3df-7643-89c7-8da633b6257c",
+      "project_id": "01a1a19c-c3dd-7530-9068-9221a813a273",
+      "device_id": "01a1a19c-c3df-7643-89c7-8da51ec9d17f",
+      "designation": {
+        "functional_path": [],
+        "location_path": [],
+        "device": "K2",
+        "terminal": null
+      },
+      "kind": "Coil",
+      "role": "Main",
+      "properties": {
+        "known": {},
+        "custom": {}
+      }
+    }
+  ],
+  "components": [],
+  "terminals": [],
+  "connection_points": [
+    {
+      "id": "01a1a19c-c3df-7643-89c7-8da32a09d92b",
+      "project_id": "01a1a19c-c3dd-7530-9068-9221a813a273",
+      "function_id": "01a1a19c-c3df-7643-89c7-8da1279c02d1",
+      "designation": "1",
+      "terminal_id": null,
+      "properties": {
+        "known": {},
+        "custom": {}
+      }
+    },
+    {
+      "id": "01a1a19c-c3df-7643-89c7-8da460f08715",
+      "project_id": "01a1a19c-c3dd-7530-9068-9221a813a273",
+      "function_id": "01a1a19c-c3df-7643-89c7-8da1279c02d1",
+      "designation": "2",
+      "terminal_id": null,
+      "properties": {
+        "known": {},
+        "custom": {}
+      }
+    },
+    {
+      "id": "01a1a19c-c3df-7643-89c7-8da84b7be16d",
+      "project_id": "01a1a19c-c3dd-7530-9068-9221a813a273",
+      "function_id": "01a1a19c-c3df-7643-89c7-8da633b6257c",
+      "designation": "1",
+      "terminal_id": null,
+      "properties": {
+        "known": {},
+        "custom": {}
+      }
+    },
+    {
+      "id": "01a1a19c-c3df-7643-89c7-8da954dfd330",
+      "project_id": "01a1a19c-c3dd-7530-9068-9221a813a273",
+      "function_id": "01a1a19c-c3df-7643-89c7-8da633b6257c",
+      "designation": "2",
+      "terminal_id": null,
+      "properties": {
+        "known": {},
+        "custom": {}
+      }
+    }
+  ],
+  "connections": [
+    {
+      "id": "01a1a19c-c3e0-7083-8889-e685d35747c6",
+      "project_id": "01a1a19c-c3dd-7530-9068-9221a813a273",
+      "source": "01a1a19c-c3df-7643-89c7-8da460f08715",
+      "target": "01a1a19c-c3df-7643-89c7-8da84b7be16d"
+    }
+  ],
+  "conductors": [],
+  "cables": [],
+  "cable_cores": [],
+  "terminal_strips": [],
+  "terminal_bridges": [],
+  "representations": [
+    {
+      "id": "01a1a19c-c3df-7643-89c7-8da2d4f13dfb",
+      "project_id": "01a1a19c-c3dd-7530-9068-9221a813a273",
+      "page_id": "01a1a19c-c3dd-7530-9068-9223041d01d2",
+      "target": {
+        "Function": "01a1a19c-c3df-7643-89c7-8da1279c02d1"
+      },
+      "symbol": "cad-craft.contact-no",
+      "transform": {
+        "translation": {
+          "x": 100.0,
+          "y": 100.0
+        },
+        "rotation_degrees": 0.0,
+        "mirror_x": false,
+        "mirror_y": false
+      },
+      "local_bounds": {
+        "origin": {
+          "x": -3.0,
+          "y": -10.0
+        },
+        "size": {
+          "width": 6.0,
+          "height": 20.0
+        }
+      },
+      "visual": {
+        "visible": true,
+        "layer": 0,
+        "label": null
+      }
+    },
+    {
+      "id": "01a1a19c-c3df-7643-89c7-8da7fdffabb4",
+      "project_id": "01a1a19c-c3dd-7530-9068-9221a813a273",
+      "page_id": "01a1a19c-c3dd-7530-9068-9223041d01d2",
+      "target": {
+        "Function": "01a1a19c-c3df-7643-89c7-8da633b6257c"
+      },
+      "symbol": "cad-craft.coil",
+      "transform": {
+        "translation": {
+          "x": 100.0,
+          "y": 150.0
+        },
+        "rotation_degrees": 0.0,
+        "mirror_x": false,
+        "mirror_y": false
+      },
+      "local_bounds": {
+        "origin": {
+          "x": -4.0,
+          "y": -10.0
+        },
+        "size": {
+          "width": 8.0,
+          "height": 20.0
+        }
+      },
+      "visual": {
+        "visible": true,
+        "layer": 0,
+        "label": null
+      }
+    },
+    {
+      "id": "01a1a19c-c3e0-7083-8889-e686a76b00f6",
+      "project_id": "01a1a19c-c3dd-7530-9068-9221a813a273",
+      "page_id": "01a1a19c-c3dd-7530-9068-9223041d01d2",
+      "target": {
+        "Connection": "01a1a19c-c3e0-7083-8889-e685d35747c6"
+      },
+      "symbol": null,
+      "transform": {
+        "translation": {
+          "x": 0.0,
+          "y": 0.0
+        },
+        "rotation_degrees": 0.0,
+        "mirror_x": false,
+        "mirror_y": false
+      },
+      "local_bounds": {
+        "origin": {
+          "x": 100.0,
+          "y": 110.0
+        },
+        "size": {
+          "width": 0.0,
+          "height": 30.0
+        }
+      },
+      "visual": {
+        "visible": true,
+        "layer": 0,
+        "label": null
+      }
+    }
+  ],
+  "symbol_definitions": [
+    {
+      "id": "cad-craft.coil",
+      "version": 1,
+      "name": "Bobina de relé ou contator",
+      "category": "Comando",
+      "primitives": [
+        {
+          "Line": {
+            "start": {
+              "x": 0.0,
+              "y": -10.0
+            },
+            "end": {
+              "x": 0.0,
+              "y": -4.0
+            }
+          }
+        },
+        {
+          "Rectangle": {
+            "rect": {
+              "origin": {
+                "x": -4.0,
+                "y": -4.0
+              },
+              "size": {
+                "width": 8.0,
+                "height": 8.0
+              }
+            }
+          }
+        },
+        {
+          "Line": {
+            "start": {
+              "x": 0.0,
+              "y": 4.0
+            },
+            "end": {
+              "x": 0.0,
+              "y": 10.0
+            }
+          }
+        }
+      ],
+      "ports": [
+        {
+          "id": "1",
+          "position": {
+            "x": 0.0,
+            "y": -10.0
+          },
+          "orientation_degrees": 270.0,
+          "identification": "1",
+          "role": null
+        },
+        {
+          "id": "2",
+          "position": {
+            "x": 0.0,
+            "y": 10.0
+          },
+          "orientation_degrees": 90.0,
+          "identification": "2",
+          "role": null
+        }
+      ],
+      "orientations": {
+        "rotations": [],
+        "mirror_x": true,
+        "mirror_y": true
+      },
+      "metadata": {
+        "source": "CAD-CRAFT original; referência industrial, sem certificação IEC"
+      }
+    },
+    {
+      "id": "cad-craft.contact-no",
+      "version": 1,
+      "name": "Contato normalmente aberto",
+      "category": "Contatos",
+      "primitives": [
+        {
+          "Line": {
+            "start": {
+              "x": 0.0,
+              "y": -10.0
+            },
+            "end": {
+              "x": 0.0,
+              "y": -3.0
+            }
+          }
+        },
+        {
+          "Line": {
+            "start": {
+              "x": -3.0,
+              "y": -3.0
+            },
+            "end": {
+              "x": 3.0,
+              "y": -3.0
+            }
+          }
+        },
+        {
+          "Line": {
+            "start": {
+              "x": -3.0,
+              "y": 3.0
+            },
+            "end": {
+              "x": 3.0,
+              "y": 3.0
+            }
+          }
+        },
+        {
+          "Line": {
+            "start": {
+              "x": 0.0,
+              "y": 3.0
+            },
+            "end": {
+              "x": 0.0,
+              "y": 10.0
+            }
+          }
+        }
+      ],
+      "ports": [
+        {
+          "id": "1",
+          "position": {
+            "x": 0.0,
+            "y": -10.0
+          },
+          "orientation_degrees": 270.0,
+          "identification": "1",
+          "role": null
+        },
+        {
+          "id": "2",
+          "position": {
+            "x": 0.0,
+            "y": 10.0
+          },
+          "orientation_degrees": 90.0,
+          "identification": "2",
+          "role": null
+        }
+      ],
+      "orientations": {
+        "rotations": [],
+        "mirror_x": true,
+        "mirror_y": true
+      },
+      "metadata": {
+        "source": "CAD-CRAFT original; referência industrial, sem certificação IEC"
+      }
+    }
+  ],
+  "port_bindings": [
+    {
+      "port": {
+        "representation": "01a1a19c-c3df-7643-89c7-8da2d4f13dfb",
+        "port": "1"
+      },
+      "point": "01a1a19c-c3df-7643-89c7-8da32a09d92b"
+    },
+    {
+      "port": {
+        "representation": "01a1a19c-c3df-7643-89c7-8da2d4f13dfb",
+        "port": "2"
+      },
+      "point": "01a1a19c-c3df-7643-89c7-8da460f08715"
+    },
+    {
+      "port": {
+        "representation": "01a1a19c-c3df-7643-89c7-8da7fdffabb4",
+        "port": "1"
+      },
+      "point": "01a1a19c-c3df-7643-89c7-8da84b7be16d"
+    },
+    {
+      "port": {
+        "representation": "01a1a19c-c3df-7643-89c7-8da7fdffabb4",
+        "port": "2"
+      },
+      "point": "01a1a19c-c3df-7643-89c7-8da954dfd330"
+    }
+  ],
+  "connection_routes": [
+    {
+      "id": "01a1a19c-c3e0-7083-8889-e686a76b00f6",
+      "project_id": "01a1a19c-c3dd-7530-9068-9221a813a273",
+      "page_id": "01a1a19c-c3dd-7530-9068-9223041d01d2",
+      "connection_id": "01a1a19c-c3e0-7083-8889-e685d35747c6",
+      "source": {
+        "representation": "01a1a19c-c3df-7643-89c7-8da2d4f13dfb",
+        "port": "2"
+      },
+      "target": {
+        "representation": "01a1a19c-c3df-7643-89c7-8da7fdffabb4",
+        "port": "1"
+      },
+      "points": [
+        {
+          "x": 100.0,
+          "y": 110.0
+        },
+        {
+          "x": 100.0,
+          "y": 140.0
+        }
+      ],
+      "routing_base": [
+        {
+          "x": 100.0,
+          "y": 110.0
+        },
+        {
+          "x": 100.0,
+          "y": 140.0
+        }
+      ]
+    }
+  ],
+  "connection_junctions": [],
+  "markers": [],
+  "marker_groups": []
+}

@@ -1,0 +1,49 @@
+# Rust e diretórios locais
+/target/
+**/target/
+/.local/
+.vs/
+.idea/
+
+# Compilação e depuração (não ignorar executáveis/bibliotecas globalmente)
+*.user
+*.suo
+*.pdb
+*.ilk
+*.obj
+*.o
+*.dmp
+
+# Logs, temporários e caches
+*.log
+*.tmp
+*.bak
+*.swp
+__pycache__/
+*.pyc
+
+# Credenciais; exemplos sem segredos continuam versionáveis
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Backups locais, máquinas virtuais e imagens de disco
+/backups/
+*.vmdk
+*.vdi
+*.vhd
+*.vhdx
+*.vmem
+*.vmss
+*.qcow2
+*.iso
+
+# Amostras reais (podem ser proprietárias ou pessoais): nunca versionar.
+# Os testes opcionais as leem pela variável CADCRAFT_SAMPLES.
+/samples/
+# Arquivo pessoal do autor na raiz.
+/docs.rar
+# Regras locais do fluxo de trabalho do autor (ver AGENTS.md).
+/AGENTS.local.md

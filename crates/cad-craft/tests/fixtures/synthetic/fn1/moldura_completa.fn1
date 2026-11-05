@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!-- Moldura sintética no formato PXF do EPLAN (.fn1), escrita à mão para os testes.
+     Cobre: borda na origem, grupos, polilinha com arco (bulge), texto com
+     formatação girada, campos especiais de projeto e de estrutura, imagem
+     externa, configuração e campo de usuário (ignorados com relatório).
+     Nenhum conteúdo de terceiros. -->
+<EplanPxfRoot Name="SINT_COMPLETA" Type="Frame" PxfVersion="1.23">
+ <O1 A19="21/1" A539="42;42;42;42;42;42;42;42;42;42" A541="70;70;70;70" A543="0/17">
+  <P39 P12033="420" P12034="297"/>
+  <O2 A19="89/2" A3319="0/0" A3321="420/297"/>
+  <O3 A19="26/3">
+   <O4 A19="31/4" A1079="0/17" A1081="420/17" A845="0.35"/>
+   <O5 A19="34/5" A1259="300/0;300/17;420/17" A1261="0;0.4" A1263="0"/>
+   <O6 A19="30/6" A1019="305/10" A1039="??_??@Desenho;en_US@Drawing">
+    <F1 A1939="2.5" A1949="5" A1941="1.5707963267948966"/>
+   </O6>
+  </O3>
+  <O7 A19="53/7" A1019="10/8" A1559="10000"/>
+  <O8 A19="53/8" A1019="10/4" A1559="1001" A1563="20132"/>
+  <O9 A19="53/9" A1019="200/8" A1559="11071" A1561="2"/>
+  <O10 A19="91/10" A1019="0/0" A3319="380/2" A3321="418/15" A3359="$(MD_IMG)\logo.png"/>
+  <O11 A19="212/11"/>
+ </O1>
+</EplanPxfRoot>

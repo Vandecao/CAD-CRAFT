@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!-- Moldura sintética no formato PXF do EPLAN (.fn1), escrita à mão para os testes.
+     Desenho em coordenadas internas deslocadas: a borda do tamanho da folha
+     começa em (-29; 31), e o importador a leva para a origem da folha.
+     Nenhum conteúdo de terceiros. -->
+<EplanPxfRoot Name="SINT_DESLOCADA" Type="Frame" PxfVersion="1.23">
+ <O1 A19="76/1"/>
+ <O2 A19="21/2" A539="42;42;42;42;42;42;42;42;42;42" A541="70;70;70;70" A543="0/17">
+  <P39 P12033="420" P12034="297" P18011="pt_BR@Moldura sintética;en_US@Synthetic frame"/>
+  <O3 A19="89/3" A3319="-29/31" A3321="391/328" A845="0.5"/>
+  <O4 A19="31/4" A1079="371/35" A1081="391/35"/>
+  <O5 A19="30/5" A1019="-20/40" A1039="pt_BR@Projeto;en_US@Project">
+   <F1 A1939="3.5" A1949="1" A1941="0"/>
+  </O5>
+  <O6 A19="53/6" A1019="300/40" A1559="11000">
+   <F1 A1939="2.5" A1949="4"/>
+  </O6>
+  <O7 A19="53/7" A1019="-8/320" A1559="19005"/>
+  <O8 A19="53/8" A1019="-26/100" A1559="19006"/>
+ </O2>
+</EplanPxfRoot>

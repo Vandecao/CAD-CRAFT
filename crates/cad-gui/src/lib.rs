@@ -1,0 +1,47 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Copyright (C) 2026 Vanderlei Braga e colaboradores do CAD-CRAFT
+//! Desktop presentation over the independent CAD-CRAFT domain.
+pub mod app;
+mod backstage;
+pub mod camera;
+mod checks_ui;
+pub mod commands;
+pub mod connection_demo;
+pub mod connection_editor;
+pub mod connection_geometry;
+mod connection_properties;
+mod connection_view;
+pub mod demo;
+mod device_properties;
+mod dialogs;
+pub mod dwg;
+pub mod editing;
+mod editor_view;
+pub mod edz_import_ui;
+pub mod frame_editor;
+pub mod frame_view;
+pub mod history;
+pub mod hit_test;
+mod icons;
+pub mod interaction;
+pub mod macro_library;
+pub mod navigation;
+mod numbering_ui;
+mod panels;
+pub mod part_editor;
+pub mod pdf_export;
+mod physical_editor;
+pub mod preferences;
+pub mod project_file;
+mod qet_import_ui;
+mod reference_properties;
+pub mod references;
+pub mod reports_ui;
+mod ribbon;
+mod snapshots;
+pub mod state;
+pub mod symbol_editor;
+pub mod symbol_files;
+pub mod symbol_view;
+mod theme;
+mod viewport;

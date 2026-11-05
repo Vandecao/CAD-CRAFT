@@ -1,0 +1,38 @@
+[package]
+name = "cad-craft"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+publish.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+
+[dependencies]
+serde = { version = "1", features = ["derive"] }
+uuid = { version = "1", features = ["v7", "serde"] }
+# Etapa 12: formato .cadcraft (manifesto/projeto JSON em contêiner ZIP).
+serde_json = { version = "1", features = ["float_roundtrip"] }
+zip = { version = "9.3.0", default-features = false, features = ["deflate-flate2"] }
+# Somente seleciona o backend Rust (miniz_oxide) exigido por deflate-flate2.
+flate2 = { version = "1.1.10", default-features = false, features = ["rust_backend"] }
+# Etapa 15: leitura de molduras XML (.fn1 do EPLAN, .titleblock do QElectroTech).
+quick-xml = { version = "0.42", default-features = false }
+csv = "1.3"
+# Etapa 21 (aprovado): PDF vetorial multipágina.
+pdf-writer = "=0.15.0"
+# Etapa 21: decodificar PNG da moldura para o PDF (crate aprovado na Etapa 14).
+image = { version = "0.25", default-features = false, features = ["png"] }
+# Etapa 23: listas XLSX (versão aprovada e fixada).
+rust_xlsxwriter = "=0.102.0"
+
+# Etapa 26: leitor 7z aprovado (Apache-2.0); encoder somente para fixtures sintéticas.
+sevenz-rust2 = { version = "=0.24.2", default-features = false }
+
+[dev-dependencies]
+sevenz-rust2 = { version = "=0.24.2", default-features = false, features = ["compress"] }
+# Etapa 21 (aprovado): ler o PDF de volta nos testes.
+lopdf = { version = "=0.47.0", default-features = false }
+
+[lints]
+workspace = true

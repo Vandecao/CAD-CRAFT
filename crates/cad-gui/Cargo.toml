@@ -1,0 +1,26 @@
+[package]
+name = "cad-gui"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+publish.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+
+[dependencies]
+cad-craft = { path = "../cad-craft" }
+eframe = { version = "=0.33.3", default-features = false, features = ["glow", "default_fonts", "accesskit", "persistence", "x11", "wayland"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+tempfile = "3"
+# Etapa 12: diálogos nativos Abrir/Salvar.
+rfd = "0.17.2"
+# Etapa 14 (aprovado): leitura e validação de logotipos PNG/JPEG.
+image = { version = "0.25", default-features = false, features = ["png", "jpeg"] }
+
+[dev-dependencies]
+zip = { version = "9.3.0", default-features = false, features = ["deflate-flate2"] }
+
+[lints]
+workspace = true
