@@ -4,7 +4,7 @@
 
 use super::*;
 
-/// Lê e valida uma imagem: limites e cabeçalho (Core) e decodificação completa.
+/// Read and validate image limits, the Core header and complete decoding.
 pub fn load_image_file(path: &std::path::Path) -> GuiResult<ImageAsset> {
     let meta = std::fs::metadata(path).map_err(GuiError::from)?;
     if meta.len() > MAX_IMAGE_BYTES as u64 {

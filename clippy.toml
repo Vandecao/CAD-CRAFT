@@ -1,0 +1,4 @@
+# Test assertions may unwrap synthetic fixtures; production code explains invariants.
+allow-unwrap-in-tests = true
+# Constant production code follows the same rule as other production code.
+allow-unwrap-in-consts = false

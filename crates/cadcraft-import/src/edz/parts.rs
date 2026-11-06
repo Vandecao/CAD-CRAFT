@@ -135,7 +135,7 @@ pub(super) fn convert(
                 ))
                 .map_err(|e| fail(e.to_string()))?,
             );
-            // Os códigos numéricos ficam opacos; não inferir bobina/contato.
+            // Keep numeric codes opaque; do not infer coils or contacts.
             let role = match f.attr("mainfunction") {
                 Some("1") => FunctionRole::Main,
                 Some("0") => FunctionRole::Auxiliary,

@@ -100,3 +100,5 @@ Before changing code, read [CONTRIBUTING](../CONTRIBUTING.md) and AGENTS.md, the
 run the full validation command from [architecture](ARCHITECTURE.md). Tests for
 source module introductions prevent future source files from losing their entry
 point comments; exact-output baselines protect compatibility during reorganization.
+
+Repeated Brazilian Portuguese GUI actions, titles and diagnostics live in [strings.rs](../crates/cadcraft-gui/src/strings.rs). Their values remain pinned by real AccessKit dialog tests; singleton phrases stay beside their UI logic.

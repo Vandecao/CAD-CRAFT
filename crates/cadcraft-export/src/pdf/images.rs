@@ -10,7 +10,7 @@ pub(super) fn deflate(bytes: &[u8]) -> Vec<u8> {
     encoder.finish().expect("compressão em memória")
 }
 
-/// Componentes de cor do JPEG (marcador SOF); `None` se ilegível.
+/// JPEG color components from the SOF marker; `None` if unreadable.
 fn jpeg_components(bytes: &[u8]) -> Option<u8> {
     let mut i = 2;
     while i + 9 < bytes.len() {
@@ -28,7 +28,7 @@ fn jpeg_components(bytes: &[u8]) -> Option<u8> {
 }
 
 impl Writer<'_> {
-    /// Escreve a imagem uma vez; `None` quando não há conteúdo legível.
+    /// Writes an image once; `None` when readable content is unavailable.
     pub(super) fn image(&mut self, asset: AssetId) -> ImageEntry {
         if let Some(entry) = self.images.get(&asset) {
             return entry.clone();

@@ -92,7 +92,7 @@ pub(in crate::part_editor) fn kind_index(kind: &FunctionKind) -> usize {
 pub(in crate::part_editor) fn kind_label(index: usize) -> &'static str {
     ["Bobina", "Contato principal", "Contato auxiliar", "Outra"][index.min(3)]
 }
-/// Tipo de função legível (peças de fabricante trazem tipos próprios).
+/// Readable function type; manufacturer parts may define custom types.
 pub(in crate::part_editor) fn kind_text(kind: &FunctionKind) -> String {
     match kind {
         FunctionKind::Coil => "Bobina".into(),

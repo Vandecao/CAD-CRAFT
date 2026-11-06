@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (C) 2026 Vanderlei Braga e colaboradores do CAD-CRAFT
-//! Etapa 22: diálogo Exportar DXF / Exportar DWG com eventos egui reais.
-//! O conversor DWG é um script `.cmd` de teste (Windows); nada de terceiros.
+//! DXF and DWG export dialogs driven by real egui events. The Windows DWG converter is a synthetic .cmd script, with no third-party software.
+// Fixture helpers use validated synthetic inputs and fail immediately on setup errors.
+#![allow(clippy::unwrap_used)]
 use cad_craft::domain::*;
 use cad_gui::{app::CadApp, commands::CommandId, project_file::ScriptedPicker};
 use eframe::egui::{self, Context, Event, Modifiers, PointerButton, Pos2, Rect, vec2};
@@ -27,7 +28,7 @@ fn labels(out: &egui::FullOutput) -> Vec<String> {
         .filter_map(|(_, n)| n.label().or_else(|| n.value()).map(str::to_owned))
         .collect()
 }
-/// Clica no controle com o rótulo (o título da janela, mesmo texto, é ignorado).
+/// Click the labeled control, ignoring the window title with the same text.
 fn click(app: &mut CadApp, ctx: &Context, label: &str) {
     frame(app, ctx, vec![]);
     let out = frame(app, ctx, vec![]);
@@ -48,7 +49,7 @@ fn click(app: &mut CadApp, ctx: &Context, label: &str) {
                 )
         })
         .filter_map(|(_, n)| n.bounds())
-        // A faixa de opções (topo) repete os nomes dos comandos; o diálogo fica abaixo.
+        // The ribbon repeats command names at the top; the dialog is below it.
         .max_by(|a, b| a.y0.total_cmp(&b.y0))
         .unwrap_or_else(|| panic!("widget {label} ausente: {:?}", labels(&out)));
     let pos = Pos2::new(
@@ -65,7 +66,7 @@ fn click(app: &mut CadApp, ctx: &Context, label: &str) {
     frame(app, ctx, vec![event(false)]);
     frame(app, ctx, vec![]);
 }
-/// Espera a thread terminar; devolve o relatório ou o erro.
+/// Wait for the worker and return its report or error.
 fn finish(app: &mut CadApp, ctx: &Context) -> Result<String, String> {
     for _ in 0..1500 {
         frame(app, ctx, vec![]);
@@ -128,10 +129,10 @@ fn files_with(dir: &Path, extension: &str) -> Vec<PathBuf> {
     out
 }
 
-/// Os testes de DWG observam a pasta temporária: um de cada vez.
+/// DWG tests inspect temporary directories and run one at a time.
 static TEMP_LOCK: std::sync::Mutex<()> = std::sync::Mutex::new(());
 
-/// Pastas temporárias do conversor ainda existentes.
+/// Converter temporary directories still present.
 fn leftovers() -> Vec<PathBuf> {
     std::fs::read_dir(std::env::temp_dir())
         .unwrap()
@@ -143,7 +144,7 @@ fn leftovers() -> Vec<PathBuf> {
         .collect()
 }
 
-/// Critério 6: DXF da página ativa e do projeto, com relatório.
+/// Export active-page and whole-project DXF with a report.
 #[test]
 fn dxf_dialog_exports_active_page_then_project() {
     let dir = tempfile::tempdir().unwrap();
@@ -176,8 +177,7 @@ fn dxf_dialog_exports_active_page_then_project() {
     assert!(labels(&out).iter().any(|l| l.starts_with("DXF gerado em")));
 }
 
-/// Critério 5/6: sem conversor configurado, Exportar DWG fica desabilitado
-/// e explica o motivo.
+/// Without a configured converter, DWG export is disabled and explains why.
 #[test]
 fn dwg_is_disabled_without_converter() {
     let dir = tempfile::tempdir().unwrap();
@@ -204,8 +204,7 @@ fn script(dir: &Path, name: &str, body: &str) -> PathBuf {
     path
 }
 
-/// Critério 5/6: com o conversor falso, a chamada leva entrada, saída,
-/// versão escolhida e filtro; os DWG chegam ao destino; nada fica no temp.
+/// The fake converter receives input, output, selected version and filter; DWG files reach the destination and no temporary files remain.
 #[cfg(windows)]
 #[test]
 fn dwg_export_runs_the_configured_converter_and_cleans_up() {
@@ -232,8 +231,7 @@ fn dwg_export_runs_the_configured_converter_and_cleans_up() {
     assert_eq!(leftovers(), before, "pastas temporárias removidas");
 }
 
-/// Critério 5: tempo limite encerra o conversor; falha do conversor é
-/// relatada; em nenhum caso sobram temporários.
+/// Timeout kills the converter and failures are reported; neither case leaves temporary files.
 #[cfg(windows)]
 #[test]
 fn dwg_converter_timeout_and_failure_are_reported() {

@@ -152,7 +152,7 @@ impl CadApp {
                 painter.circle_filled(p, 0.8, theme::GRID_DOT);
             }
         }
-        // Origem (ponto de inserção).
+        // Origin, also the insertion point.
         if let Some(o) = Point2D::new(0.0, 0.0)
             .ok()
             .and_then(|o| camera.world_to_screen(o, rect))
@@ -213,7 +213,7 @@ impl CadApp {
                 );
             }
         }
-        // Prévia da ferramenta.
+        // Tool preview.
         let cursor = response.hover_pos().and_then(world);
         let mut preview = ed.pending.clone();
         if let Some(c) = cursor
@@ -236,7 +236,7 @@ impl CadApp {
                 painter.circle_stroke(s, 3.0, Stroke::new(1.0_f32, theme::ACCENT));
             }
         }
-        // Interação.
+        // Interaction.
         let tolerance = 6.0 / camera.scale();
         if ed.tool == SymbolTool::Select {
             if response.drag_started_by(PointerButton::Primary)
@@ -270,8 +270,7 @@ impl CadApp {
         } else if response.double_clicked_by(PointerButton::Primary)
             && matches!(ed.tool, SymbolTool::Polyline | SymbolTool::Polygon)
         {
-            // Duplo clique encerra só polilinha/polígono; nas outras
-            // ferramentas dois cliques rápidos são dois pontos.
+            // Double-click finishes only polylines and polygons; other tools interpret two rapid clicks as two points.
             ed.finish_path();
         } else if response.clicked_by(PointerButton::Primary)
             && let Some(at) = response.interact_pointer_pos().and_then(world)
@@ -281,7 +280,7 @@ impl CadApp {
         if response.secondary_clicked() {
             ed.cancel();
         }
-        // Teclado (o editor de símbolos tem Desfazer próprio).
+        // Keyboard handling; the symbol editor has its own undo history.
         if !ui.ctx().wants_keyboard_input() {
             let (del, enter, undo, redo, esc) = ui.input_mut(|i| {
                 (

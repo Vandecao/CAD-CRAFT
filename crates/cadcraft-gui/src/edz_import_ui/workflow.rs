@@ -261,7 +261,7 @@ impl CadApp {
                         egui::ProgressBar::new(completed as f32 / self.edz.total.max(1) as f32)
                             .text(format!("{} / {}", completed, self.edz.total)),
                     );
-                    if ui.button("Cancelar operação").clicked() {
+                    if ui.button(crate::strings::CANCEL_OPERATION).clicked() {
                         self.edz.cancel();
                     }
                 }

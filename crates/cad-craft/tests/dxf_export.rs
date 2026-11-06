@@ -1,7 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (C) 2026 Vanderlei Braga e colaboradores do CAD-CRAFT
-//! Etapa 22: DXF R12 de página, conferido por um leitor independente de
-//! códigos de grupo (escrito aqui) e pelo importador de molduras da Etapa 15.
+//! Verify page DXF R12 with an independent group-code reader and the frame importer.
+// Synthetic test fixtures intentionally fail fast when setup is invalid.
+#![allow(clippy::unwrap_used)]
+
 mod output_common;
 
 use cad_craft::display::{DisplayItem, DisplayList};
@@ -13,7 +15,7 @@ use output_common::*;
 use std::collections::{BTreeMap, BTreeSet};
 use std::time::Instant;
 
-/// ANSI 1252 → texto (tabela reversa da codificação WinAnsi do Core).
+/// Decode ANSI 1252 with the inverse of the Core WinAnsi mapping.
 fn decode(bytes: &[u8]) -> String {
     let mut table: BTreeMap<u8, char> = BTreeMap::new();
     for c in (0u32..0x2200).filter_map(char::from_u32) {
@@ -27,7 +29,7 @@ fn decode(bytes: &[u8]) -> String {
         .collect()
 }
 
-/// Pares (código, valor) do arquivo.
+/// Read the group-code/value pairs.
 fn pairs(bytes: &[u8]) -> Vec<(i32, String)> {
     let lines: Vec<&[u8]> = bytes
         .split(|b| *b == b'\n')
@@ -46,7 +48,7 @@ fn pairs(bytes: &[u8]) -> Vec<(i32, String)> {
         .collect()
 }
 
-/// Entidade: tipo e pares; `VERTEX` vão para o `POLYLINE` anterior.
+/// Group entity pairs by type; append VERTEX records to the preceding POLYLINE.
 #[derive(Debug, Default)]
 struct Entity {
     kind: String,
@@ -153,8 +155,7 @@ fn page_dxf(f: &Fixture, index: usize) -> (DisplayList, Vec<u8>) {
     (list, bytes)
 }
 
-/// Critério 1: cabeçalho em mm, extensão da folha, camadas por categoria,
-/// textos esperados; o importador da Etapa 15 também lê o arquivo.
+/// Verify millimetre units, sheet extents, category layers, text and frame-import compatibility.
 #[test]
 fn page_dxf_has_units_extent_layers_and_expected_texts() {
     let f = fixture("Painel CCM");
@@ -181,7 +182,7 @@ fn page_dxf_has_units_extent_layers_and_expected_texts() {
         assert!(shown.iter().any(|t| t == expected), "{expected}: {shown:?}");
     }
     assert!(shown.iter().any(|t| t.contains(&coil_ref)), "{shown:?}");
-    // Entidades nas camadas declaradas.
+    // Entities use the declared layers.
     for e in &dxf.entities {
         let layer = e.get(8).unwrap();
         assert!(dxf.layers.contains(layer), "{layer}");
@@ -189,13 +190,13 @@ fn page_dxf_has_units_extent_layers_and_expected_texts() {
     let second = read(&page_dxf(&f, 1).1);
     let ref_k1 = f.project.short_reference(f.pages[0], p(130.0, 150.0));
     assert!(texts(&second).iter().any(|t| t == &ref_k1));
-    // Importador de molduras (Etapa 15) aceita o arquivo.
+    // The frame importer accepts the exported file.
     let imported = import(&bytes, &DxfImportOptions::new("página")).unwrap();
     assert!(!imported.package.frame.elements().is_empty());
 }
 
-/// Critério 2: todos os pontos dos traços e as origens dos textos coincidem
-/// com a lista de exibição (0,001 mm); a imagem vira caixa e é relatada.
+/// Path points and text origins match the display list within 0.001 mm; images become reported
+/// boxes.
 #[test]
 fn geometry_matches_the_display_list() {
     let f = fixture("Geometria");
@@ -243,7 +244,7 @@ fn geometry_matches_the_display_list() {
     assert!(report.summary().contains("caixa"));
 }
 
-/// Critério 3: acentos em ANSI 1252; fora dele `\U+XXXX`, relatado.
+/// Accents use ANSI 1252; other characters use reported DXF Unicode escapes.
 #[test]
 fn accents_are_ansi_and_other_characters_are_escaped() {
     let f = fixture("Ação elétrica Ω");
@@ -258,7 +259,7 @@ fn accents_are_ansi_and_other_characters_are_escaped() {
     assert_eq!(report.escaped.iter().collect::<String>(), "Ω");
 }
 
-/// Critério 4: nomes seguros e únicos; alcance, cancelamento e vazio.
+/// Verify safe unique names, scope selection, cancellation and empty output.
 #[test]
 fn file_names_are_safe_unique_and_scope_is_respected() {
     let mut project = Project::new("Painel: CCM/1").unwrap();
@@ -309,7 +310,7 @@ fn file_names_are_safe_unique_and_scope_is_respected() {
     ));
 }
 
-/// Critério 7: 200 páginas típicas. Meta: < 10 s no Release.
+/// Export 200 typical pages within ten seconds in Release.
 #[test]
 fn two_hundred_pages_export_dxf_within_the_time_limit() {
     let project = scale_project(200);
@@ -319,7 +320,7 @@ fn two_hundred_pages_export_dxf_within_the_time_limit() {
     assert_eq!(files.len(), 200);
     assert_eq!(report.pages, 200);
     let size: usize = files.iter().map(|f| f.bytes.len()).sum();
-    println!(
+    eprintln!(
         "DXF: 200 páginas, {:.1} MiB, {:?}",
         size as f64 / 1_048_576.0,
         elapsed
@@ -328,8 +329,7 @@ fn two_hundred_pages_export_dxf_within_the_time_limit() {
     assert!(elapsed.as_secs() < limit, "{elapsed:?}");
 }
 
-/// Preenchimento em SOLID (leque), tracejado por tipo de linha e texto
-/// girado/espelhado pela matriz.
+/// Verify SOLID triangle fans, dashed line types and transformed rotated/mirrored text.
 #[test]
 fn fill_dash_and_text_orientation_are_written() {
     use cad_craft::display::{DisplayColor, DisplayLayer, DisplayStroke, DisplayText};
@@ -392,8 +392,7 @@ fn contains_ltype(bytes: &[u8], name: &str) -> bool {
         .any(|w| w[0] == (0, "LTYPE".into()) && w[1] == (2, name.into()))
 }
 
-/// Teste no executável (Etapa 22): o número do fio não pode ficar sobre o
-/// traço — à direita de trecho vertical, acima de trecho horizontal.
+/// Wire numbers sit beside vertical lines and above horizontal lines, never on top of the wire.
 #[test]
 fn wire_number_sits_beside_the_wire() {
     use cad_craft::display::{WIRE_NUMBER_GAP, wire_number_placement};
@@ -410,7 +409,7 @@ fn wire_number_sits_beside_the_wire() {
         wire_number_placement(&vertical, Some(explicit)),
         Some((explicit, TextAlign::MiddleLeft))
     );
-    // Na folha do cenário comum o "1" fica à direita do fio vertical.
+    // In the shared sheet fixture, number 1 is to the right of the vertical wire.
     let f = fixture("Fio");
     let list = f.project.page_display_list(f.pages[0]).unwrap();
     let number = list

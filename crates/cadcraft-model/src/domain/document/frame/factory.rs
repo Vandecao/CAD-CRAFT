@@ -32,8 +32,8 @@ fn key(name: &str) -> Text {
     Text::new(name).expect("static key")
 }
 
-/// Moldura original CAD-CRAFT: borda a 5 mm, faixa de colunas de 5 mm no
-/// topo e carimbo de 30 mm na base com quatro campos por linha.
+/// Original CAD-CRAFT frame: 5 mm border, 5 mm column strip at the top and a 30 mm title block at
+/// the bottom with four fields per row.
 fn factory(name: &str, sheet: Size2D, columns: usize) -> FrameTemplate {
     let (w, h) = (sheet.width(), sheet.height());
     let (left, right, bottom, top) = (5.0, w - 5.0, 5.0, h - 5.0);
@@ -85,7 +85,7 @@ fn factory(name: &str, sheet: Size2D, columns: usize) -> FrameTemplate {
             e.push(value(x, top_of_row - 13.0, field));
         }
     }
-    // "de N" completa a posição da folha na última célula.
+    // The total-sheet suffix completes the sheet position in the last cell.
     e.push(value(
         right - 20.0,
         bottom + 2.0,
@@ -111,11 +111,11 @@ fn factory(name: &str, sheet: Size2D, columns: usize) -> FrameTemplate {
 }
 
 impl FrameTemplate {
-    /// Moldura de fábrica A3 paisagem (10 colunas de 41 mm).
+    /// Factory A3 landscape frame with ten 41 mm columns.
     pub fn factory_a3() -> Self {
         factory("CAD-CRAFT A3 paisagem", PaperFormat::A3.size(true), 10)
     }
-    /// Moldura de fábrica A4 retrato (5 colunas de 40 mm).
+    /// Factory A4 portrait frame with five 40 mm columns.
     pub fn factory_a4() -> Self {
         factory("CAD-CRAFT A4 retrato", PaperFormat::A4.size(false), 5)
     }

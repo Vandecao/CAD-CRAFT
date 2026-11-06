@@ -5,7 +5,7 @@
 use super::*;
 
 impl Writer<'_> {
-    /// Conteúdo da página; devolve as imagens usadas (nome, referência).
+    /// Page content; returns referenced images as name/reference pairs.
     pub(super) fn content(
         &mut self,
         list: &DisplayList,

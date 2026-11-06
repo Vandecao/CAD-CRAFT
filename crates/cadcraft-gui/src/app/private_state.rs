@@ -79,7 +79,7 @@ pub(crate) struct ChromeState {
     pub(crate) exit_confirmed: bool,
     pub(crate) theme_ready: bool,
     pub(in crate::app) last_system_theme: Option<egui::Theme>,
-    /// Pasta da biblioteca de símbolos já carregada (recarrega ao mudar).
+    /// Last loaded symbol-library directory; reload when it changes.
     pub(in crate::app) symbol_library_seen: Option<String>,
 }
 impl Default for ChromeState {

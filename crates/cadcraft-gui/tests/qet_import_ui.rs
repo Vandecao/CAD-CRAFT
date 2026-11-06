@@ -1,9 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (C) 2026 Vanderlei Braga e colaboradores do CAD-CRAFT
-//! Etapa 25: Arquivo > Importar > Projeto QElectroTech com eventos egui
-//! reais: Procurar, Analisar em segundo plano, prévia, criar projeto novo e
-//! abrir as Verificações; arquivo inválido; confirmação com alterações
-//! pendentes.
+//! QElectroTech project import with real egui events: browsing, background analysis, preview, new-project creation and validation panel; invalid input and pending-change confirmation.
+// Fixture helpers use validated synthetic inputs and fail immediately on setup errors.
+#![allow(clippy::unwrap_used)]
 use cad_gui::{app::CadApp, commands::CommandId, project_file::ScriptedPicker};
 use eframe::egui::{self, Context, Event, Modifiers, PointerButton, Pos2, Rect, vec2};
 use std::path::PathBuf;
@@ -108,8 +107,7 @@ fn app_with(paths: Vec<PathBuf>) -> (CadApp, Context) {
     (app, ctx)
 }
 
-/// Procurar → Analisar (segundo plano) → prévia → Criar projeto importado →
-/// projeto novo aberto na 1ª folha, pendente de salvar, Verificações abertas.
+/// Browse, analyze in the background, preview and create the imported project; open its first sheet unsaved, with validation results visible.
 #[test]
 fn browse_analyse_preview_and_create_project_with_checks() {
     let _guard = TEMP_LOCK.lock().unwrap();
@@ -145,7 +143,7 @@ fn browse_analyse_preview_and_create_project_with_checks() {
     assert!(app.checks.report.is_some(), "Verificações executadas");
 }
 
-/// Arquivo inválido: falha relatada, sem prévia nem projeto.
+/// Invalid input reports failure without a preview or project.
 #[test]
 fn invalid_file_reports_failure_without_preview() {
     let _guard = TEMP_LOCK.lock().unwrap();
@@ -158,15 +156,14 @@ fn invalid_file_reports_failure_without_preview() {
     assert!(app.qet.preview.is_none());
     assert!(shows(&mut app, &ctx, "Falha:"), "{}", app.qet.status);
     assert!(app.session.project().is_none());
-    // Extensão errada também é recusada.
+    // An incorrect extension is rejected too.
     app.qet.path = temp("x.txt", QET).display().to_string();
     click(&mut app, &ctx, "Analisar");
     wait_analysis(&mut app, &ctx);
     assert!(app.qet.status.contains(".qet"), "{}", app.qet.status);
 }
 
-/// Com alterações pendentes, criar o projeto importado pede confirmação e
-/// mantém o projeto atual até a resposta.
+/// With pending changes, creating the imported project asks for confirmation and keeps the current project until the answer.
 #[test]
 fn pending_changes_ask_before_replacing_the_session() {
     let _guard = TEMP_LOCK.lock().unwrap();

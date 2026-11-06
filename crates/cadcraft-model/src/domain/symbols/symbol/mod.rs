@@ -18,16 +18,18 @@ fn nonempty(value: &str) -> Result<()> {
     }
 }
 
-/// Identidade textual de biblioteca, independente de ocorrências UUID.
+/// Textual library identity independent of occurrence UUIDs.
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 #[serde(try_from = "String", into = "String")]
 pub struct SymbolDefinitionId(String);
 impl SymbolDefinitionId {
+    /// Validate a stable textual symbol library key.
     pub fn new(value: impl Into<String>) -> Result<Self> {
         let value = value.into();
         nonempty(&value)?;
         Ok(Self(value))
     }
+    /// Borrow the validated textual value.
     pub fn as_str(&self) -> &str {
         &self.0
     }
@@ -49,72 +51,104 @@ impl std::fmt::Display for SymbolDefinitionId {
     }
 }
 
-/// Geometria local em milímetros. Texto tem células monoespaçadas 0,6 × altura;
-/// sua origem é o canto inferior esquerdo da caixa nominal, sem padding.
+/// Local millimetre geometry. Text has monospaced cells 0.6 times its height; origin is the
+/// bottom-left corner of the nominal box without padding.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub enum SymbolPrimitive {
+    /// Straight line primitive.
     Line {
+        /// Starting value or geometric endpoint.
         start: Point2D,
+        /// Final endpoint in local millimetre coordinates.
         end: Point2D,
     },
+    /// Ordered polyline vertices with optional closure.
     Polyline {
+        /// Connection points or authored geometric vertices.
         points: Vec<Point2D>,
+        /// Whether the polyline closes its final segment.
         closed: bool,
     },
+    /// Rectangular primitive.
     Rectangle {
+        /// Rectangle in local millimetre coordinates.
         rect: Rect2D,
     },
+    /// Circular primitive.
     Circle {
+        /// Center in local millimetre coordinates.
         center: Point2D,
+        /// Radius in millimetres.
         radius: f64,
     },
+    /// Circular arc primitive.
     Arc {
+        /// Center in local millimetre coordinates.
         center: Point2D,
+        /// Radius in millimetres.
         radius: f64,
+        /// Initial arc angle in degrees.
         start_degrees: f64,
+        /// Signed angular extent of the arc in degrees.
         sweep_degrees: f64,
     },
+    /// Text content.
     Text {
+        /// Origin in millimetre coordinates.
         origin: Point2D,
+        /// Text displayed to the user.
         text: String,
+        /// Text or geometry height in millimetres.
         height: f64,
     },
+    /// Anchor without drawable geometry.
     Anchor {
+        /// Position in the containing page or terminal.
         position: Point2D,
     },
-    /// Etapa 17: elipse com raios nos eixos locais girados de `rotation_degrees`.
+    /// Ellipse with local-axis radii rotated by `rotation_degrees`.
     Ellipse {
+        /// Center in local millimetre coordinates.
         center: Point2D,
+        /// Radius along the local X axis in millimetres.
         radius_x: f64,
+        /// Radius along the local Y axis in millimetres.
         radius_y: f64,
+        /// Counterclockwise rotation in degrees.
         rotation_degrees: f64,
     },
-    /// Etapa 17: texto preenchido na ocorrência (designação, porta, …).
+    /// Text resolved for an occurrence, such as designation or port label.
     DynamicText {
+        /// Origin in millimetre coordinates.
         origin: Point2D,
+        /// Dynamic text field resolved from the current project context.
         field: SymbolTextField,
+        /// Text or geometry height in millimetres.
         height: f64,
+        /// Text alignment relative to the origin.
         align: TextAlign,
+        /// Counterclockwise rotation in degrees.
         rotation_degrees: f64,
     },
 }
 
-/// Etapa 17: o que um texto dinâmico mostra na ocorrência do símbolo.
+/// Value displayed by dynamic text in a symbol occurrence.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub enum SymbolTextField {
-    /// Designação do dispositivo (ex.: `-K1`).
+    /// Device designation, such as `-K1`.
     Designation,
-    /// Tipo da função representada.
+    /// Kind of the represented function.
     FunctionKind,
-    /// Rótulo do ponto de conexão ligado à porta.
+    /// Label of the connection point bound to the port.
     PortLabel(String),
-    /// Referência cruzada da ocorrência (`/página.coluna`).
+    /// Occurrence cross-reference, formatted as `/page.column`.
     Reference,
-    /// Propriedade técnica do dispositivo pela chave.
+    /// Device technical property selected by key.
     DeviceProperty(String),
 }
 impl SymbolTextField {
+    /// Return the pt-BR display label.
     pub fn label(&self) -> String {
         match self {
             Self::Designation => "Designação".into(),
@@ -124,7 +158,7 @@ impl SymbolTextField {
             Self::DeviceProperty(k) => format!("Propriedade: {k}"),
         }
     }
-    /// Texto mostrado quando não há ocorrência (editor e biblioteca).
+    /// Placeholder when no occurrence exists, used by the editor and library.
     pub fn placeholder(&self) -> String {
         match self {
             Self::Designation => "-K?".into(),
@@ -136,17 +170,23 @@ impl SymbolTextField {
     }
 }
 
-/// Etapa 17: padrão do traço.
+/// Stroke pattern.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub enum LineDash {
+    /// Continuous stroke.
     #[default]
     Solid,
+    /// Dashed stroke.
     Dashed,
+    /// Alternating dash and dot stroke.
     DashDot,
+    /// Dotted stroke.
     Dotted,
 }
 impl LineDash {
+    /// All supported variants in display order.
     pub const ALL: [Self; 4] = [Self::Solid, Self::Dashed, Self::DashDot, Self::Dotted];
+    /// Return the pt-BR display label.
     pub fn label(self) -> &'static str {
         match self {
             Self::Solid => "Contínuo",
@@ -155,7 +195,7 @@ impl LineDash {
             Self::Dotted => "Pontilhado",
         }
     }
-    /// Comprimentos traço/vão em múltiplos da espessura nominal (mm).
+    /// Dash and gap lengths as multiples of nominal stroke width in millimetres.
     pub fn pattern_mm(self) -> &'static [f64] {
         match self {
             Self::Solid => &[],
@@ -166,15 +206,17 @@ impl LineDash {
     }
 }
 
-/// Etapa 17: aparência de uma primitiva (padrão = traço contínuo, espessura
-/// do desenho, sem preenchimento).
+/// Primitive appearance; defaults to a continuous stroke, drawing stroke width and no fill.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct PrimitiveStyle {
+    /// Stroke dash pattern.
     #[serde(default, skip_serializing_if = "is_solid")]
     pub dash: LineDash,
+    /// Width in millimetres.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub width_mm: Option<f64>,
+    /// Whether the closed primitive interior is filled.
     #[serde(default, skip_serializing_if = "std::ops::Not::not")]
     pub fill: bool,
 }
@@ -182,10 +224,11 @@ fn is_solid(d: &LineDash) -> bool {
     *d == LineDash::Solid
 }
 impl PrimitiveStyle {
+    /// Whether the primitive style equals the default drawing style.
     pub fn is_default(&self) -> bool {
         *self == Self::default()
     }
-    /// Confere o estilo para a primitiva (preenchimento só em formas fechadas).
+    /// Validate style compatibility; only closed shapes accept fill.
     pub fn check(&self, primitive: &SymbolPrimitive) -> Result<()> {
         if self
             .width_mm
@@ -202,9 +245,10 @@ impl PrimitiveStyle {
     }
 }
 
-/// Largura nominal (caracteres) usada para os limites de um texto dinâmico.
+/// Nominal character width used for dynamic text bounds.
 const DYNAMIC_TEXT_CHARS: f64 = 4.0;
 
+/// Allowed finite symbol rotations and mirror directions.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(try_from = "OrientationsData")]
 pub struct SymbolOrientations {
@@ -226,7 +270,7 @@ impl TryFrom<OrientationsData> for SymbolOrientations {
     }
 }
 impl SymbolOrientations {
-    /// Uma lista vazia permite qualquer rotação finita.
+    /// An empty list allows any finite rotation.
     pub fn any() -> Self {
         Self {
             rotations: vec![],
@@ -234,6 +278,7 @@ impl SymbolOrientations {
             mirror_y: true,
         }
     }
+    /// Create an orientation policy from finite rotations and allowed mirror directions.
     pub fn new(rotations: Vec<f64>, mirror_x: bool, mirror_y: bool) -> Result<Self> {
         if rotations.iter().any(|a| !a.is_finite()) {
             return Err(invalid());
@@ -247,15 +292,18 @@ impl SymbolOrientations {
             mirror_y,
         })
     }
+    /// Return the rotations in their stored order.
     pub fn rotations(&self) -> &[f64] {
         &self.rotations
     }
+    /// Whether the transform satisfies the allowed rotations and mirror directions.
     pub fn allows(&self, t: Transform2D) -> bool {
         (!t.mirror_x() || self.mirror_x)
             && (!t.mirror_y() || self.mirror_y)
             && (self.rotations.is_empty() || self.rotations.contains(&t.rotation_degrees()))
     }
 }
+/// Named local connection port with position, orientation and identification.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(try_from = "PortData")]
 pub struct SymbolPort {
@@ -287,6 +335,7 @@ impl TryFrom<PortData> for SymbolPort {
     }
 }
 impl SymbolPort {
+    /// Create a local symbol port with validated identity, orientation and identification.
     pub fn new(
         id: impl Into<String>,
         position: Point2D,
@@ -312,21 +361,27 @@ impl SymbolPort {
             role,
         })
     }
+    /// Return this entity or definition's stable identifier.
     pub fn id(&self) -> &str {
         &self.id
     }
+    /// Return the position in millimetre coordinates.
     pub fn position(&self) -> Point2D {
         self.position
     }
+    /// Return the orientation degrees.
     pub fn orientation_degrees(&self) -> f64 {
         self.orientation_degrees
     }
+    /// Return the identification.
     pub fn identification(&self) -> &str {
         &self.identification
     }
+    /// Return the optional role; absence represents an unset value or relation.
     pub fn role(&self) -> Option<&str> {
         self.role.as_deref()
     }
+    /// Return the port after applying a validated placement transform.
     pub fn transformed(&self, t: Transform2D) -> Result<Self> {
         let mut angle = self.orientation_degrees;
         if t.mirror_x() {
@@ -344,6 +399,7 @@ impl SymbolPort {
         )
     }
 }
+/// Versioned local symbol geometry, ports, styles and orientation policy.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(try_from = "DefinitionData")]
 pub struct SymbolDefinition {
@@ -355,7 +411,7 @@ pub struct SymbolDefinition {
     ports: Vec<SymbolPort>,
     orientations: SymbolOrientations,
     metadata: Metadata,
-    /// Etapa 17: estilo por índice de primitiva (omitido quando vazio).
+    /// Style by primitive index, omitted when empty.
     #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
     styles: BTreeMap<usize, PrimitiveStyle>,
     #[serde(skip)]
@@ -382,6 +438,7 @@ impl TryFrom<DefinitionData> for SymbolDefinition {
     }
 }
 impl SymbolDefinition {
+    /// Create a symbol definition after validating its identity, geometry, ports and bounds.
     pub fn new(
         id: SymbolDefinitionId,
         version: u32,
@@ -402,10 +459,12 @@ impl SymbolDefinition {
             styles: BTreeMap::new(),
         })
     }
+    /// Return this value with orientations replaced.
     pub fn with_orientations(mut self, orientations: SymbolOrientations) -> Self {
         self.orientations = orientations;
         self
     }
+    /// Return this value with metadata replaced.
     pub fn with_metadata(mut self, metadata: Metadata) -> Self {
         self.metadata = metadata;
         self
@@ -463,41 +522,51 @@ impl SymbolDefinition {
             bounds,
         })
     }
+    /// Return this entity or definition's stable identifier.
     pub fn id(&self) -> &SymbolDefinitionId {
         &self.id
     }
+    /// Return the version.
     pub fn version(&self) -> u32 {
         self.version
     }
+    /// Return the name.
     pub fn name(&self) -> &str {
         &self.name
     }
+    /// Return the category.
     pub fn category(&self) -> &str {
         &self.category
     }
+    /// Return the primitives in their stored order.
     pub fn primitives(&self) -> &[SymbolPrimitive] {
         &self.primitives
     }
+    /// Return the ports in their stored order.
     pub fn ports(&self) -> &[SymbolPort] {
         &self.ports
     }
+    /// Return the orientations.
     pub fn orientations(&self) -> &SymbolOrientations {
         &self.orientations
     }
+    /// Return the metadata.
     pub fn metadata(&self) -> &Metadata {
         &self.metadata
     }
+    /// Return axis-aligned geometry bounds in millimetres.
     pub fn bounds(&self) -> Rect2D {
         self.bounds
     }
-    /// Etapa 17: estilo da primitiva `index` (padrão quando não definido).
+    /// Style of primitive `index`, falling back to the default.
     pub fn style(&self, index: usize) -> PrimitiveStyle {
         self.styles.get(&index).copied().unwrap_or_default()
     }
+    /// Return the styles.
     pub fn styles(&self) -> &BTreeMap<usize, PrimitiveStyle> {
         &self.styles
     }
-    /// Etapa 17: mesmos dados com estilos novos (validados).
+    /// The same data with validated replacement styles.
     pub fn with_styles(self, styles: BTreeMap<usize, PrimitiveStyle>) -> Result<Self> {
         Self::from_data(DefinitionData {
             id: self.id,
@@ -511,7 +580,7 @@ impl SymbolDefinition {
             styles,
         })
     }
-    /// Etapa 17: nova versão editada (mesmo ID, versão + 1).
+    /// Edited next version retaining the ID and incrementing version by one.
     pub fn edited(
         &self,
         name: impl Into<String>,
@@ -532,7 +601,7 @@ impl SymbolDefinition {
             styles,
         })
     }
-    /// Etapa 17: cópia com outra identidade (versão 1), para duplicar.
+    /// Independent duplicate with a different identity and version one.
     pub fn with_identity(&self, id: SymbolDefinitionId, name: impl Into<String>) -> Result<Self> {
         Self::from_data(DefinitionData {
             id,
@@ -546,6 +615,7 @@ impl SymbolDefinition {
             styles: self.styles.clone(),
         })
     }
+    /// Check local value constraints and report the first violated invariant.
     pub fn validate(&self) -> Result<()> {
         let reconstructed = Self::from_data(DefinitionData {
             id: self.id.clone(),

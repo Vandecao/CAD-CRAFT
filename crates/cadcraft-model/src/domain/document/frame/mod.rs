@@ -1,12 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (C) 2026 Vanderlei Braga e colaboradores do CAD-CRAFT
-//! Etapa 13: molduras (folha, área útil, zonas, carimbo e textos especiais).
-//!
-//! Coordenadas locais da folha em milímetros, origem no canto inferior
-//! esquerdo, X à direita e Y para cima. Zonas partem da área útil: colunas
-//! da esquerda para a direita, linhas de cima para baixo (convenção dos
-//! esquemas elétricos). Cada zona é um intervalo semiaberto `[início, fim)`;
-//! a última também inclui o fim.
+//! Sheet frames, usable areas, zones, title blocks and special texts; start with FrameTemplate.
+//! Local millimetre coordinates use a bottom-left origin, X right and Y up. Zones divide the usable
+//! area: columns run left to right and rows top to bottom. Intervals are half-open except the final
+//! interval, which includes its end.
 use super::*;
 use crate::domain::tolerance::EPS_MM as EPS;
 use crate::error::{DomainError, Result};
@@ -19,13 +16,22 @@ fn invalid(reason: &'static str) -> DomainError {
 const MAX_ZONES: usize = 1000;
 const MAX_ELEMENTS: usize = 100_000;
 
-/// Rótulos de zona: números a partir de `start` ou letras (A…Z, AA, AB…).
+/// Zone labels: numbers starting at `start`, or letters A through Z, then AA, AB and so on.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub enum ZoneLabelStyle {
-    Numbers { start: u32 },
-    Letters { start: u32 },
+    /// Decimal numbering beginning at the supplied value.
+    Numbers {
+        /// Number assigned to the first zone.
+        start: u32,
+    },
+    /// Alphabetic labels A through Z, then AA, AB and so on.
+    Letters {
+        /// Zero-based alphabetic offset of the first zone.
+        start: u32,
+    },
 }
 impl ZoneLabelStyle {
+    /// Format the zone label at the zero-based axis index.
     pub fn label(self, index: usize) -> String {
         match self {
             Self::Numbers { start } => (start as u64 + index as u64).to_string(),
@@ -44,18 +50,21 @@ impl ZoneLabelStyle {
     }
 }
 
-/// Divisão de um eixo da área útil. `sizes` vazio = eixo sem zonas.
+/// Division of one usable-area axis. Empty `sizes` means no zones on that axis.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct ZoneAxis {
+    /// Zone lengths in millimetres; empty means no division.
     pub sizes: Vec<f64>,
+    /// Rendering or zone-label style.
     pub style: ZoneLabelStyle,
-    /// Colunas: rótulos acima; linhas: rótulos à esquerda.
+    /// Column labels above; row labels to the left.
     pub labels_start: bool,
-    /// Colunas: rótulos abaixo; linhas: rótulos à direita.
+    /// Column labels below; row labels to the right.
     pub labels_end: bool,
 }
 impl ZoneAxis {
+    /// Create an undivided zone axis.
     pub fn none() -> Self {
         Self {
             sizes: vec![],
@@ -64,6 +73,7 @@ impl ZoneAxis {
             labels_end: false,
         }
     }
+    /// Create equally sized zones using the supplied label style.
     pub fn uniform(count: usize, size: f64, style: ZoneLabelStyle) -> Self {
         Self {
             sizes: vec![size; count],
@@ -72,10 +82,11 @@ impl ZoneAxis {
             labels_end: false,
         }
     }
+    /// Return the combined zone extent in millimetres.
     pub fn total(&self) -> f64 {
         self.sizes.iter().sum()
     }
-    /// Índice da zona que contém `offset` (distância desde o início do eixo).
+    /// Index of the zone containing `offset`, measured from the axis origin.
     pub fn index_at(&self, offset: f64) -> Option<usize> {
         if self.sizes.is_empty() || !offset.is_finite() || offset < -EPS {
             return None;
@@ -90,7 +101,7 @@ impl ZoneAxis {
         }
         None
     }
-    /// Limites `[início, fim]` (desde o início do eixo) de cada zona.
+    /// Start and end bounds of each zone measured from the axis origin.
     pub fn bounds(&self) -> Vec<(f64, f64)> {
         let mut start = 0.0;
         self.sizes
@@ -113,29 +124,41 @@ impl ZoneAxis {
     }
 }
 
+/// Independent column and row divisions of a frame usable area.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct ZoneLayout {
+    /// Ordered report columns.
     pub columns: ZoneAxis,
+    /// Report rows or their count before pagination.
     pub rows: ZoneAxis,
 }
 
-/// Ponto de alinhamento do texto em relação à origem.
+/// Text alignment point relative to its origin.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub enum TextAlign {
+    /// Bottom left text alignment.
     #[default]
     BottomLeft,
+    /// Bottom center text alignment.
     BottomCenter,
+    /// Bottom right text alignment.
     BottomRight,
+    /// Middle left text alignment.
     MiddleLeft,
+    /// Center text alignment.
     Center,
+    /// Middle right text alignment.
     MiddleRight,
+    /// Top left text alignment.
     TopLeft,
+    /// Top center text alignment.
     TopCenter,
+    /// Top right text alignment.
     TopRight,
 }
 impl TextAlign {
-    /// Fração (horizontal, vertical a partir de baixo) da caixa do texto.
+    /// Horizontal and bottom-up vertical fractions of the text box.
     pub fn fractions(self) -> (f64, f64) {
         match self {
             Self::BottomLeft => (0.0, 0.0),
@@ -151,17 +174,22 @@ impl TextAlign {
     }
 }
 
+/// Text height, alignment, rotation and watermark rendering settings.
 #[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct FrameTextStyle {
+    /// Text or geometry height in millimetres.
     pub height: f64,
+    /// Text alignment relative to the origin.
     pub align: TextAlign,
+    /// Counterclockwise rotation in degrees.
     pub rotation_degrees: f64,
-    /// Etapa 14: marca d'água — desenhada antes do conteúdo, em cor clara.
+    /// Watermark drawn before content in a light color.
     #[serde(default, skip_serializing_if = "std::ops::Not::not")]
     pub watermark: bool,
 }
 impl FrameTextStyle {
+    /// Create text settings with the supplied height and alignment, zero rotation and no watermark.
     pub fn new(height: f64, align: TextAlign) -> Self {
         Self {
             height,
@@ -178,21 +206,25 @@ impl FrameTextStyle {
     }
 }
 
-/// Texto fixo: valor padrão (pt-BR) e variantes por idioma (`en-US` → texto).
+/// Fixed text with a pt-BR default and language variants, such as en-US.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct LocalizedText {
+    /// Fallback text when no language variant matches.
     pub default: String,
+    /// Text variants indexed by language key.
     #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
     pub translations: BTreeMap<String, String>,
 }
 impl LocalizedText {
+    /// Create fallback text without language-specific variants.
     pub fn new(default: impl Into<String>) -> Self {
         Self {
             default: default.into(),
             translations: BTreeMap::new(),
         }
     }
+    /// Return the requested language variant, falling back to the default text.
     pub fn get(&self, language: Option<&str>) -> &str {
         language
             .and_then(|l| self.translations.get(l))
@@ -201,30 +233,44 @@ impl LocalizedText {
     }
 }
 
-/// Valor resolvido a partir do projeto, da página ou da moldura.
+/// Value resolved from the project, page or frame.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub enum SpecialField {
+    /// Project name.
     ProjectName,
+    /// Project description.
     ProjectDescription,
+    /// Project documentary identification.
     ProjectIdentification,
-    /// Metadado do projeto pela chave (ex.: "Autor", "Cliente").
+    /// Project metadata selected by key, such as author or customer.
     ProjectProperty(Text),
+    /// Containing document name.
     DocumentName,
+    /// Page documentary number.
     PageNumber,
+    /// Page name.
     PageName,
+    /// Page functional classification path.
     PageFunctionalPath,
+    /// Page location classification path.
     PageLocationPath,
-    /// Posição da página (1…n) no documento.
+    /// One-based page position within its document.
     PagePosition,
+    /// Number of pages in the containing document.
     PageCountInDocument,
+    /// Total project page count.
     PageCountInProject,
+    /// Previous page number in document order.
     PreviousPageNumber,
+    /// Next page number in document order.
     NextPageNumber,
-    /// Metadado da página pela chave (ex.: "Data", "Desenhista").
+    /// Page metadata selected by key, such as date or drafter.
     PageProperty(Text),
+    /// Frame template name.
     FrameName,
 }
 impl SpecialField {
+    /// Return the pt-BR display label.
     pub fn label(&self) -> String {
         match self {
             Self::ProjectName => "Nome do projeto".into(),
@@ -247,47 +293,74 @@ impl SpecialField {
     }
 }
 
+/// Drawable line, shape, text, field or image in a sheet frame.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub enum FrameElement {
+    /// Straight line primitive.
     Line {
+        /// Starting value or geometric endpoint.
         start: Point2D,
+        /// Final endpoint in local millimetre coordinates.
         end: Point2D,
+        /// Stroke or geometry width in millimetres.
         width: f64,
     },
+    /// Rectangular primitive.
     Rectangle {
+        /// Rectangle in local millimetre coordinates.
         rect: Rect2D,
+        /// Stroke or geometry width in millimetres.
         width: f64,
     },
+    /// Circular primitive.
     Circle {
+        /// Center in local millimetre coordinates.
         center: Point2D,
+        /// Radius in millimetres.
         radius: f64,
+        /// Stroke or geometry width in millimetres.
         width: f64,
     },
+    /// Circular arc primitive.
     Arc {
+        /// Center in local millimetre coordinates.
         center: Point2D,
+        /// Radius in millimetres.
         radius: f64,
+        /// Initial arc angle in degrees.
         start_degrees: f64,
+        /// Signed angular extent of the arc in degrees.
         sweep_degrees: f64,
+        /// Stroke or geometry width in millimetres.
         width: f64,
     },
+    /// Text content.
     Text {
+        /// Origin in millimetre coordinates.
         origin: Point2D,
+        /// Text displayed to the user.
         text: LocalizedText,
+        /// Rendering or zone-label style.
         style: FrameTextStyle,
     },
-    /// Texto especial; `index` seleciona `chave.n` em propriedades indexadas
-    /// (ex.: linhas do quadro de revisões).
+    /// Special text; `index` selects `key.n` in indexed properties, such as revision rows.
     Special {
+        /// Origin in millimetre coordinates.
         origin: Point2D,
+        /// Dynamic text field resolved from the current project context.
         field: SpecialField,
+        /// Position or indexed-field selector within the containing record.
         #[serde(default, skip_serializing_if = "Option::is_none")]
         index: Option<u32>,
+        /// Rendering or zone-label style.
         style: FrameTextStyle,
     },
-    /// Etapa 14: imagem do projeto ajustada ao retângulo (mm).
+    /// Project image fitted into a millimetre rectangle.
     Image {
+        /// Rectangle in local millimetre coordinates.
         rect: Rect2D,
+        /// Project image asset identifier.
         asset: AssetId,
     },
 }
@@ -339,6 +412,7 @@ impl FrameElement {
     }
 }
 
+/// Versioned sheet frame with validated geometry, zones and title-block elements.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(try_from = "FrameData")]
 pub struct FrameTemplate {
@@ -381,6 +455,7 @@ impl TryFrom<FrameData> for FrameTemplate {
     }
 }
 impl FrameTemplate {
+    /// Create a frame template with fresh identity, version one and validated sheet geometry.
     pub fn new(
         name: impl Into<String>,
         sheet: Size2D,
@@ -401,11 +476,12 @@ impl FrameTemplate {
         frame.validate()?;
         Ok(frame)
     }
+    /// Return this value with description replaced.
     pub fn with_description(mut self, description: impl Into<String>) -> Self {
         self.description = description.into();
         self
     }
-    /// Nova versão do mesmo modelo (mesmo ID), validada.
+    /// Validated next version of the same template, retaining its ID.
     pub fn revised(
         &self,
         name: Text,
@@ -422,30 +498,39 @@ impl FrameTemplate {
         frame.validate()?;
         Ok(frame)
     }
+    /// Return this entity or definition's stable identifier.
     pub fn id(&self) -> FrameTemplateId {
         self.id
     }
+    /// Return the name.
     pub fn name(&self) -> &Text {
         &self.name
     }
+    /// Return the version.
     pub fn version(&self) -> u32 {
         self.version
     }
+    /// Return the description.
     pub fn description(&self) -> &str {
         &self.description
     }
+    /// Return the sheet.
     pub fn sheet(&self) -> Size2D {
         self.sheet
     }
+    /// Return the usable.
     pub fn usable(&self) -> Rect2D {
         self.usable
     }
+    /// Return the zones.
     pub fn zones(&self) -> &ZoneLayout {
         &self.zones
     }
+    /// Iterate or borrow the explicitly stored document elements.
     pub fn elements(&self) -> &[FrameElement] {
         &self.elements
     }
+    /// Check local value constraints and report the first violated invariant.
     pub fn validate(&self) -> Result<()> {
         let u = self.usable;
         let max = u.max();
@@ -468,7 +553,7 @@ impl FrameTemplate {
         }
         Ok(())
     }
-    /// Zona (coluna, linha) do ponto da folha; `None` fora da divisão.
+    /// Column and row at the sheet point, or `None` outside the division.
     pub fn zone_at(&self, point: Point2D) -> Option<Zone> {
         let u = self.usable;
         let column = self.zones.columns.index_at(point.x() - u.origin().x());
@@ -487,34 +572,43 @@ impl FrameTemplate {
     }
 }
 
-/// Rótulos da zona encontrada (cada eixo pode não ter divisão).
+/// Labels of the located zone; either axis may have no division.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Zone {
+    /// Column-zone label, absent when the axis is undivided.
     pub column: Option<String>,
+    /// Row-zone label, absent when the axis is undivided.
     pub row: Option<String>,
 }
 
-/// Formato textual das referências cruzadas quando há moldura com zonas.
+/// Cross-reference text format for frames with zones.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub enum ReferenceFormat {
-    /// `/página.coluna`, ex.: `/3.4`.
+    /// `/page.column`, such as `/3.4`.
     #[default]
     PageColumn,
-    /// `/página.colunaLinha`, ex.: `/3.4B`.
+    /// `/page.columnRow`, such as `/3.4B`.
     PageColumnRow,
 }
 
-/// Formatos de folha ISO 216 (mm), paisagem ou retrato.
+/// ISO 216 sheet sizes in millimetres, landscape or portrait.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum PaperFormat {
+    /// ISO 216 A0 sheet size.
     A0,
+    /// ISO 216 A1 sheet size.
     A1,
+    /// ISO 216 A2 sheet size.
     A2,
+    /// ISO 216 A3 sheet size.
     A3,
+    /// ISO 216 A4 sheet size.
     A4,
 }
 impl PaperFormat {
+    /// All supported variants in display order.
     pub const ALL: [Self; 5] = [Self::A0, Self::A1, Self::A2, Self::A3, Self::A4];
+    /// Return the pt-BR display label.
     pub fn label(self) -> &'static str {
         match self {
             Self::A0 => "A0",
@@ -524,6 +618,7 @@ impl PaperFormat {
             Self::A4 => "A4",
         }
     }
+    /// Return dimensions in millimetres.
     pub fn size(self, landscape: bool) -> Size2D {
         let (w, h) = match self {
             Self::A0 => (1189.0, 841.0),
@@ -535,7 +630,7 @@ impl PaperFormat {
         let (w, h) = if landscape { (w, h) } else { (h, w) };
         Size2D::new(w, h).expect("static paper size")
     }
-    /// Formato e orientação que coincidem com o tamanho (tolerância 0,5 mm).
+    /// Format and orientation matching the size within 0.5 mm.
     pub fn matching(size: Size2D) -> Option<(Self, bool)> {
         Self::ALL.into_iter().find_map(|f| {
             [true, false].into_iter().find_map(|landscape| {
@@ -547,7 +642,7 @@ impl PaperFormat {
     }
 }
 
-/// Valor de exibição do texto especial; `index` usa a chave `chave.n`.
+/// Display value of special text; `index` selects `key.n`.
 pub(crate) fn indexed_key(key: &Text, index: Option<u32>) -> String {
     match index {
         Some(n) => format!("{}.{n}", key.as_str()),

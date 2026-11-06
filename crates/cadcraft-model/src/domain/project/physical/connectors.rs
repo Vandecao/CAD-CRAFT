@@ -4,52 +4,61 @@
 use super::*;
 use std::collections::BTreeSet;
 
-/// Situação derivada de um contato de conector. Nunca é persistida.
-/// Um contato está ocupado quando há associação explícita a ponto funcional
-/// ou condutor físico terminando nele; o acoplamento não o ocupa.
+/// Derived connector contact status, never persisted. An explicit functional-point binding or
+/// terminating physical conductor occupies a contact; mating alone does not.
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct ContactStatus {
+    /// Connection points or authored geometric vertices.
     pub points: Vec<ConnectionPointId>,
+    /// Physical conductors associated with this record.
     pub conductors: Vec<ConductorId>,
+    /// Explicitly mapped mating counterpart, when present.
     pub mated_with: Option<TerminalId>,
 }
 impl ContactStatus {
+    /// Whether no explicit functional point or physical conductor occupies the contact.
     pub fn is_free(&self) -> bool {
         self.points.is_empty() && self.conductors.is_empty()
     }
 }
 
 impl Project {
+    /// Find the connector by its stable identifier; return None when absent.
     pub fn connector(&self, id: ConnectorId) -> Option<&Connector> {
         self.connectors.get(&id)
     }
+    /// Iterate connectors without exposing mutable access.
     pub fn connectors(&self) -> impl Iterator<Item = &Connector> {
         self.connectors.values()
     }
+    /// Find the connector mating by its stable identifier; return None when absent.
     pub fn connector_mating(&self, id: ConnectorMatingId) -> Option<&ConnectorMating> {
         self.connector_matings.get(&id)
     }
+    /// Iterate connector matings without exposing mutable access.
     pub fn connector_matings(&self) -> impl Iterator<Item = &ConnectorMating> {
         self.connector_matings.values()
     }
+    /// Return the connector explicitly containing this terminal as a contact.
     pub fn connector_for_terminal(&self, terminal: TerminalId) -> Option<&Connector> {
         self.physical_index
             .connector_by_terminal
             .get(&terminal)
             .and_then(|id| self.connector(*id))
     }
+    /// Return the explicit mating containing the connector, if any.
     pub fn mating_for_connector(&self, connector: ConnectorId) -> Option<&ConnectorMating> {
         self.physical_index
             .mating_by_connector
             .get(&connector)
             .and_then(|id| self.connector_mating(*id))
     }
-    /// Contato da outra metade segundo o mapa explícito do acoplamento.
+    /// Counterpart contact selected by the explicit mating map.
     pub fn mated_contact(&self, contact: TerminalId) -> Option<TerminalId> {
         let connector = self.connector_for_terminal(contact)?;
         self.mating_for_connector(connector.id())?.mate_of(contact)
     }
-    /// Pontos funcionais explicitamente associados ao borne/contato.
+    /// Functional points explicitly bound to the terminal or contact.
     pub fn points_for_terminal(&self, terminal: TerminalId) -> Vec<ConnectionPointId> {
         self.connection_points
             .values()
@@ -57,6 +66,7 @@ impl Project {
             .map(ConnectionPoint::id)
             .collect()
     }
+    /// Derive current point, conductor and mating associations for a contact.
     pub fn contact_status(&self, contact: TerminalId) -> Result<ContactStatus> {
         self.require(EntityRef::Terminal(contact))?;
         Ok(ContactStatus {
@@ -72,8 +82,8 @@ impl Project {
             mated_with: self.mated_contact(contact),
         })
     }
-    /// Primeira ocorrência gráfica explícita de um contato do conector, ou do
-    /// dispositivo documental associado. Nunca procura por texto/proximidade.
+    /// First explicit graphical occurrence of a connector contact or its associated documentary device.
+    /// Never searches by text or proximity.
     pub fn connector_occurrence(&self, id: ConnectorId) -> Option<RepresentationId> {
         let connector = self.connector(id)?;
         connector
@@ -173,7 +183,7 @@ impl Project {
                 ));
             }
         }
-        // Etapa 24 (DEC-11-01): conexões de posse coerentes com os pares.
+        // Owned connections must match the explicit contact pairs.
         if !mating.owned_is_legacy() {
             let expected = self.mating_point_pairs(mating);
             let owned = mating.owned_connections();
@@ -198,7 +208,7 @@ impl Project {
 }
 
 impl Project {
-    /// Ponto de conexão associado ao contato (o de menor ID, se houver vários).
+    /// Connection point associated with the contact; lowest ID if several exist.
     pub(in crate::domain::project) fn contact_point(
         &self,
         contact: TerminalId,
@@ -208,8 +218,8 @@ impl Project {
             .map(ConnectionPoint::id)
             .min()
     }
-    /// Pares de pontos que o acoplamento liga, na ordem dos pares; contatos
-    /// sem ponto associado ficam de fora (verificação VER-017).
+    /// Point pairs connected by the mating, in pair order. Contacts without associated points are
+    /// excluded and reported by VER-017.
     pub(in crate::domain::project) fn mating_point_pairs(
         &self,
         mating: &ConnectorMating,
@@ -225,9 +235,9 @@ impl Project {
             })
             .collect()
     }
-    /// Conexões de posse para o acoplamento: reaproveita as de `before` que
-    /// ligam os mesmos pontos (preserva número de fio) e cria as que faltam.
-    /// Devolve (ids na ordem dos pares, novas conexões, conexões removidas).
+    /// Owned mating connections: reuse entries in `before` with identical endpoints, preserving wire
+    /// numbers, and create missing ones. Return ordered pair IDs, new connections and removed
+    /// connections.
     pub(in crate::domain::project) fn plan_mating_connections(
         &self,
         mating: &ConnectorMating,

@@ -1,7 +1,10 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (C) 2026 Vanderlei Braga e colaboradores do CAD-CRAFT
-//! Etapa 11 — conectores industriais: contatos como bornes existentes,
-//! associação explícita a pontos funcionais e acoplamento documental.
+//! Industrial connectors reuse terminals as contacts, associate functional points explicitly and
+//! model documentary mating.
+// Synthetic test fixtures intentionally fail fast when setup is invalid.
+#![allow(clippy::unwrap_used)]
+
 mod physical_common;
 use cad_craft::{domain::*, error::DomainError};
 use physical_common::part;
@@ -324,8 +327,8 @@ fn mating_is_explicit_validated_and_gives_continuity() {
     assert_eq!(p.mated_contact(ca[0]), Some(cb[1]));
     assert_eq!(p.mated_contact(cb[0]), Some(ca[1]));
     assert_eq!(p.contact_status(ca[0]).unwrap().mated_with, Some(cb[1]));
-    // Etapa 24 (DEC-11-01, proposta A): o acoplamento possui uma conexão por
-    // par com ponto e as redes atravessam o conector, pelo mapa explícito.
+    // Each mapped pair with points owns a connection, so networks traverse the connector through
+    // the explicit map.
     assert_ne!(p.networks(), networks);
     assert!(p.are_connected(pa[0], pb[1]).unwrap());
     assert!(p.are_connected(pa[1], pb[0]).unwrap());

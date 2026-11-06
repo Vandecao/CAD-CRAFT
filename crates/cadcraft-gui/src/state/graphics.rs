@@ -5,9 +5,9 @@ use super::*;
 
 impl Session {
     pub fn delete_graphic_selection(&mut self) -> Result<bool> {
-        let p = self
-            .project()
-            .ok_or(DomainError::InvalidRelation("nenhum projeto aberto"))?;
+        let p = self.project().ok_or(DomainError::InvalidRelation(
+            crate::strings::NO_OPEN_PROJECT,
+        ))?;
         let changes = self
             .graphics
             .selection
@@ -44,12 +44,12 @@ impl Session {
         graphic: PageGraphic,
         transform: Transform2D,
     ) -> Result<RepresentationId> {
-        let p = self
-            .project()
-            .ok_or(DomainError::InvalidRelation("nenhum projeto aberto"))?;
+        let p = self.project().ok_or(DomainError::InvalidRelation(
+            crate::strings::NO_OPEN_PROJECT,
+        ))?;
         let page = self
             .active
-            .ok_or(DomainError::InvalidRelation("abra uma página"))?;
+            .ok_or(DomainError::InvalidRelation(crate::strings::OPEN_PAGE))?;
         let r = Representation::new_graphic(p.id(), page, graphic, transform)?;
         let id = r.id();
         let p = self.project.as_mut().expect("checked");
@@ -89,10 +89,9 @@ impl Session {
         Ok(changed)
     }
     pub fn dispatch_physical(&mut self, edit: PhysicalEdit) -> Result<bool> {
-        let project = self
-            .project
-            .as_mut()
-            .ok_or(DomainError::InvalidRelation("nenhum projeto aberto"))?;
+        let project = self.project.as_mut().ok_or(DomainError::InvalidRelation(
+            crate::strings::NO_OPEN_PROJECT,
+        ))?;
         let changed = self.history.physical(project, edit)?;
         if changed {
             self.changed();
@@ -123,18 +122,17 @@ impl Session {
     }
     pub fn dispatch_graphic(&mut self, edit: GraphicEdit) -> Result<bool> {
         let previous_selection = self.selection;
-        // Etapa 13: edições de moldura/metadados vêm do painel e mantêm a seleção.
+        // Panel frame and metadata edits preserve selection.
         let keeps_selection = matches!(edit, GraphicEdit::Frame(_));
-        // Etapa 17: símbolo do projeto, da biblioteca externa ou embutido.
+        // Symbol from the project, external library or built-ins.
         let symbol = match &edit {
             GraphicEdit::InsertSymbol { definition, .. }
             | GraphicEdit::PlaceSymbol { definition, .. } => self.find_symbol(definition),
             _ => None,
         };
-        let p = self
-            .project
-            .as_mut()
-            .ok_or(DomainError::InvalidRelation("nenhum projeto aberto"))?;
+        let p = self.project.as_mut().ok_or(DomainError::InvalidRelation(
+            crate::strings::NO_OPEN_PROJECT,
+        ))?;
         let mut inserted = None;
         let changed = match edit {
             GraphicEdit::Device(edit) => self.history.device(p, edit)?,
@@ -150,12 +148,12 @@ impl Session {
                 target,
                 transform,
             } => {
-                let page = self
-                    .active
-                    .ok_or(DomainError::InvalidRelation("abra uma página para inserir"))?;
+                let page = self.active.ok_or(DomainError::InvalidRelation(
+                    crate::strings::OPEN_PAGE_TO_INSERT,
+                ))?;
                 let _ = definition;
                 let definition = symbol.as_ref().ok_or(DomainError::InvalidRelation(
-                    "símbolo ausente na biblioteca",
+                    crate::strings::SYMBOL_NOT_IN_LIBRARY,
                 ))?;
                 inserted = Some(
                     self.history
@@ -168,12 +166,12 @@ impl Session {
                 plan,
                 transform,
             } => {
-                let page = self
-                    .active
-                    .ok_or(DomainError::InvalidRelation("abra uma página para inserir"))?;
+                let page = self.active.ok_or(DomainError::InvalidRelation(
+                    crate::strings::OPEN_PAGE_TO_INSERT,
+                ))?;
                 let _ = definition;
                 let definition = symbol.as_ref().ok_or(DomainError::InvalidRelation(
-                    "símbolo ausente na biblioteca",
+                    crate::strings::SYMBOL_NOT_IN_LIBRARY,
                 ))?;
                 if let DevicePlan::ExistingFunction(function) = plan {
                     inserted = Some(self.history.place_existing_function(
@@ -292,16 +290,16 @@ impl Session {
         target: Option<RepresentationTarget>,
         transform: Transform2D,
     ) -> Result<()> {
-        let page = self
-            .active
-            .ok_or(DomainError::InvalidRelation("abra uma página para inserir"))?;
-        let p = self
-            .project()
-            .ok_or(DomainError::InvalidRelation("nenhum projeto aberto"))?;
+        let page = self.active.ok_or(DomainError::InvalidRelation(
+            crate::strings::OPEN_PAGE_TO_INSERT,
+        ))?;
+        let p = self.project().ok_or(DomainError::InvalidRelation(
+            crate::strings::NO_OPEN_PROJECT,
+        ))?;
         let symbol = self
             .find_symbol(&definition)
             .ok_or(DomainError::InvalidRelation(
-                "símbolo ausente na biblioteca",
+                crate::strings::SYMBOL_NOT_IN_LIBRARY,
             ))?;
         let symbol = &symbol;
         if !symbol.orientations().allows(transform) {
@@ -328,7 +326,7 @@ impl Session {
         });
         Ok(())
     }
-    /// Etapa 12: cada clique cria a ocorrência e o cadastro elétrico dela.
+    /// Each click creates the occurrence and its electrical registration.
     pub fn begin_device_insertion(
         &mut self,
         definition: SymbolDefinitionId,

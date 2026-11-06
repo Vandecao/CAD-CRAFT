@@ -114,7 +114,7 @@ impl CadApp {
                 }
             }
         }
-        // Área útil e divisão em zonas (guias do editor).
+        // Usable area and zone divisions serve as editor guides.
         let u = frame.usable();
         if let Some(r) = camera.clipped_rect(u, rect) {
             painter.rect_stroke(
@@ -152,7 +152,7 @@ impl CadApp {
             );
         }
         frame_view::paint_zone_labels(&painter, frame, camera, rect);
-        // Pontos pendentes e prévia.
+        // Pending points and preview.
         let cursor = response.hover_pos().and_then(world);
         let mut preview = self.frame_editor.pending.clone();
         if let Some(c) = cursor
@@ -176,11 +176,11 @@ impl CadApp {
                 painter.circle_stroke(s, 3.0, Stroke::new(1.0_f32, theme::ACCENT));
             }
         }
-        // Interação.
+        // Interaction.
         let ctrl = ui.input(|i| i.modifiers.command);
         let tool = self.frame_editor.tool;
         if tool == FrameTool::Select {
-            // O arrasto começa onde o botão foi pressionado, não onde o egui detecta o movimento.
+            // Dragging starts at the pointer press, rather than where egui detects motion.
             if response.drag_started_by(PointerButton::Primary)
                 && let Some(start) = ui
                     .input(|i| i.pointer.press_origin())
@@ -422,5 +422,5 @@ impl CadApp {
         }
     }
 
-    // ------------------------------------------------- comandos de arquivo
+    // File commands.
 }

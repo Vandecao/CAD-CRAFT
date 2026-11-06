@@ -7,13 +7,13 @@ use super::*;
 /// Display list of a page. An extension trait because methods of [`Project`]
 /// can only be declared in the model crate; the method name is unchanged.
 pub trait PageDisplayList {
-    /// Lista de exibição da página: moldura, conteúdo, referências e junções,
-    /// na ordem de desenho da tela.
+    /// Page display list: frame, content, references and junctions,
+    /// in screen drawing order.
     fn page_display_list(&self, page: PageId) -> Result<DisplayList>;
 }
 impl PageDisplayList for Project {
-    /// Lista de exibição da página: moldura, conteúdo, referências e junções,
-    /// na ordem de desenho da tela.
+    /// Page display list: frame, content, references and junctions,
+    /// in screen drawing order.
     fn page_display_list(&self, page: PageId) -> Result<DisplayList> {
         let p = self
             .page(page)

@@ -42,12 +42,12 @@ impl Builder<'_> {
     }
 }
 
-/// Afastamento (mm) do número do fio em relação ao traço.
+/// Wire number offset from the stroke in mm.
 pub const WIRE_NUMBER_GAP: f64 = 0.8;
 
-/// Onde escrever o número do fio: a posição guardada na rota (texto à direita
-/// dela) ou, sem ela, o meio do trecho mais longo — acima de trecho
-/// horizontal, à direita de trecho vertical, para não ficar sobre o traço.
+/// Wire number position: stored route position with text to its right,
+/// or the midpoint of the longest segment. Place text above horizontal
+/// segments and right of vertical segments to keep it off the stroke.
 pub fn wire_number_placement(
     points: &[Point2D],
     explicit: Option<Point2D>,

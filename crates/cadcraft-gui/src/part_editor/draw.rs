@@ -17,7 +17,7 @@ impl PartEditor {
         }
         let mut open = self.open;
         let mut action = None;
-        egui::Window::new("Peças e dispositivos")
+        egui::Window::new(crate::strings::PARTS_AND_DEVICES)
             .open(&mut open)
             .default_size([780.0, 640.0])
             .resizable(true)

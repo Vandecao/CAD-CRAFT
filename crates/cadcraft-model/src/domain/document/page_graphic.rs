@@ -5,22 +5,26 @@ use super::{Point2D, PrimitiveStyle, Rect2D, Size2D, SymbolPrimitive};
 use crate::error::{DomainError, Result};
 use serde::{Deserialize, Serialize};
 
+/// Horizontal alignment of free page text.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub enum TextAlignment {
+    /// Left text alignment.
     #[default]
     Left,
+    /// Center text alignment.
     Center,
+    /// Right text alignment.
     Right,
 }
 
-/// Geometria documental independente de entidades elétricas.
+/// Document geometry independent of electrical entities.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(try_from = "PageGraphicData")]
 pub struct PageGraphic {
     primitive: SymbolPrimitive,
     stroke_mm: f64,
     alignment: TextAlignment,
-    /// Etapa 17: traço, preenchimento (espessura própria em `stroke_mm`).
+    /// Stroke and fill; stroke width remains in `stroke_mm`.
     #[serde(default, skip_serializing_if = "PrimitiveStyle::is_default")]
     style: PrimitiveStyle,
 }
@@ -43,6 +47,7 @@ impl TryFrom<PageGraphicData> for PageGraphic {
 }
 
 impl PageGraphic {
+    /// Create free page content, validating its primitive, stroke and alignment.
     pub fn new(
         primitive: SymbolPrimitive,
         stroke_mm: f64,
@@ -78,19 +83,23 @@ impl PageGraphic {
         value.bounds()?;
         Ok(value)
     }
+    /// Return the primitive.
     pub fn primitive(&self) -> &SymbolPrimitive {
         &self.primitive
     }
+    /// Return the stroke width in millimetres.
     pub fn stroke_mm(&self) -> f64 {
         self.stroke_mm
     }
+    /// Return the alignment.
     pub fn alignment(&self) -> TextAlignment {
         self.alignment
     }
+    /// Return the style.
     pub fn style(&self) -> PrimitiveStyle {
         self.style
     }
-    /// Etapa 17: traço e preenchimento (a espessura continua em `stroke_mm`).
+    /// Stroke and fill; stroke width remains in `stroke_mm`.
     pub fn with_style(mut self, style: PrimitiveStyle) -> Result<Self> {
         let style = PrimitiveStyle {
             width_mm: None,
@@ -100,6 +109,7 @@ impl PageGraphic {
         self.style = style;
         Ok(self)
     }
+    /// Resolve text alignment into geometry suitable for drawing.
     pub fn drawable(&self) -> Result<SymbolPrimitive> {
         match &self.primitive {
             SymbolPrimitive::Text {
@@ -122,9 +132,11 @@ impl PageGraphic {
             other => Ok(other.clone()),
         }
     }
+    /// Return axis-aligned geometry bounds in millimetres.
     pub fn bounds(&self) -> Result<Rect2D> {
         self.drawable()?.bounds()
     }
+    /// Create geometry from drag endpoints, validating dimensions and stroke settings.
     pub fn from_drag(
         kind: GraphicKind,
         start: Point2D,
@@ -159,12 +171,17 @@ impl PageGraphic {
     }
 }
 
+/// Free-geometry tool used to create a page graphic from a drag.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum GraphicKind {
+    /// Straight line primitive.
     Line,
+    /// Rectangular primitive.
     Rectangle,
+    /// Circular primitive.
     Circle,
+    /// Circular arc primitive.
     Arc,
-    /// Etapa 17: elipse inscrita no retângulo arrastado.
+    /// Ellipse inscribed in the dragged rectangle.
     Ellipse,
 }

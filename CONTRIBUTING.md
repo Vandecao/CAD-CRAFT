@@ -32,7 +32,11 @@ Rules for tests:
 
 - Code, file and module names, API comments (`///`, `//!`) and commit messages: **English**.
 - User interface text: **Brazilian Portuguese** for now.
-- Older comments in Portuguese are being converted gradually; you do not need to convert code you are not changing.
+- Source comments describe behavior and invariants in English, without development-stage labels. Preserve the required copyright attribution and exact protocol examples. Reuse repeated GUI phrases from `cadcraft-gui/src/strings.rs` without changing their Brazilian Portuguese text.
+
+## Lint and documentation boundaries
+
+Workspace Clippy checks reject unexplained production `unwrap`, debug macros, unfinished `todo` macros and library stdout. Synthetic test fixtures may unwrap; executable examples may print their results. `cadcraft-model` and `cadcraft-format` require documentation for their public APIs. Before final review, also run `cargo doc --workspace --no-deps --locked` with `RUSTDOCFLAGS="-D warnings"`.
 
 ## Licensing and sign-off
 

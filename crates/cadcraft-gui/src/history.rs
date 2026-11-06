@@ -21,7 +21,7 @@ enum Transaction {
     Drawing(ConnectionDrawingDelta),
     Representations(RepresentationDelta),
     Sheet(SheetEditDelta),
-    /// Etapa 19: inserção de macro ou colagem com fios.
+    /// Macro insertion or paste with wires.
     Macro(Box<MacroInsertDelta>),
     Symbols(Vec<SymbolUpdateDelta>),
     Visual {
@@ -120,7 +120,7 @@ impl History {
     ) -> Result<bool> {
         if preview.rows.len() > MAX_DELTAS {
             return Err(DomainError::InvalidRelation(
-                "operação excede a capacidade do histórico",
+                crate::strings::HISTORY_CAPACITY_EXCEEDED,
             ));
         }
         let delta = p.apply_device_numbering(preview)?;
@@ -137,7 +137,7 @@ impl History {
     ) -> Result<bool> {
         if preview.rows.len() > MAX_DELTAS {
             return Err(DomainError::InvalidRelation(
-                "operação excede a capacidade do histórico",
+                crate::strings::HISTORY_CAPACITY_EXCEEDED,
             ));
         }
         let delta = p.apply_connection_numbering(preview)?;
@@ -147,7 +147,7 @@ impl History {
         self.record(Transaction::NumberConnections(Box::new(delta)));
         Ok(true)
     }
-    /// Número e trava de um fio editados à mão: uma transação.
+    /// Edit a wire number and lock manually in one transaction.
     pub(crate) fn connection_number(
         &mut self,
         p: &mut Project,
@@ -169,7 +169,7 @@ impl History {
     ) -> Result<bool> {
         if preview.rows.len() > MAX_DELTAS {
             return Err(DomainError::InvalidRelation(
-                "operação excede a capacidade do histórico",
+                crate::strings::HISTORY_CAPACITY_EXCEEDED,
             ));
         }
         let delta = p.apply_page_numbering(preview)?;
@@ -179,7 +179,7 @@ impl History {
         self.record(Transaction::NumberPages(Box::new(delta)));
         Ok(true)
     }
-    /// Etapa 24: esquema de verificação (regras e ignorados) numa transação.
+    /// Validation rules and exclusions in one transaction.
     pub(crate) fn check_scheme(&mut self, p: &mut Project, scheme: CheckScheme) -> Result<bool> {
         let delta = p.set_check_scheme(scheme)?;
         if delta.is_empty() {
@@ -196,7 +196,7 @@ impl History {
         if delta.len() > MAX_DELTAS {
             p.restore_physical(&delta, false)?;
             return Err(DomainError::InvalidRelation(
-                "operação excede a capacidade do histórico",
+                crate::strings::HISTORY_CAPACITY_EXCEEDED,
             ));
         }
         self.record(Transaction::Physical(Box::new(delta)));
@@ -210,7 +210,7 @@ impl History {
         if delta.len() > MAX_DELTAS {
             p.restore_device_edit(&delta, false)?;
             return Err(DomainError::InvalidRelation(
-                "operação excede a capacidade do histórico",
+                crate::strings::HISTORY_CAPACITY_EXCEEDED,
             ));
         }
         self.record(Transaction::Device(Box::new(delta)));
@@ -224,13 +224,13 @@ impl History {
         if delta.len() > MAX_DELTAS {
             p.restore_marker(&delta, false)?;
             return Err(DomainError::InvalidRelation(
-                "operação excede a capacidade do histórico",
+                crate::strings::HISTORY_CAPACITY_EXCEEDED,
             ));
         }
         self.record(Transaction::Marker(Box::new(delta)));
         Ok(true)
     }
-    /// Etapa 12: inserção com cadastro elétrico, uma única transação.
+    /// Insertion with electrical registration in a single transaction.
     pub(crate) fn place(
         &mut self,
         p: &mut Project,
@@ -292,7 +292,7 @@ impl History {
         self.record(Transaction::FunctionPoint(Box::new(delta)));
         Ok(true)
     }
-    /// Etapa 12: documentos e páginas entram no mesmo histórico.
+    /// Documents and pages share the same history.
     pub(crate) fn document(&mut self, p: &mut Project, edit: DocumentEdit) -> Result<bool> {
         let delta = p.edit_document(edit)?;
         if delta.is_empty() {
@@ -301,7 +301,7 @@ impl History {
         self.record(Transaction::Document(Box::new(delta)));
         Ok(true)
     }
-    /// Etapa 13: molduras, atribuição, formato de referência e metadados.
+    /// Frames, assignments, reference format and metadata.
     pub(crate) fn frame(&mut self, p: &mut Project, edit: FrameEdit) -> Result<bool> {
         let delta = p.edit_frame(edit)?;
         if delta.is_empty() {
@@ -361,7 +361,7 @@ impl History {
         if delta.len() > MAX_DELTAS {
             p.restore_connection_drawing(&delta, false)?;
             return Err(DomainError::InvalidRelation(
-                "operação excede a capacidade do histórico",
+                crate::strings::HISTORY_CAPACITY_EXCEEDED,
             ));
         }
         self.record(Transaction::Drawing(delta));
@@ -374,7 +374,7 @@ impl History {
     ) -> Result<bool> {
         if changes.len() > MAX_DELTAS {
             return Err(DomainError::InvalidRelation(
-                "operação excede a capacidade do histórico",
+                crate::strings::HISTORY_CAPACITY_EXCEEDED,
             ));
         }
         let delta = p.edit_representations(changes)?;
@@ -384,7 +384,7 @@ impl History {
         self.record(Transaction::Representations(delta));
         Ok(true)
     }
-    /// Etapa 17: atualiza símbolos do projeto num passo (tudo ou nada).
+    /// Update project symbols atomically in one undo step.
     pub(crate) fn symbol_updates(
         &mut self,
         p: &mut Project,
@@ -408,13 +408,13 @@ impl History {
         self.record(Transaction::Symbols(deltas));
         Ok(true)
     }
-    /// Etapa 16: recorte/colagem já aplicados pelo Core.
+    /// Cut or paste already applied by Core.
     pub(crate) fn sheet(&mut self, delta: SheetEditDelta) {
         if !delta.is_empty() {
             self.record(Transaction::Sheet(delta));
         }
     }
-    /// Etapa 19: inserção de macro já aplicada pelo Core.
+    /// Macro insertion already applied by Core.
     pub(crate) fn macro_insert(&mut self, delta: MacroInsertDelta) {
         if !delta.is_empty() {
             self.record(Transaction::Macro(Box::new(delta)));

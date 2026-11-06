@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (C) 2026 Vanderlei Braga e colaboradores do CAD-CRAFT
-//! Etapa 12 — critérios de aceitação: projeto real criado na interface,
-//! salvo, fechado, reaberto, editado e salvo de novo; trava, recuperação,
-//! formato v0, arquivos inseguros e Undo/Redo de páginas e inserções.
+//! Project lifecycle through real GUI interactions: create, save, close, reopen, edit and save again; locking, recovery, v0 migration, unsafe files and undo/redo for pages and insertions.
+// Fixture helpers use validated synthetic inputs and fail immediately on setup errors.
+#![allow(clippy::unwrap_used)]
 use cad_craft::domain::*;
 use cad_gui::{
     app::CadApp,
@@ -82,10 +82,7 @@ impl Ui {
         }]);
         self.settle(3)
     }
-    /// Digita no campo de texto do diálogo logo abaixo do rótulo indicado.
-    /// Painéis laterais repetem rótulos ("Nome"): a busca fica na coluna do
-    /// botão Confirmar do diálogo modal. Botões da faixa com o mesmo texto
-    /// ("Identificação") não servem de rótulo.
+    /// Type into the dialog field immediately below the given label. Side panels repeat labels, so search in the modal confirm button's column; ribbon buttons with the same text are not field labels.
     fn type_below(&mut self, label: &str, text: &str) -> egui::FullOutput {
         let output = self.settle(1);
         let confirm = find(&output, "Confirmar");
@@ -204,7 +201,7 @@ fn dir_entries(dir: &Path) -> Vec<PathBuf> {
     entries
 }
 
-/// Critério 1: fluxo completo com diálogos, cliques na folha e atalhos reais.
+/// Complete workflow with dialogs, sheet clicks and real shortcuts.
 #[test]
 fn real_project_is_created_saved_reopened_edited_and_saved_again() {
     let dir = tempfile::tempdir().unwrap();
@@ -234,7 +231,7 @@ fn real_project_is_created_saved_reopened_edited_and_saved_again() {
     );
     ui.fix_camera();
 
-    // 4 símbolos, 2 dispositivos: bobinas criam K1/K2, contatos viram funções.
+    // Four symbols, two devices: coils create K1/K2; contacts become functions.
     let new = || DevicePlan::New {
         prefix: String::new(),
     };
@@ -272,7 +269,7 @@ fn real_project_is_created_saved_reopened_edited_and_saved_again() {
     assert_eq!(joined, 3);
     assert!(ui.app.session.dirty);
 
-    // Ctrl+S sem arquivo pergunta o destino; a extensão é acrescentada.
+    // Ctrl+S without an associated file asks for a destination and appends the extension.
     ui.picker(&[], &[&target]);
     ui.key(Key::S, ctrl());
     assert!(file.is_file());
@@ -295,7 +292,7 @@ fn real_project_is_created_saved_reopened_edited_and_saved_again() {
     assert!(!ui.app.session.file.as_ref().unwrap().read_only);
     assert_eq!(ui.app.files.recent.first(), Some(&file));
 
-    // Edição após reabrir: mover símbolo e renomear dispositivo.
+    // After reopening, move a symbol and rename a device.
     ui.app.session.open_page(comando).unwrap();
     ui.fix_camera();
     let coil = ui
@@ -312,7 +309,7 @@ fn real_project_is_created_saved_reopened_edited_and_saved_again() {
         designation: Designation::new("K20").unwrap(),
     }));
     assert!(ui.app.session.dirty);
-    ui.key(Key::S, ctrl()); // mesmo arquivo, sem diálogo
+    ui.key(Key::S, ctrl()); // same file, without a dialog
     assert!(!ui.app.session.dirty);
     let edited = ui.project().clone();
     assert_ne!(edited, saved);
@@ -341,7 +338,7 @@ fn real_project_is_created_saved_reopened_edited_and_saved_again() {
     assert_eq!(dir_entries(dir.path()), vec![file]);
 }
 
-/// Critério 2: demonstrações completas ida e volta pela interface.
+/// Complete demo round trips through the interface.
 #[test]
 fn demonstration_projects_round_trip_through_cadcraft() {
     let dir = tempfile::tempdir().unwrap();
@@ -364,7 +361,7 @@ fn demonstration_projects_round_trip_through_cadcraft() {
     }
 }
 
-/// Critério 6 (trava): segunda sessão abre somente leitura e grava cópia.
+/// A second session opens read-only and saves a copy.
 #[test]
 fn second_session_gets_lock_warning_and_read_only_copy() {
     let dir = tempfile::tempdir().unwrap();
@@ -385,7 +382,7 @@ fn second_session_gets_lock_warning_and_read_only_copy() {
     second.press("Confirmar");
     let state = second.app.session.file.as_ref().unwrap();
     assert!(state.read_only && !state.locked());
-    // Salvar em sessão somente leitura vira "Salvar como".
+    // Save in a read-only session becomes Save As.
     second.key(Key::S, ctrl());
     assert!(copy.is_file());
     assert!(!second.app.session.file.as_ref().unwrap().read_only);
@@ -395,7 +392,7 @@ fn second_session_gets_lock_warning_and_read_only_copy() {
     assert!(!project_file::lock_path(&copy).exists());
 }
 
-/// Critério 6 (recuperação): encerramento abrupto e oferta na próxima abertura.
+/// Abrupt termination offers recovery at the next startup.
 #[test]
 fn recovery_copy_is_offered_after_abrupt_termination() {
     let dir = tempfile::tempdir().unwrap();
@@ -407,10 +404,10 @@ fn recovery_copy_is_offered_after_abrupt_termination() {
         .replace(Project::new("Sem salvar").unwrap(), false)
         .unwrap();
     ui.app.session.new_document("Esquema").unwrap();
-    ui.settle(1); // salvamento automático imediato do primeiro estado alterado
+    ui.settle(1); // immediate autosave of the first modified state
     let expected = ui.project().clone();
     assert_eq!(Recovery::new(&rec).entries().len(), 1);
-    // Encerramento abrupto: nenhuma confirmação ou descarte executado.
+    // Abrupt termination executes no confirmation or discard.
     drop(ui);
 
     let mut next = Ui::new();
@@ -427,7 +424,7 @@ fn recovery_copy_is_offered_after_abrupt_termination() {
     assert!(Recovery::new(&rec).entries().is_empty());
 }
 
-/// Critérios 3/4 na interface: v0 migra; arquivo inseguro não toca o disco.
+/// The GUI migrates v0; an unsafe file never touches the disk.
 #[test]
 fn legacy_snapshot_migrates_and_unsafe_file_is_refused_without_side_effects() {
     let dir = tempfile::tempdir().unwrap();
@@ -463,7 +460,7 @@ fn legacy_snapshot_migrates_and_unsafe_file_is_refused_without_side_effects() {
     assert_eq!(ui.project(), &current);
 }
 
-/// Critério 7: Undo/Redo de inserção com dispositivo e de páginas.
+/// Undo/redo for insertion with a device and for pages.
 #[test]
 fn undo_redo_restore_placements_and_page_operations_exactly() {
     let mut ui = Ui::new();
@@ -503,10 +500,10 @@ fn undo_redo_restore_placements_and_page_operations_exactly() {
     ui.app.session.delete_page(b).unwrap();
     let end = ui.project().clone();
 
-    ui.key(Key::Z, ctrl()); // exclusão
-    ui.key(Key::Z, ctrl()); // reordenação
+    ui.key(Key::Z, ctrl()); // deletion
+    ui.key(Key::Z, ctrl()); // reordering
     assert_eq!(ui.project(), &placed);
-    ui.key(Key::Z, ctrl()); // inserção com dispositivo
+    ui.key(Key::Z, ctrl()); // insertion with a device
     assert_eq!(ui.project(), &with_pages);
     assert!(ui.project().representation(rep).is_none());
     for _ in 0..3 {
@@ -523,7 +520,7 @@ fn undo_redo_restore_placements_and_page_operations_exactly() {
     assert_eq!(ui.project(), &end);
 }
 
-/// Reabrir o arquivo já aberto reutiliza a própria trava (sem conflito).
+/// Reopening the active file reuses the session's lock without conflict.
 #[test]
 fn reopening_the_same_file_keeps_the_session_lock() {
     let dir = tempfile::tempdir().unwrap();
@@ -540,9 +537,7 @@ fn reopening_the_same_file_keeps_the_session_lock() {
     assert!(!project_file::lock_path(&file).exists());
 }
 
-/// Teste no app (2026-11-05): depois de confirmar Sair descartando as
-/// alterações, os quadros finais antes do fechamento não podem gravar de novo
-/// a cópia de recuperação.
+/// After confirming exit and discarding changes, final frames before closing must not recreate the recovery copy.
 #[test]
 fn confirmed_exit_discards_the_recovery_copy_for_good() {
     let dir = tempfile::tempdir().unwrap();
@@ -556,7 +551,7 @@ fn confirmed_exit_discards_the_recovery_copy_for_good() {
     ui.app.session.new_document("Esquema").unwrap();
     ui.settle(1);
     assert_eq!(Recovery::new(&rec).entries().len(), 1);
-    // Salvamento automático a cada quadro: o defeito regravaria a cópia.
+    // Autosave on every frame would recreate the copy if the regression returned.
     ui.app.files.autosave_interval = std::time::Duration::ZERO;
     let ctx = ui.ctx.clone();
     ui.app.execute(cad_gui::commands::CommandId::Exit, &ctx);
@@ -566,4 +561,40 @@ fn confirmed_exit_discards_the_recovery_copy_for_good() {
     assert!(!ui.app.dialog_open(), "confirmação respondida");
     ui.settle(3);
     assert!(Recovery::new(&rec).entries().is_empty());
+}
+
+/// Pin rendered labels independently of the production phrase constants.
+#[test]
+fn repeated_dialog_labels_remain_brazilian_portuguese() {
+    let mut ui = Ui::new();
+    ui.app
+        .session
+        .replace(cad_gui::demo::project().unwrap(), false)
+        .unwrap();
+    let before = ui.app.session.snapshot().unwrap();
+    for (command, title) in [
+        (CommandId::NewDocument, "Novo documento"),
+        (CommandId::NewPage, "Nova página"),
+    ] {
+        ui.app.execute(command, &ui.ctx.clone());
+        let output = ui.settle(3);
+        let labels = nodes(&output);
+        assert!(
+            labels.iter().any(|(label, _, _)| label == title),
+            "missing pinned dialog title: {title}"
+        );
+        assert!(
+            labels
+                .iter()
+                .any(|(label, _, role)| label == "Cancelar" && *role == Role::Button)
+        );
+        assert!(
+            labels
+                .iter()
+                .any(|(label, _, role)| label == "Confirmar" && *role == Role::Button)
+        );
+        ui.press("Cancelar");
+        assert!(!ui.app.dialog_open());
+        assert_eq!(ui.app.session.snapshot().unwrap(), before);
+    }
 }

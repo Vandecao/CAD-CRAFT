@@ -1,26 +1,21 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (C) 2026 Vanderlei Braga e colaboradores do CAD-CRAFT
-//! Etapa 16: recortar e colar como transações únicas e reversíveis.
-//!
-//! - Copiar captura instantâneos (o projeto não muda).
-//! - Recortar remove na hora as ocorrências e seus vínculos porta→ponto;
-//!   dispositivo, função e pontos continuam no cadastro.
-//! - Colar: conteúdo livre vira cópia com ID novo; símbolo de função cria um
-//!   dispositivo novo com a próxima designação (ou, se pedido, uma função nova
-//!   do mesmo dispositivo); item recortado volta com o mesmo ID e vínculos.
-//!
-//! Rotas, junções e marcadores não entram: a topologia elétrica não pode ser
-//! duplicada como desenho isolado.
+//! Cut and paste as single reversible transactions; start with ClipboardItem. Copy captures
+//! snapshots without mutation. Cut immediately removes occurrences and port bindings, retaining
+//! devices, functions and points. Paste copies free content with fresh IDs; function symbols create
+//! a device with a free designation or a new function of the existing device. A cut item returns
+//! with its original ID and bindings. Routes, junctions and markers are excluded because electrical
+//! topology cannot be duplicated as isolated graphics.
 use super::*;
 
-/// Limite de itens por operação de área de transferência.
+/// Item limit per clipboard operation.
 pub const MAX_CLIPBOARD_ITEMS: usize = 10_000;
 
 #[derive(Clone, Debug, PartialEq)]
 enum ClipSource {
-    /// Conteúdo livre ou símbolo sem função: cópia da representação.
+    /// Free content or an unassigned symbol copied as an occurrence.
     Copy,
-    /// Símbolo de função: cadastro necessário para criar outro dispositivo.
+    /// Function symbol with registration data needed to create another device.
     Function {
         definition: Box<SymbolDefinition>,
         function_kind: FunctionKind,
@@ -30,27 +25,28 @@ enum ClipSource {
     },
 }
 
-/// Item da área de transferência (instantâneo independente do projeto).
+/// Clipboard item containing a snapshot independent of the project.
 #[derive(Clone, Debug, PartialEq)]
 pub struct ClipItem {
     representation: Representation,
     source: ClipSource,
-    /// Vínculos removidos pelo recorte; `Some` até a primeira colagem.
+    /// Bindings removed by cut; present until the first paste.
     cut: Option<Vec<(PortRef, ConnectionPointId)>>,
 }
 impl ClipItem {
+    /// Return the representation.
     pub fn representation(&self) -> &Representation {
         &self.representation
     }
+    /// Whether this clipboard item still carries cut bindings for identity-preserving paste.
     pub fn is_cut(&self) -> bool {
         self.cut.is_some()
     }
-    /// Cria outro dispositivo ao colar (símbolo de função).
+    /// Create another device when pasting a function symbol.
     pub fn creates_device(&self) -> bool {
         matches!(self.source, ClipSource::Function { .. })
     }
-    /// Após a primeira colagem de um recorte, os itens passam a ser cópias do
-    /// que foi colado.
+    /// After the first paste of cut content, items become copies of the pasted content.
     pub fn as_copy_of(&self, pasted: Representation) -> Self {
         Self {
             representation: pasted,
@@ -75,13 +71,14 @@ enum Step {
     },
 }
 
-/// Resultado reversível de recortar ou colar.
+/// Reversible cut or paste result.
 #[derive(Clone, Debug, PartialEq)]
 pub struct SheetEditDelta {
     project: ProjectId,
     steps: Vec<Step>,
 }
 impl SheetEditDelta {
+    /// Return the number of contained entries or entity changes recorded by this value.
     pub fn len(&self) -> usize {
         self.steps
             .iter()
@@ -93,6 +90,7 @@ impl SheetEditDelta {
             })
             .sum()
     }
+    /// Whether this collection or recorded edit contains no effective entries or changes.
     pub fn is_empty(&self) -> bool {
         self.steps.is_empty()
     }
@@ -102,7 +100,7 @@ fn clip_error(reason: &'static str) -> DomainError {
     DomainError::InvalidRelation(reason)
 }
 
-/// Prefixo da designação (ex.: "K" de "K12").
+/// Designation prefix, such as K from K12.
 fn prefix_of(designation: &Designation) -> String {
     let device = designation.device().as_str();
     let prefix = device.trim_end_matches(|c: char| c.is_ascii_digit());
@@ -120,7 +118,7 @@ impl Project {
             .any(|r| r.source().representation_id() == id || r.target().representation_id() == id)
     }
 
-    /// Instantâneos da seleção para copiar ou recortar.
+    /// Selection snapshots for copy or cut.
     pub fn clipboard_items(&self, ids: &[RepresentationId]) -> Result<Vec<ClipItem>> {
         if ids.is_empty() {
             return Err(clip_error("selecione conteúdo livre ou símbolos"));
@@ -183,7 +181,7 @@ impl Project {
             .collect()
     }
 
-    /// Recorta: remove ocorrências e vínculos numa transação; devolve os itens.
+    /// Cut occurrences and bindings in one transaction, returning clipboard items.
     pub fn cut_representations(
         &mut self,
         ids: &[RepresentationId],
@@ -241,8 +239,8 @@ impl Project {
         ))
     }
 
-    /// Cola os itens na página, deslocados de (`dx`, `dy`) mm. Devolve o delta
-    /// e os IDs das novas ocorrências, na ordem dos itens.
+    /// Paste items on the page translated by (`dx`, `dy`) millimetres. Return the delta and new
+    /// occurrence IDs in item order.
     pub fn paste_items(
         &mut self,
         items: &[ClipItem],
@@ -276,7 +274,7 @@ impl Project {
         let mut steps = Vec::new();
         let mut pasted: Vec<Option<Representation>> = vec![None; items.len()];
         let result = (|| -> Result<()> {
-            // 1. Cópias simples e recortes (mesmo ID) num lote de representações.
+            // 1. Batch plain copies and cut items, retaining cut IDs.
             let mut changes = Vec::new();
             let mut bindings = Vec::new();
             for (i, item) in items.iter().enumerate() {
@@ -308,7 +306,7 @@ impl Project {
                 self.apply_step(&step, true)?;
                 steps.push(step);
             }
-            // 2. Símbolos de função: dispositivo novo (ou função nova).
+            // 2. Function symbols create a new device or function.
             for (i, item) in items.iter().enumerate() {
                 let (
                     None,
@@ -429,7 +427,7 @@ impl Project {
         }
     }
 
-    /// Desfaz (`forward = false`) ou refaz o recorte/colagem.
+    /// Undo when `forward = false`, otherwise redo the cut or paste.
     pub fn restore_sheet_edit(&mut self, delta: &SheetEditDelta, forward: bool) -> Result<()> {
         self.check_project(delta.project)?;
         let ordered: Vec<&Step> = if forward {

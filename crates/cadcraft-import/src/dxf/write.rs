@@ -15,7 +15,7 @@ fn num(v: f64) -> String {
 fn round6(v: f64) -> f64 {
     (v * 1e6).round() / 1e6
 }
-/// Texto DXF R12: não-ASCII como `\U+XXXX`.
+/// DXF R12 text: encode non-ASCII characters as `\U+XXXX`.
 pub(super) fn escape(text: &str) -> String {
     let mut out = String::new();
     for c in text.chars() {
@@ -45,8 +45,8 @@ fn align_codes(a: TextAlign) -> (i64, i64) {
     }
 }
 
-/// Exporta a moldura em DXF R12 (mm). O relatório lista o que não cabe no
-/// DXF (imagens; traduções ficam só no texto padrão).
+/// Exports a frame as DXF R12 in mm. The report lists unsupported content:
+/// images and translations beyond the default text.
 pub(super) fn export(frame: &FrameTemplate) -> (Vec<u8>, ImportReport) {
     let mut report = ImportReport::default();
     let mut out = String::new();

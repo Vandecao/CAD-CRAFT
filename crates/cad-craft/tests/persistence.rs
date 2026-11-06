@@ -1,7 +1,10 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (C) 2026 Vanderlei Braga e colaboradores do CAD-CRAFT
-//! Etapa 12: formato `.cadcraft` v1, leitura do snapshot JSON (v0), versões e
-//! recusa de contêineres inseguros. Nada é extraído para o disco.
+//! Versioned native containers, legacy technical JSON, migrations and unsafe-input rejection.
+//! Nothing is extracted to disk.
+// Synthetic test fixtures intentionally fail fast when setup is invalid.
+#![allow(clippy::unwrap_used)]
+
 mod physical_common;
 
 use cad_craft::{
@@ -17,8 +20,7 @@ fn p(x: f64, y: f64) -> Point2D {
     Point2D::new(x, y).unwrap()
 }
 
-/// Projeto pequeno e completo da Etapa 12: páginas, dispositivos criados por
-/// inserção, rota e rede derivada.
+/// Small complete project with pages, registered devices, a route and a derived network.
 fn sample() -> Project {
     let mut project = Project::new("Fixture Etapa 12").unwrap();
     let doc = project
@@ -131,14 +133,14 @@ fn mimetype_is_the_first_uncompressed_entry() {
 
 #[test]
 fn versioned_fixtures_keep_opening() {
-    // Fixtures históricas v0–v5 são imutáveis após a elevação ao formato 6.
+    // Historical fixtures v0-v5 are immutable after format 6.
     let v0 = format!("{FIXTURES}/etapa12-v0-snapshot.json");
     let v1 = format!("{FIXTURES}/etapa12-v1.cadcraft");
-    // v0/v1 (Etapa 12) e v2 (Etapa 13) nunca são regeradas.
+    // Never regenerate historical v0/v1 or v2 fixtures.
     let v2 = format!("{FIXTURES}/etapa13-v2.cadcraft");
     let v3 = format!("{FIXTURES}/etapa14-v3.cadcraft");
-    // v4 (Etapa 16) é histórica. v5 (Etapa 17) só é regerada deliberadamente,
-    // a partir da v4: CAD_CRAFT_WRITE_FIXTURES=1 cargo test -p cad-craft --test persistence
+    // Version 4 is historical; deliberately regenerate v5 from it only with
+    // CAD_CRAFT_WRITE_FIXTURES=1 cargo test -p cad-craft --test persistence.
     let v4 = format!("{FIXTURES}/etapa16-v4.cadcraft");
     let v5 = format!("{FIXTURES}/etapa17-v5.cadcraft");
     let v6 = format!("{FIXTURES}/etapa18-v6.cadcraft");
@@ -509,7 +511,7 @@ fn duplicate_names_exact_or_by_case_are_refused() {
 #[test]
 fn declared_sizes_and_entry_counts_are_bounded() {
     let json = project_json(&sample());
-    // Tamanho declarado de 2 GiB no diretório central: recusa antes de ler.
+    // Reject a declared central-directory size of 2 GiB before reading data.
     let mut big = container(&[
         ("mimetype", persistence::MIMETYPE.as_bytes()),
         ("manifest.json", &manifest(1, 1)),
@@ -525,7 +527,7 @@ fn declared_sizes_and_entry_counts_are_bounded() {
         persistence::read_project_from_slice(&big),
         Err(PersistenceError::TooLarge(_))
     ));
-    // Manifesto real acima de 64 KiB.
+    // Reject an actual manifest larger than 64 KiB.
     let mut huge = manifest(1, 1);
     huge.truncate(huge.len() - 1);
     huge.extend(format!(",\"pad\":\"{}\"}}", "x".repeat(70_000)).bytes());
@@ -538,7 +540,7 @@ fn declared_sizes_and_entry_counts_are_bounded() {
         persistence::read_project_from_slice(&bytes),
         Err(PersistenceError::TooLarge(_))
     ));
-    // Mais de 4.096 entradas.
+    // Reject more than 4,096 entries.
     let names: Vec<String> = (0..=persistence::MAX_ENTRIES)
         .map(|i| format!("assets/{i}"))
         .collect();
@@ -558,7 +560,7 @@ fn encrypted_entries_are_refused() {
         ("manifest.json", &manifest(1, 1)),
         ("project.json", &json),
     ]);
-    // Bit 0 do campo de flags no diretório central = entrada criptografada.
+    // Central-directory flag bit 0 marks an encrypted entry.
     let central = bytes.windows(4).rposition(|w| w == b"PK\x01\x02").unwrap();
     bytes[central + 8] |= 1;
     assert!(persistence::read_project_from_slice(&bytes).is_err());
@@ -566,8 +568,8 @@ fn encrypted_entries_are_refused() {
 
 #[test]
 fn invalid_projects_are_not_written() {
-    // Integridade é verificada antes de qualquer byte: um agregado válido
-    // passa; o leitor também revalida o conteúdo recebido.
+    // Validate aggregate integrity before writing bytes, and revalidate decoded contents when
+    // reading.
     let project = sample();
     let mut value = serde_json::to_value(&project).unwrap();
     value["connection_points"] = serde_json::json!([]);
@@ -579,9 +581,8 @@ fn invalid_projects_are_not_written() {
     assert!(persistence::read_project_from_slice(&bytes).is_err());
 }
 
-/// Teste no app (2026-11-05): macros `.edz` não eram relidas porque o leitor
-/// JSON padrão podia errar o último bit de números longos, e o Core compara
-/// limites exatamente. Com `float_roundtrip`, todo `f64` gravado volta igual.
+/// Standard JSON decoding can change the last bit of long floats and break exact bounds.
+/// float_roundtrip preserves every serialized f64 bit when reopening native packages.
 #[test]
 fn json_floats_round_trip_bit_exactly() {
     for i in 0..50_000u32 {

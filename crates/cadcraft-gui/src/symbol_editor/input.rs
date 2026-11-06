@@ -65,7 +65,7 @@ impl SymbolEditor {
             }
         })
     }
-    /// Item sob o ponto (tolerância em mm).
+    /// Item under the point, with tolerance in millimetres.
     pub fn hit(&self, at: Point2D, tolerance: f64) -> Option<SymbolItem> {
         let port = self.ports().iter().enumerate().find(|(_, p)| {
             (p.position().x() - at.x()).hypot(p.position().y() - at.y()) <= tolerance * 1.5
@@ -100,7 +100,7 @@ impl SymbolEditor {
             }
         }
     }
-    /// Primitiva da ferramenta a partir dos cliques (prévia ou definitiva).
+    /// Tool primitive from clicks, for preview or final insertion.
     pub fn build_tool_primitive(
         &self,
         points: &[Point2D],
@@ -173,7 +173,7 @@ impl SymbolEditor {
         };
         p.bounds().is_ok().then_some(p)
     }
-    /// Recebe um clique da ferramenta; conclui quando há pontos suficientes.
+    /// Handle a tool click; finish when enough points are present.
     pub fn tool_click(&mut self, at: Point2D) {
         if self.tool == SymbolTool::Port {
             self.add_port(at);
@@ -190,7 +190,7 @@ impl SymbolEditor {
             self.add_primitive(p);
         }
     }
-    /// Encerra polilinha/polígono.
+    /// Finish a polyline or polygon.
     pub fn finish_path(&mut self) {
         if matches!(self.tool, SymbolTool::Polyline | SymbolTool::Polygon)
             && let Some(p) = self.build_tool_primitive(&self.pending.clone(), true)
@@ -221,7 +221,7 @@ impl CadApp {
         };
         self.session.graphics.cancel();
     }
-    /// Novo símbolo (ID único `usuario.<uuid>`).
+    /// New symbol with a unique `usuario.<uuid>` ID.
     pub fn open_symbol_editor_new(&mut self) {
         let id = SymbolDefinitionId::new(format!("usuario.{}", RepresentationId::new()))
             .expect("ID gerado");
@@ -229,7 +229,7 @@ impl CadApp {
             None,
             id,
             Draft {
-                name: "Novo símbolo".into(),
+                name: crate::strings::NEW_SYMBOL.into(),
                 category: "Usuário".into(),
                 primitives: vec![],
                 styles: BTreeMap::new(),
@@ -237,7 +237,7 @@ impl CadApp {
             },
         );
     }
-    /// Edita um símbolo existente (salvar gera versão + 1).
+    /// Edit an existing symbol; saving increments its version.
     pub fn open_symbol_editor(&mut self, definition: SymbolDefinition) {
         let draft = Draft {
             name: definition.name().to_owned(),
@@ -252,7 +252,7 @@ impl CadApp {
     pub fn close_symbol_editor(&mut self) {
         self.symbol_editor = SymbolEditor::default();
     }
-    /// Grava o símbolo na biblioteca (pasta ou memória).
+    /// Save the symbol to the directory or in-memory library.
     pub fn save_symbol_to_library(&mut self) -> bool {
         match self.symbol_editor.build() {
             Ok(d) => {
@@ -284,7 +284,7 @@ impl CadApp {
             }
         }
     }
-    /// Troca a definição usada pelo projeto (portas compatíveis; um passo).
+    /// Replace the definition used by the project, checking compatible ports, in one undo step.
     pub fn update_symbol_in_project(&mut self) -> bool {
         let d = match self.symbol_editor.build() {
             Ok(d) => d,

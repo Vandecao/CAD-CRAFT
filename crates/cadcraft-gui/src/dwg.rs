@@ -1,12 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (C) 2026 Vanderlei Braga e colaboradores do CAD-CRAFT
-//! Etapa 22: DWG por conversor externo instalado pelo usuário (padrão:
-//! ODA File Converter, licença proprietária da Open Design Alliance; o
-//! CAD-CRAFT só o chama, não o distribui nem o baixa).
-//!
-//! O DXF R12 é gravado numa pasta temporária; o conversor é chamado com
-//! argumentos separados (sem shell) e tempo limite; os `.dwg` gerados vão
-//! para o destino; as pastas temporárias são sempre removidas.
+//! DWG conversion through a user-installed external converter, normally ODA File Converter (proprietary Open Design Alliance software, never distributed or downloaded here). Start with convert: write R12 DXF to a temporary directory, invoke the converter with separate arguments and a timeout, copy output to the destination and clean up temporary directories.
 use crate::error::{GuiError, GuiResult};
 use cad_craft::dxf_export::DxfFile;
 use std::ffi::OsString;
@@ -14,7 +8,7 @@ use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 use std::time::{Duration, Instant};
 
-/// Versões de saída oferecidas (rótulo, argumento do ODA File Converter).
+/// Available output versions: display label and ODA File Converter argument.
 pub const DWG_VERSIONS: [(&str, &str); 4] = [
     ("2000", "ACAD2000"),
     ("2007", "ACAD2007"),
@@ -22,10 +16,10 @@ pub const DWG_VERSIONS: [(&str, &str); 4] = [
     ("2018", "ACAD2018"),
 ];
 
-/// Tempo limite padrão do conversor.
+/// Default converter timeout.
 pub const DEFAULT_TIMEOUT: Duration = Duration::from_secs(120);
 
-/// Por que o conversor não pode ser usado; `None` = pronto.
+/// Why the converter cannot be used; None means ready.
 pub fn converter_problem(path: &str) -> Option<&'static str> {
     let path = path.trim();
     if path.is_empty() {
@@ -37,8 +31,7 @@ pub fn converter_problem(path: &str) -> Option<&'static str> {
     }
 }
 
-/// Argumentos do ODA File Converter: entrada, saída, versão, tipo,
-/// recursivo (0), auditoria (1) e filtro.
+/// ODA File Converter arguments: input, output, version, type, recursive (0), audit (1) and filter.
 pub fn oda_arguments(input: &Path, output: &Path, version: &str) -> Vec<OsString> {
     vec![
         input.as_os_str().to_owned(),
@@ -51,7 +44,7 @@ pub fn oda_arguments(input: &Path, output: &Path, version: &str) -> Vec<OsString
     ]
 }
 
-/// Executa o programa e espera até `timeout`; ao estourar, encerra o processo.
+/// Run the program until completion or timeout; kill it on timeout.
 pub fn run_with_timeout(program: &Path, args: &[OsString], timeout: Duration) -> GuiResult<()> {
     let mut command = Command::new(program);
     command
@@ -62,7 +55,7 @@ pub fn run_with_timeout(program: &Path, args: &[OsString], timeout: Duration) ->
     #[cfg(windows)]
     {
         use std::os::windows::process::CommandExt;
-        // CREATE_NO_WINDOW: sem janela de console piscando.
+        // CREATE_NO_WINDOW avoids flashing a console window.
         command.creation_flags(0x0800_0000);
     }
     let mut child = command
@@ -92,7 +85,7 @@ pub fn run_with_timeout(program: &Path, args: &[OsString], timeout: Duration) ->
     }
 }
 
-/// Pasta temporária removida ao sair do escopo (também em erro).
+/// Temporary directory removed on scope exit, including errors.
 struct TempDir(PathBuf);
 impl Drop for TempDir {
     fn drop(&mut self) {
@@ -100,7 +93,7 @@ impl Drop for TempDir {
     }
 }
 
-/// Converte os DXF e copia os `.dwg` para `destination`; devolve quantos.
+/// Convert DXF files, copy .dwg files to destination and return the count.
 pub fn convert_to_dwg(
     program: &Path,
     files: &[DxfFile],

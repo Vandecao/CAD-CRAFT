@@ -21,7 +21,7 @@ pub(super) fn convert(
     } = placement;
     let s = importer.s;
     let world = |page, x, y| super::world(pages, s, page, x, y);
-    // Terminais por folha: id → (instância, id do terminal).
+    // Terminals per sheet: id → (instance, terminal id).
     let mut terminal_index: BTreeMap<(usize, String), usize> = BTreeMap::new();
     for (n, inst) in instances.iter().enumerate() {
         for (id, _, _) in &inst.terminals {
@@ -34,7 +34,7 @@ pub(super) fn convert(
         PortRef::new(rep, port).ok()
     };
 
-    // Relatórios de folha: ponto do outro lado do condutor.
+    // Sheet reports: endpoint on the other side of the conductor.
     let report_set: BTreeSet<usize> = reports.iter().copied().collect();
     let mut report_point: BTreeMap<usize, ConnectionPointId> = BTreeMap::new();
     let mut report_lines: Vec<(usize, Vec<Point2D>)> = vec![];
@@ -83,7 +83,7 @@ pub(super) fn convert(
             {
                 report_point.insert(report, point);
             }
-            // O traço do condutor fica como desenho, sem efeito elétrico.
+            // Keep the conductor stroke as drawing content with no electrical effect.
             let report_terminal = if report == a { &wire.t1 } else { &wire.t2 };
             let other_pos = port_ref(importer, other, terminal)
                 .and_then(|p| importer.project.port_position(&p).ok())
@@ -124,7 +124,7 @@ pub(super) fn convert(
                 points: points.clone(),
             })
             .or_else(|_| {
-                // Caminho original inválido: rota simples em L.
+                // Invalid original path: fall back to a simple L-shaped route.
                 let mut simple = vec![start];
                 if start.x() != end.x()
                     && start.y() != end.y()
@@ -172,7 +172,7 @@ pub(super) fn convert(
         }
     }
 
-    // Marcadores de interrupção e grupos.
+    // Interruption markers and groups.
     let mut marker_of: BTreeMap<usize, RepresentationId> = BTreeMap::new();
     for n in reports {
         let inst = &instances[*n];
@@ -184,8 +184,8 @@ pub(super) fn convert(
             importer.report.ignored("relatório de folha sem terminal");
             continue;
         };
-        // O marcador exige a porta única "p" na origem: o desenho é deslocado
-        // e a posição da ocorrência compensa o deslocamento.
+        // The marker requires its sole port "p" at the origin: shift the drawing
+        // and compensate with the occurrence position.
         let offset = first.position();
         let port = SymbolPort::new(
             "p",
@@ -195,8 +195,8 @@ pub(super) fn convert(
             None,
         )
         .map_err(domain)?;
-        // Sem dispositivo, a designação mostraria só "-K?": o nome do
-        // marcador já identifica a interrupção. Os estilos seguem os índices.
+        // Without a device, designation would show only "-K?"; the marker name
+        // already identifies the interruption. Styles follow their indices.
         let mut primitives = vec![];
         let mut styles = BTreeMap::new();
         for (i, p) in def.symbol.primitives().iter().enumerate() {
@@ -303,8 +303,8 @@ pub(super) fn convert(
         }
     }
 
-    // Traços dos condutores dos relatórios de folha (só desenho, um traço
-    // por segmento: o conteúdo livre não tem polilinha).
+    // Sheet-report conductor strokes are drawing-only, with one stroke
+    // per segment because free drawing content has no polyline.
     for (page, path) in report_lines {
         let mut failed = None;
         for w in path.windows(2) {
@@ -343,8 +343,8 @@ pub(super) fn convert(
     Ok(())
 }
 
-/// Tira pontos repetidos e pontos no meio de um trecho reto (inclusive volta
-/// sobre o mesmo eixo), mantendo o caminho ortogonal.
+/// Removes duplicate points and points inside straight segments, including
+/// backtracking along an axis, while preserving the orthogonal path.
 fn simplify(points: Vec<Point2D>) -> Vec<Point2D> {
     let mut out: Vec<Point2D> = Vec::with_capacity(points.len());
     for p in points {
@@ -365,8 +365,8 @@ fn simplify(points: Vec<Point2D>) -> Vec<Point2D> {
     out
 }
 
-/// Percurso ortogonal do condutor QET: segmentos a partir de `start`
-/// (vertical positivo = para baixo na tela), fechado até `end`.
+/// Orthogonal QET conductor path: segments from `start`
+/// (positive vertical means downward on screen), closed through `end`.
 fn qet_path(start: Point2D, end: Point2D, segments: &[(bool, f64)], s: f64) -> Vec<Point2D> {
     let mut points = vec![start];
     let mut last = start;

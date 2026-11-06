@@ -1,5 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (C) 2026 Vanderlei Braga e colaboradores do CAD-CRAFT
+// Synthetic test fixtures intentionally fail fast when setup is invalid.
+#![allow(clippy::unwrap_used)]
+
 mod document_common;
 use cad_craft::domain::*;
 
@@ -322,8 +325,8 @@ fn names(project: &Project, ids: &[DeviceId]) -> Vec<String> {
         .collect()
 }
 
-/// Critério 1 (Core): três páginas, -K5/-K2/-K9 fora de ordem; funções e
-/// peças acompanham; desfazer/refazer exatos.
+/// Renumber three unordered device pages while keeping functions/parts attached; undo/redo
+/// restores exact state.
 #[test]
 fn three_pages_out_of_order_become_sequential_with_functions_and_parts() {
     let (mut project, first, second, _, _) = document_common::fixture();
@@ -368,7 +371,7 @@ fn three_pages_out_of_order_become_sequential_with_functions_and_parts() {
     assert_eq!(project, after);
 }
 
-/// Critério 3: página/coluna gera -K2.4; dois na mesma coluna não colidem.
+/// Page/column numbering produces -K2.4 and resolves collisions within one column.
 #[test]
 fn page_column_rule_names_by_frame_zone_without_collisions() {
     let (mut project, _, second, _, _) = document_common::fixture();
@@ -378,7 +381,7 @@ fn page_column_rule_names_by_frame_zone_without_collisions() {
     project
         .edit_frame(FrameEdit::SetDefaultFrame(Some(a3_id)))
         .unwrap();
-    // Colunas de 41 mm a partir de x = 5: x = 150 → coluna 4.
+    // With 41 mm columns starting at X=5, X=150 is in column 4.
     let upper = placed(&mut project, "K7", second, 150.0, 150.0);
     let lower = placed(&mut project, "K8", second, 150.0, 100.0);
     let mut scheme = project.numbering_scheme().clone();
@@ -395,7 +398,7 @@ fn page_column_rule_names_by_frame_zone_without_collisions() {
 #[test]
 fn order_by_rows_and_unlocking_rule_change_the_result() {
     let (mut project, first, _, _, _) = document_common::fixture();
-    // Coluna da esquerda embaixo, coluna da direita em cima.
+    // The left column contains the lower item; the right column contains the upper item.
     let left_low = placed(&mut project, "K5", first, 20.0, 20.0);
     let right_high = placed(&mut project, "K6", first, 200.0, 180.0);
     let ids = vec![left_low, right_high];
@@ -410,7 +413,7 @@ fn order_by_rows_and_unlocking_rule_change_the_result() {
         .preview_device_numbering(NumberingFilter::Selection(ids.clone()))
         .unwrap();
     assert_eq!(by_row.rows[0].device, right_high);
-    // Trava respeitada por padrão; desligar "manter travadas" renumera.
+    // Keep locked values by default; disabling that option renumbers them.
     project.set_designation_locked(left_low, true).unwrap();
     let kept = project
         .preview_device_numbering(NumberingFilter::Selection(ids.clone()))
@@ -430,7 +433,7 @@ fn order_by_rows_and_unlocking_rule_change_the_result() {
         .preview_device_numbering(NumberingFilter::Selection(ids))
         .unwrap();
     assert_eq!(row(&renumbered), "-K2");
-    // -K1 fora da seleção (fixture) já existe: a prévia acusa o conflito.
+    // The fixture already contains -K1 outside the selection, so preview reports a conflict.
     assert!(
         renumbered
             .rows
@@ -440,8 +443,8 @@ fn order_by_rows_and_unlocking_rule_change_the_result() {
     assert!(project.apply_device_numbering(&renumbered).is_err());
 }
 
-/// Critério 4: redes distintas recebem números distintos; número travado de
-/// outra rede fica reservado.
+/// Distinct networks receive distinct wire numbers; a locked number from another network stays
+/// reserved.
 #[test]
 fn distinct_networks_get_distinct_numbers_and_skip_reserved_ones() {
     let (mut project, _, _, device, first_connection) = document_common::fixture();

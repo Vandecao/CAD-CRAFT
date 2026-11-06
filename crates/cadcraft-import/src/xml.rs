@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (C) 2026 Vanderlei Braga e colaboradores do CAD-CRAFT
-//! Árvore XML mínima sobre `quick-xml` para os leitores de moldura.
+//! Minimal `quick-xml` tree for frame readers; start at `parse`.
 //!
-//! Recusa DOCTYPE com declarações de entidade (sem entidades externas) e
-//! entidades desconhecidas; limita profundidade e quantidade de nós.
+//! Rejects DOCTYPE entity declarations and unknown entities, with no external
+//! entity expansion; bounds nesting depth and node count.
 use super::{ImportResult, fail};
 use quick_xml::XmlVersion;
 use quick_xml::escape::resolve_predefined_entity;
@@ -53,7 +53,7 @@ fn element(start: &BytesStart<'_>) -> ImportResult<Element> {
     })
 }
 
-/// Lê o documento e devolve o elemento raiz.
+/// Reads a document and returns its root element.
 pub(crate) fn parse(bytes: &[u8]) -> ImportResult<Element> {
     let text = std::str::from_utf8(bytes)
         .map_err(|_| fail("arquivo XML não está em UTF-8"))?

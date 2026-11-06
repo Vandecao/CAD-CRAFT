@@ -10,7 +10,7 @@ pub(super) fn save_packages(
     cancel: &AtomicBool,
     sender: Option<&mpsc::Sender<Message>>,
 ) -> GuiResult<()> {
-    // Planejar e serializar TODO o lote antes de escrever qualquer arquivo.
+    // Plan and serialize the entire batch before writing any file.
     let mut inventories = BTreeMap::new();
     for package in packages.iter() {
         for artifact in &package.artifacts {

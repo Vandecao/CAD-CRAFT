@@ -54,10 +54,10 @@ pub enum Tool {
     InsertGraphic(GraphicKind),
     InsertText,
     Paste,
-    /// Etapa 19: inserir a macro de `Interaction::macro_draft`.
+    /// Insert the macro from Interaction::macro_draft.
     InsertMacro,
 }
-/// Etapa 19: macro em posicionamento (giro e espelho antes do clique).
+/// Macro placement state, allowing rotation and mirroring before the click.
 #[derive(Clone, Debug)]
 pub struct MacroDraft {
     pub definition: MacroDefinition,
@@ -76,14 +76,14 @@ impl MacroDraft {
         Transform2D::new(at, self.rotation, self.mirror, false)
     }
 }
-/// Etapa 12: cadastro elétrico criado ao confirmar cada inserção.
+/// Electrical registration created when confirming each insertion.
 #[derive(Clone, Debug, PartialEq)]
 pub enum DevicePlan {
-    /// Novo dispositivo com designação `{prefixo}{n}` livre no momento do clique.
+    /// New device with an available prefix-and-number designation at click time.
     New { prefix: String },
-    /// Nova função (com pontos de conexão) em dispositivo existente.
+    /// New function with connection points on an existing device.
     Existing(DeviceId),
-    /// Função já cadastrada, ainda sem representação na folha.
+    /// Registered function without a sheet representation yet.
     ExistingFunction(FunctionId),
 }
 /// Placement draft has no occurrence ID and never owns electrical entities.
@@ -94,7 +94,7 @@ pub struct InsertionDraft {
     pub target: Option<RepresentationTarget>,
     pub transform: Transform2D,
     pub positioned: bool,
-    /// Quando presente, a confirmação cria o cadastro em vez de usar `target`.
+    /// When present, confirmation creates registration instead of using target.
     pub device: Option<DevicePlan>,
 }
 #[derive(Debug)]

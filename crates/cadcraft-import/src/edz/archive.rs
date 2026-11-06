@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (C) 2026 Vanderlei Braga e colaboradores do CAD-CRAFT
-//! Contêiner EDZ: extração limitada em memória, sem arquivos temporários.
+//! EDZ archive extraction bounded in memory without temporary files; start at `Archive`.
 use super::{EdzContainer, EdzLimits};
 use crate::{ImportResult, fail};
 use std::{

@@ -82,9 +82,7 @@ pub fn welcome(ui: &mut egui::Ui) {
     v.widgets.active.weak_bg_fill = SELECTION;
 }
 
-/// Fonte reserva do sistema para símbolos que as fontes padrão do egui não
-/// têm (→, Ω, │, ☐…). Encontrada no teste no executável da Etapa 22: sem ela
-/// esses caracteres apareciam como quadrados. Sem o arquivo, nada muda.
+/// System fallback font for symbols missing from egui defaults, such as arrows, omega and checkboxes. Without it these glyphs appear as squares; if the file is unavailable, leave fonts unchanged.
 pub fn install_symbol_font(ctx: &egui::Context) {
     let windows = std::env::var_os("WINDIR").map(|dir| {
         std::path::PathBuf::from(dir)

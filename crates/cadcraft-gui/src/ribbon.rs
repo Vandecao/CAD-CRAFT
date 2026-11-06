@@ -36,7 +36,7 @@ impl CadApp {
                         .session
                         .project()
                         .map(|p| p.name().as_str())
-                        .unwrap_or("Nenhum projeto aberto");
+                        .unwrap_or(crate::strings::NO_OPEN_PROJECT_TITLE);
                     ui.add(
                         egui::Label::new(RichText::new(name).small().color(theme::MUTED))
                             .truncate(),
@@ -217,7 +217,7 @@ impl CadApp {
                                         "Visualização gráfica" => 3,
                                         "Texto" => 4,
                                         "Editar" => 5,
-                                        "Procurar" => 6,
+                                        crate::strings::BROWSE => 6,
                                         _ => 7,
                                     });
                                 }

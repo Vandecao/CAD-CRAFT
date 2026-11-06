@@ -3,6 +3,9 @@
 //! The workspace crates depend on each other in one direction only:
 //! model ← format, render, import; render ← export; all ← facade ← GUI.
 //! A new dependency against this direction fails here.
+// Synthetic test fixtures intentionally fail fast when setup is invalid.
+#![allow(clippy::unwrap_used)]
+
 use std::collections::{BTreeMap, BTreeSet};
 
 fn project_dependencies() -> BTreeMap<String, BTreeSet<String>> {

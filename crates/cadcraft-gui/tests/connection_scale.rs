@@ -5,6 +5,8 @@
 //! The fixture deliberately overlaps 500 copies of the two-route demo on one
 //! page. This is a dense adversarial workload, not a realistic industrial page.
 //! The batch JSON import avoids 1,000 individual index-rebuilding route edits.
+// Fixture helpers use validated synthetic inputs and fail immediately on setup errors.
+#![allow(clippy::unwrap_used)]
 use cad_craft::domain::*;
 use cad_gui::{
     app::CadApp, camera::Camera, commands::CommandId, connection_demo,

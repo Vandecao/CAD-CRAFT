@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (C) 2026 Vanderlei Braga e colaboradores do CAD-CRAFT
-//! Etapa 16: copiar, recortar, colar e duplicar na sessão.
+//! Copy, cut, paste and duplicate operations in the session.
+// Fixture helpers use validated synthetic inputs and fail immediately on setup errors.
+#![allow(clippy::unwrap_used)]
 use cad_craft::domain::*;
 use cad_gui::{editing::GraphicEdit, state::Session};
 
@@ -147,7 +149,7 @@ fn cut_removes_now_and_first_paste_restores_same_id() {
     let before_cut = s.snapshot().unwrap();
     let undo = s.history.undo_len();
     s.capture_selection(true).unwrap();
-    // Recortar remove na hora, num passo de Desfazer.
+    // Cut removes content immediately in one undo step.
     assert!(s.project().unwrap().representation(id).is_none());
     assert_eq!(s.history.undo_len(), undo + 1);
     s.dispatch_graphic(GraphicEdit::Undo).unwrap();
@@ -160,7 +162,7 @@ fn cut_removes_now_and_first_paste_restores_same_id() {
         s.project().unwrap().representation(id).unwrap().page_id(),
         target
     );
-    // Desfazer a colagem e depois o recorte devolve a origem exata.
+    // Undoing paste then cut restores the exact source.
     s.dispatch_graphic(GraphicEdit::Undo).unwrap();
     assert!(s.project().unwrap().representation(id).is_none());
     s.dispatch_graphic(GraphicEdit::Undo).unwrap();
@@ -243,7 +245,7 @@ fn symbol_paste_creates_new_device_with_next_designation() {
     assert_ne!(new_device.designation(), source_device.designation());
     assert_eq!(new_device.classification(), source_device.classification());
     assert_eq!(s.project().unwrap().devices().count(), devices + 1);
-    // Fios não são copiados: as ligações existentes não mudam.
+    // Wires are not copied; existing connections remain unchanged.
     assert_eq!(s.project().unwrap().connections().count(), connections);
     let bound = s
         .project()
@@ -252,12 +254,12 @@ fn symbol_paste_creates_new_device_with_next_designation() {
         .filter(|(p, _)| p.representation_id() == copied.id())
         .count();
     assert!(bound > 0, "portas do novo símbolo ligadas a pontos novos");
-    // Um passo de Desfazer remove tudo; Refazer recria com os mesmos IDs.
+    // One undo removes everything; redo recreates the same IDs.
     s.dispatch_graphic(GraphicEdit::Undo).unwrap();
     assert_eq!(s.snapshot().unwrap(), before);
     s.dispatch_graphic(GraphicEdit::Redo).unwrap();
     assert_eq!(device_of(&s, &copied).id(), new_device.id());
-    // Nova colagem: outra designação.
+    // Another paste receives another designation.
     s.confirm_paste(Point2D::new(120.0, 50.0).unwrap()).unwrap();
     let third = primary(&s);
     assert_ne!(
@@ -285,7 +287,7 @@ fn paste_same_device_adds_function_and_reference_on_other_page() {
     let RepresentationTarget::Function(original_function) = original.target() else {
         unreachable!()
     };
-    // Função nova do mesmo dispositivo (principal só se ele ainda não tinha).
+    // New function of the same device; main only if none existed.
     assert_ne!(pasted.function, Some(original_function));
     assert_eq!(pasted.device, device.id());
 }
@@ -310,7 +312,7 @@ fn cut_refuses_wired_symbol_and_moves_bindings_of_unwired_one() {
         assert!(err.contains("fios"), "{err}");
         assert_eq!(s.snapshot().unwrap(), before);
     }
-    // Símbolo sem fios (colado como dispositivo novo) é recortado com vínculos.
+    // Cut an unwired symbol pasted as a new device along with its bindings.
     s.capture_selection(false).unwrap();
     s.confirm_paste(Point2D::new(300.0, 200.0).unwrap())
         .unwrap();

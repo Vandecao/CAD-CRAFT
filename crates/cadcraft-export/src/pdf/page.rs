@@ -4,12 +4,12 @@
 
 use super::*;
 
-/// Data atual (UTC) para os metadados.
+/// Current UTC date for metadata.
 fn today() -> Date {
     let secs = std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
         .map_or(0, |d| d.as_secs());
-    // Dias desde 1970-01-01 → data civil (algoritmo de H. Hinnant).
+    // Days since 1970-01-01 to civil date using H. Hinnant's algorithm.
     let z = (secs / 86_400) as i64 + 719_468;
     let era = z.div_euclid(146_097);
     let doe = z - era * 146_097;
@@ -24,8 +24,8 @@ fn today() -> Date {
         .day(day as u8)
 }
 
-/// Exporta o alcance para PDF. `progress(feitas, total)` é chamado a cada
-/// página; devolver `false` cancela.
+/// Exports the range to PDF. `progress(done, total)` is called after each
+/// page; returning `false` cancels.
 pub fn export_pdf(
     project: &Project,
     options: &PdfOptions,
@@ -47,7 +47,7 @@ pub fn export_pdf(
     let tree = w.refs.next();
     let font_id = w.refs.next();
     let info = w.refs.next();
-    // Referência e posição de cada página exportada (destinos dos links).
+    // Reference and placement for every exported page, used as link destinations.
     let mut index: BTreeMap<PageId, (Ref, Placement)> = BTreeMap::new();
     for page in &pages {
         let p = project
@@ -66,7 +66,7 @@ pub fn export_pdf(
         let (data, images) = w.content(&list, &place);
         let content_id = w.refs.next();
         w.pdf.stream(content_id, &data).filter(Filter::FlateDecode);
-        // Links: destino na página exportada, na posição da ocorrência.
+        // Links target the occurrence position on the exported page.
         let mut annotations = vec![];
         for (rect, target) in list.links() {
             let destination = project.representation(target).and_then(|r| {
@@ -162,7 +162,7 @@ pub fn export_pdf(
     })
 }
 
-/// Marcadores: um item por documento com as suas páginas exportadas.
+/// Bookmarks: one item per document containing its exported pages.
 fn write_outline(
     w: &mut Writer<'_>,
     pages: &[PageId],

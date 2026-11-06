@@ -1,42 +1,56 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (C) 2026 Vanderlei Braga e colaboradores do CAD-CRAFT
-//! Etapa 12: inserção de símbolo que cria o cadastro elétrico necessário.
-//!
-//! Uma única transação registra (opcionalmente) um dispositivo novo, uma
-//! função, um ponto de conexão por porta, a ocorrência do símbolo e os vínculos
-//! porta→ponto. O delta guarda as entidades completas para refazer com os
-//! mesmos IDs; desfazer confere que nada foi alterado ou passou a referenciá-las.
+//! Symbol insertion creating required electrical entities; start with SymbolPlacement. One
+//! transaction registers an optional new device, a function, a point per port, the occurrence and
+//! port bindings. The delta stores full entities for redo with identical IDs; undo rejects changed
+//! entities or new external references.
 use super::*;
 use std::collections::BTreeSet;
 
-/// Dispositivo da nova função: criado na transação ou já existente.
+/// Device for the new function: created transactionally or already registered.
 #[derive(Clone, Debug, PartialEq)]
 pub enum PlacementDevice {
+    /// Create a new logical device.
     New {
+        /// Documentary designation; does not imply electrical connectivity.
         designation: Designation,
+        /// Documentary classification text.
         classification: String,
     },
+    /// Use an already registered logical device.
     Existing(DeviceId),
 }
 
+/// Inputs for inserting a symbol and its required electrical entities.
 #[derive(Clone, Debug, PartialEq)]
 pub struct SymbolPlacement {
+    /// Page identifier used by this operation or filter.
     pub page: PageId,
+    /// Symbol definition registered for this occurrence.
     pub definition: SymbolDefinition,
+    /// Validated placement transform in page coordinates.
     pub transform: Transform2D,
+    /// Associated logical device.
     pub device: PlacementDevice,
+    /// Kind of the associated electrical function.
     pub function_kind: FunctionKind,
 }
 
+/// Inputs for placing an occurrence of an existing electrical function.
 #[derive(Clone, Debug, PartialEq)]
 pub struct ExistingFunctionPlacement {
+    /// Page identifier used by this operation or filter.
     pub page: PageId,
+    /// Symbol definition registered for this occurrence.
     pub definition: SymbolDefinition,
+    /// Validated placement transform in page coordinates.
     pub transform: Transform2D,
+    /// Associated electrical function.
     pub function: FunctionId,
-    /// Somente após a interface avisar que não há correspondência por rótulo.
+    /// Use only after the interface warns that labels do not match.
     pub allow_order_fallback: bool,
 }
+/// Occurrence, bindings and points changed by an existing-function placement.
 #[derive(Clone, Debug, PartialEq)]
 pub struct ExistingFunctionDelta {
     representation: Representation,
@@ -46,23 +60,29 @@ pub struct ExistingFunctionDelta {
     used_order_fallback: bool,
 }
 impl ExistingFunctionDelta {
+    /// Return the representation identifier.
     pub fn representation_id(&self) -> RepresentationId {
         self.representation.id()
     }
+    /// Return IDs of the connection points recorded by this placement.
     pub fn point_ids(&self) -> Vec<ConnectionPointId> {
         self.bindings.iter().map(|(_, id)| *id).collect()
     }
+    /// Whether port mapping used order after labels failed to match.
     pub fn used_order_fallback(&self) -> bool {
         self.used_order_fallback
     }
+    /// Return the number of contained entries or entity changes recorded by this value.
     pub fn len(&self) -> usize {
         1 + self.bindings.len()
     }
+    /// Always false because a placement records at least one occurrence.
     pub fn is_empty(&self) -> bool {
         false
     }
 }
 
+/// Electrical entities and occurrence created by symbol placement.
 #[derive(Clone, Debug, PartialEq)]
 pub struct PlacementDelta {
     device: Option<Device>,
@@ -74,25 +94,31 @@ pub struct PlacementDelta {
     bindings: Vec<(PortRef, ConnectionPointId)>,
 }
 impl PlacementDelta {
+    /// Return the representation identifier.
     pub fn representation_id(&self) -> RepresentationId {
         self.representation.id()
     }
+    /// Return the device identifier.
     pub fn device_id(&self) -> DeviceId {
         self.function.device_id()
     }
+    /// Return the function identifier.
     pub fn function_id(&self) -> FunctionId {
         self.function.id()
     }
+    /// Whether the transaction registered a new device.
     pub fn created_device(&self) -> bool {
         self.device.is_some()
     }
+    /// Return IDs of the connection points recorded by this placement.
     pub fn point_ids(&self) -> Vec<ConnectionPointId> {
         self.points.iter().map(ConnectionPoint::id).collect()
     }
-    /// Entidades registradas pela transação (para limites de histórico).
+    /// Entities registered by the transaction, for history resource limits.
     pub fn len(&self) -> usize {
         usize::from(self.device.is_some()) + 2 + self.points.len() + self.bindings.len()
     }
+    /// Always false because a placement records at least one occurrence.
     pub fn is_empty(&self) -> bool {
         false
     }
@@ -103,6 +129,7 @@ fn placement_error() -> DomainError {
 }
 
 impl Project {
+    /// Place an existing function symbol and its port bindings in one reversible operation.
     pub fn place_existing_function(
         &mut self,
         placement: ExistingFunctionPlacement,
@@ -182,6 +209,8 @@ impl Project {
         Ok(delta)
     }
 
+    /// Replay the recorded existing function placement change; forward reapplies it and false restores
+    /// the prior state. Reject a mismatched expected state.
     pub fn restore_existing_function_placement(
         &mut self,
         delta: &ExistingFunctionDelta,
@@ -223,7 +252,7 @@ impl Project {
         *self = candidate;
         Ok(())
     }
-    /// Primeira designação livre `{prefixo}{n}` (n ≥ 1) entre os dispositivos.
+    /// First free device designation `{prefix}{n}` with n at least one.
     pub fn next_device_designation(&self, prefix: &str) -> Result<Designation> {
         let prefix = prefix.trim();
         DesignationPart::new(format!("{prefix}1"))?;
@@ -239,7 +268,7 @@ impl Project {
         Designation::new(format!("{prefix}{n}"))
     }
 
-    /// Valida e registra tudo ou nada; IDs novos são gerados aqui.
+    /// Validate and register everything atomically; generate new IDs here.
     pub fn place_symbol(&mut self, placement: SymbolPlacement) -> Result<PlacementDelta> {
         let SymbolPlacement {
             page,
@@ -311,6 +340,8 @@ impl Project {
         Ok(delta)
     }
 
+    /// Replay the recorded placement change; forward reapplies it and false restores the prior state.
+    /// Reject a mismatched expected state.
     pub fn restore_placement(&mut self, delta: &PlacementDelta, forward: bool) -> Result<()> {
         if forward {
             if self.representation(delta.representation_id()).is_some()
@@ -322,7 +353,7 @@ impl Project {
         }
         self.check_placement_state(delta)?;
         let snapshot = self.take_placement(delta)?;
-        // Qualquer referência externa às entidades removidas invalida o agregado.
+        // Any external reference to removed entities invalidates the aggregate.
         if let Err(error) = self.validate() {
             self.put_back(snapshot);
             return Err(error);
@@ -359,7 +390,7 @@ impl Project {
         Ok(())
     }
 
-    /// Remoção tolerante usada só para desfazer uma aplicação parcial.
+    /// Tolerant removal used only to roll back partial application.
     fn discard_placement(&mut self, delta: &PlacementDelta) {
         for (port, point) in &delta.bindings {
             if self.port_bindings.get(port) == Some(point) {

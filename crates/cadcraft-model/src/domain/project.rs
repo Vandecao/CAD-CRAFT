@@ -24,10 +24,10 @@ pub use electrical::*;
 pub use physical::*;
 pub use symbols::*;
 
-/// Agregado com identidade estável e acesso imutável às entidades registradas.
-/// Inserções exigem alvos existentes. Páginas, representações e conexões têm remoção
-/// explícita sem cascata, sujeita à ausência de referências externas.
-/// Sem histórico ou ERC.
+/// Aggregate with stable identity and immutable access to registered entities. Insertions require
+/// existing targets. Pages, representations and connections are removed explicitly without
+/// cascading, provided no external references remain. History and electrical rule checking live
+/// outside this aggregate.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(try_from = "snapshot::ProjectData")]
 pub struct Project {
@@ -38,7 +38,7 @@ pub struct Project {
     metadata: Metadata,
     properties: TechnicalProperties,
     numbering_scheme: NumberingScheme,
-    /// Etapa 24: esquema de verificação (regras e mensagens ignoradas).
+    /// Consistency check configuration, including rule overrides and ignored messages.
     #[serde(default, skip_serializing_if = "is_default_scheme")]
     check_scheme: CheckScheme,
     #[serde(serialize_with = "snapshot::serialize_entities")]
@@ -72,7 +72,7 @@ pub struct Project {
     terminal_strips: BTreeMap<TerminalStripId, TerminalStrip>,
     #[serde(serialize_with = "snapshot::serialize_entities")]
     terminal_bridges: BTreeMap<ConnectionId, TerminalBridge>,
-    // Etapa 11: omitted when empty so earlier snapshots reserialize unchanged.
+    // Omit empty fields so earlier snapshots reserialize unchanged.
     #[serde(
         serialize_with = "snapshot::serialize_entities",
         skip_serializing_if = "BTreeMap::is_empty"
@@ -97,7 +97,7 @@ pub struct Project {
     markers: BTreeMap<RepresentationId, ElectricalMarker>,
     #[serde(serialize_with = "snapshot::serialize_entities")]
     marker_groups: BTreeMap<ReferenceGroupId, MarkerGroup>,
-    // Etapa 13: molduras; omitidas quando vazias para preservar snapshots antigos.
+    // Omit empty frame collections to preserve earlier snapshots.
     #[serde(
         serialize_with = "snapshot::serialize_entities",
         skip_serializing_if = "BTreeMap::is_empty"
@@ -107,7 +107,7 @@ pub struct Project {
     default_frame: Option<FrameTemplateId>,
     #[serde(skip_serializing_if = "frames::is_default_format")]
     reference_format: ReferenceFormat,
-    // Etapa 14: imagens das molduras (bytes fora do JSON).
+    // Frame images; their bytes are stored outside JSON.
     #[serde(
         serialize_with = "snapshot::serialize_entities",
         skip_serializing_if = "BTreeMap::is_empty"
@@ -122,6 +122,7 @@ pub struct Project {
 }
 
 impl Project {
+    /// Create an empty project with fresh identity and a validated name.
     pub fn new(name: impl Into<String>) -> Result<Self> {
         Ok(Self {
             id: ProjectId::new(),
@@ -164,35 +165,46 @@ impl Project {
             graph: ConnectivityGraph::default(),
         })
     }
+    /// Return this entity or definition's stable identifier.
     pub fn id(&self) -> ProjectId {
         self.id
     }
+    /// Return the name.
     pub fn name(&self) -> &Text {
         &self.name
     }
+    /// Return the description.
     pub fn description(&self) -> &str {
         &self.description
     }
+    /// Return the metadata.
     pub fn metadata(&self) -> &Metadata {
         &self.metadata
     }
+    /// Return the properties.
     pub fn properties(&self) -> &TechnicalProperties {
         &self.properties
     }
+    /// Replace description.
     pub fn set_description(&mut self, description: impl Into<String>) {
         self.description = description.into();
     }
+    /// Insert or replace a validated metadata entry.
     pub fn set_metadata(&mut self, key: impl Into<String>, value: impl Into<String>) -> Result<()> {
         self.metadata.insert(Text::new(key)?, value.into());
         Ok(())
     }
 
+    /// Find the document by its stable identifier; return None when absent.
     pub fn document(&self, id: DocumentId) -> Option<&Document> {
         self.documents.get(&id)
     }
+    /// Iterate documents without exposing mutable access.
     pub fn documents(&self) -> impl Iterator<Item = &Document> {
         self.documents.values()
     }
+    /// Validate and register document, rejecting duplicate IDs, foreign ownership or invalid
+    /// relations.
     pub fn insert_document(&mut self, entity: Document) -> Result<DocumentId> {
         let id = entity.id();
         if self.documents.contains_key(&id) {
@@ -205,12 +217,15 @@ impl Project {
         Ok(id)
     }
 
+    /// Find the page by its stable identifier; return None when absent.
     pub fn page(&self, id: PageId) -> Option<&Page> {
         self.pages.get(&id)
     }
+    /// Iterate pages without exposing mutable access.
     pub fn pages(&self) -> impl Iterator<Item = &Page> {
         self.pages.values()
     }
+    /// Validate and register page, rejecting duplicate IDs, foreign ownership or invalid relations.
     pub fn insert_page(&mut self, entity: Page) -> Result<PageId> {
         let id = entity.id();
         if self.pages.contains_key(&id) {
@@ -223,12 +238,15 @@ impl Project {
         Ok(id)
     }
 
+    /// Find the device by its stable identifier; return None when absent.
     pub fn device(&self, id: DeviceId) -> Option<&Device> {
         self.devices.get(&id)
     }
+    /// Iterate devices without exposing mutable access.
     pub fn devices(&self) -> impl Iterator<Item = &Device> {
         self.devices.values()
     }
+    /// Validate and register device, rejecting duplicate IDs, foreign ownership or invalid relations.
     pub fn insert_device(&mut self, entity: Device) -> Result<DeviceId> {
         let id = entity.id();
         if self.devices.contains_key(&id) {
@@ -242,12 +260,16 @@ impl Project {
         Ok(id)
     }
 
+    /// Find the function by its stable identifier; return None when absent.
     pub fn function(&self, id: FunctionId) -> Option<&Function> {
         self.functions.get(&id)
     }
+    /// Iterate functions without exposing mutable access.
     pub fn functions(&self) -> impl Iterator<Item = &Function> {
         self.functions.values()
     }
+    /// Validate and register function, rejecting duplicate IDs, foreign ownership or invalid
+    /// relations.
     pub fn insert_function(&mut self, entity: Function) -> Result<FunctionId> {
         let id = entity.id();
         if self.functions.contains_key(&id) {
@@ -260,12 +282,16 @@ impl Project {
         Ok(id)
     }
 
+    /// Find the component by its stable identifier; return None when absent.
     pub fn component(&self, id: ComponentId) -> Option<&Component> {
         self.components.get(&id)
     }
+    /// Iterate components without exposing mutable access.
     pub fn components(&self) -> impl Iterator<Item = &Component> {
         self.components.values()
     }
+    /// Validate and register component, rejecting duplicate IDs, foreign ownership or invalid
+    /// relations.
     pub fn insert_component(&mut self, entity: Component) -> Result<ComponentId> {
         let id = entity.id();
         if self.components.contains_key(&id) {
@@ -278,12 +304,16 @@ impl Project {
         Ok(id)
     }
 
+    /// Find the terminal by its stable identifier; return None when absent.
     pub fn terminal(&self, id: TerminalId) -> Option<&Terminal> {
         self.terminals.get(&id)
     }
+    /// Iterate terminals without exposing mutable access.
     pub fn terminals(&self) -> impl Iterator<Item = &Terminal> {
         self.terminals.values()
     }
+    /// Validate and register terminal, rejecting duplicate IDs, foreign ownership or invalid
+    /// relations.
     pub fn insert_terminal(&mut self, entity: Terminal) -> Result<TerminalId> {
         let id = entity.id();
         if self.terminals.contains_key(&id) {
@@ -296,12 +326,16 @@ impl Project {
         Ok(id)
     }
 
+    /// Find the connection point by its stable identifier; return None when absent.
     pub fn connection_point(&self, id: ConnectionPointId) -> Option<&ConnectionPoint> {
         self.connection_points.get(&id)
     }
+    /// Iterate connection points without exposing mutable access.
     pub fn connection_points(&self) -> impl Iterator<Item = &ConnectionPoint> {
         self.connection_points.values()
     }
+    /// Validate and register connection point, rejecting duplicate IDs, foreign ownership or invalid
+    /// relations.
     pub fn insert_connection_point(
         &mut self,
         entity: ConnectionPoint,
@@ -316,16 +350,19 @@ impl Project {
         self.connection_points.insert(id, entity);
         Ok(id)
     }
+    /// Iterate the pages belonging to the supplied document.
     pub fn pages_in_document(&self, document: DocumentId) -> impl Iterator<Item = &Page> {
         self.pages
             .values()
             .filter(move |page| page.document_id() == document)
     }
+    /// Iterate functions explicitly owned by the supplied device.
     pub fn functions_for_device(&self, device: DeviceId) -> impl Iterator<Item = &Function> {
         self.functions
             .values()
             .filter(move |function| function.device_id() == device)
     }
+    /// Register an explicit electrical reference on the page after validating its target.
     pub fn add_page_element(&mut self, page: PageId, element: PageElement) -> Result<()> {
         self.require(EntityRef::Page(page))?;
         self.require(element.into())?;
@@ -338,7 +375,7 @@ impl Project {
         }
         Ok(())
     }
-    /// Substituição atômica, com resolução de todas as referências antes da escrita.
+    /// Replace atomically, resolving all references before writing.
     pub fn set_properties(
         &mut self,
         target: EntityRef,
@@ -428,7 +465,7 @@ impl Project {
     }
 }
 
-/// Etapa 24: o esquema padrão não é gravado (projetos sem ajuste ficam iguais).
+/// Do not serialize the default check scheme, preserving projects without overrides.
 fn is_default_scheme(scheme: &CheckScheme) -> bool {
     scheme == &CheckScheme::default()
 }

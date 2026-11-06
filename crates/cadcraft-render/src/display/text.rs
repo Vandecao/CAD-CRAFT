@@ -5,8 +5,8 @@
 use super::*;
 
 impl Builder<'_> {
-    /// Texto de moldura/folha: corpo `style.height`, alinhamento de 9 pontos
-    /// numa caixa `largura × 1,2·corpo`, rotação anti-horária na origem.
+    /// Frame/sheet text: font size `style.height`, nine-point alignment
+    /// in a `width × 1.2·size` box, rotated counterclockwise about its origin.
     pub(super) fn text(
         &mut self,
         origin: Point2D,
@@ -40,8 +40,8 @@ impl Builder<'_> {
         }));
     }
 
-    /// Texto de símbolo: caixa nominal `[0, largura] × [0, altura]` levada à
-    /// página por `map` (afim); as maiúsculas ocupam a altura, como na tela.
+    /// Symbol text: nominal `[0, width] × [0, height]` box mapped onto the
+    /// page by affine `map`; capital letters fill the height, as on screen.
     pub(super) fn mapped_text(
         &mut self,
         text: &str,

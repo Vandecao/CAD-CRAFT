@@ -36,23 +36,26 @@ impl CadApp {
                         ("Informações", true),
                         ("Novo", true),
                         ("Abrir", true),
-                        ("Salvar", self.session.project().is_some()),
-                        ("Salvar como", self.session.project().is_some()),
+                        (crate::strings::SAVE, self.session.project().is_some()),
+                        (crate::strings::SAVE_AS, self.session.project().is_some()),
                         ("Fazer backup", false),
                         ("Copiar projeto", false),
                         ("Excluir projeto", false),
                         ("Fechar projeto", self.session.project().is_some()),
                         ("Gerenciamento de projetos", false),
                         ("Controle de revisão", false),
-                        ("Imprimir", self.session.project().is_some()),
-                        ("Exportar PDF", self.session.project().is_some()),
-                        ("Exportar DXF", self.session.project().is_some()),
-                        ("Exportar DWG", self.session.project().is_some()),
-                        ("Exportar lista", self.session.project().is_some()),
-                        ("Importar", true),
-                        ("Exportar", self.session.project().is_some()),
+                        (crate::strings::PRINT, self.session.project().is_some()),
+                        (crate::strings::EXPORT_PDF, self.session.project().is_some()),
+                        (crate::strings::EXPORT_DXF, self.session.project().is_some()),
+                        (crate::strings::EXPORT_DWG, self.session.project().is_some()),
+                        (
+                            crate::strings::EXPORT_LIST,
+                            self.session.project().is_some(),
+                        ),
+                        (crate::strings::IMPORT, true),
+                        (crate::strings::EXPORT, self.session.project().is_some()),
                         ("Extras", true),
-                        ("Configurações", true),
+                        (crate::strings::SETTINGS, true),
                         ("Ajuda", true),
                         ("Sair", true),
                     ] {
@@ -70,16 +73,28 @@ impl CadApp {
                         {
                             match label {
                                 "Novo" => self.execute(CommandId::NewProject, ctx),
-                                "Salvar" => self.execute(CommandId::SaveProject, ctx),
-                                "Salvar como" => self.execute(CommandId::SaveProjectAs, ctx),
+                                crate::strings::SAVE => self.execute(CommandId::SaveProject, ctx),
+                                crate::strings::SAVE_AS => {
+                                    self.execute(CommandId::SaveProjectAs, ctx)
+                                }
                                 "Fechar projeto" => self.request(PendingAction::Close, ctx),
                                 "Sair" => self.request(PendingAction::Exit, ctx),
-                                "Exportar" => self.execute(CommandId::ExportSnapshot, ctx),
-                                "Imprimir" => self.execute(CommandId::Print, ctx),
-                                "Exportar PDF" => self.execute(CommandId::ExportPdf, ctx),
-                                "Exportar DXF" => self.execute(CommandId::ExportDxf, ctx),
-                                "Exportar DWG" => self.execute(CommandId::ExportDwg, ctx),
-                                "Exportar lista" => self.execute(CommandId::ExportList, ctx),
+                                crate::strings::EXPORT => {
+                                    self.execute(CommandId::ExportSnapshot, ctx)
+                                }
+                                crate::strings::PRINT => self.execute(CommandId::Print, ctx),
+                                crate::strings::EXPORT_PDF => {
+                                    self.execute(CommandId::ExportPdf, ctx)
+                                }
+                                crate::strings::EXPORT_DXF => {
+                                    self.execute(CommandId::ExportDxf, ctx)
+                                }
+                                crate::strings::EXPORT_DWG => {
+                                    self.execute(CommandId::ExportDwg, ctx)
+                                }
+                                crate::strings::EXPORT_LIST => {
+                                    self.execute(CommandId::ExportList, ctx)
+                                }
                                 _ => self.dialogs_state.backstage = Some(label),
                             }
                         }
@@ -101,12 +116,12 @@ impl CadApp {
                                     if ui.button("Editar propriedades no inspetor").clicked(){self.session.select(crate::state::Selection::Project);self.preferences.panel_mut(crate::preferences::PanelId::Properties).visible=true;self.preferences.panel_mut(crate::preferences::PanelId::Properties).collapsed=false;self.dialogs_state.backstage=None;}
                                 }
                             }
-                        }else{ui.label("Nenhum projeto aberto.");if ui.button("Abrir demonstração CAD-CRAFT").clicked(){self.execute(CommandId::Demo,ctx);}}
+                        }else{ui.label(crate::strings::NO_OPEN_PROJECT_NOTICE);if ui.button("Abrir demonstração CAD-CRAFT").clicked(){self.execute(CommandId::Demo,ctx);}}
                     },
                     "Abrir"=>self.open_ui(ui,ctx),
-                    "Importar"=>{egui::ScrollArea::vertical().id_salt("importar").show(ui,|ui|{self.qet_import_ui(ui);ui.separator();self.snapshot_ui(ui,true);});},
-                    "Exportar"=>self.snapshot_ui(ui,false),
-                    "Configurações"=>{
+                    crate::strings::IMPORT=>{egui::ScrollArea::vertical().id_salt("importar").show(ui,|ui|{self.qet_import_ui(ui);ui.separator();self.snapshot_ui(ui,true);});},
+                    crate::strings::EXPORT=>self.snapshot_ui(ui,false),
+                    crate::strings::SETTINGS=>{
                         ui.heading("Preferências visuais");ui.weak("Salvas localmente pelo aplicativo. Independentes dos dados elétricos.");
                         ui.checkbox(&mut self.preferences.ribbon_collapsed,"Ribbon recolhida");ui.checkbox(&mut self.preferences.grid_visible,"Exibir grade");ui.checkbox(&mut self.preferences.snap_enabled,"Snap à grade");ui.horizontal(|ui|{ui.label("Pasta da biblioteca de molduras");ui.add(egui::TextEdit::singleline(&mut self.preferences.frame_library).hint_text("Ex.: C:/Molduras").desired_width(320.0));});ui.horizontal(|ui|{ui.label("Pasta da biblioteca de símbolos");ui.add(egui::TextEdit::singleline(&mut self.preferences.symbol_library).hint_text("Ex.: C:/Simbolos").desired_width(320.0));});ui.horizontal(|ui|{ui.label("Escala de importação .elmt (mm por px)");ui.add(egui::DragValue::new(&mut self.preferences.elmt_mm_per_px).range(0.01..=10.0).speed(0.01));});
                         ui.horizontal(|ui|{ui.label("Pasta da biblioteca de peças");ui.add(egui::TextEdit::singleline(&mut self.preferences.part_library).hint_text("Ex.: C:/Pecas").desired_width(320.0));});
@@ -138,9 +153,9 @@ impl CadApp {
             });
         });
     }
-    /// Etapa 12: procurar arquivo, recentes e cópias de recuperação.
+    /// Browse files, recent projects and recovery copies.
     fn open_ui(&mut self, ui: &mut egui::Ui, ctx: &Context) {
-        ui.heading("Abrir projeto");
+        ui.heading(crate::strings::OPEN_PROJECT);
         ui.weak("Projetos .cadcraft e snapshots técnicos JSON (formato v0, migrados ao abrir).");
         if ui.button("Procurar arquivo…").clicked() {
             self.open_project_dialog(ctx);
@@ -179,7 +194,7 @@ impl CadApp {
                     if ui.button("Restaurar").clicked() {
                         action = Some((entry.clone(), true));
                     }
-                    if ui.button("Descartar").clicked() {
+                    if ui.button(crate::strings::DISCARD).clicked() {
                         action = Some((entry.clone(), false));
                     }
                 });

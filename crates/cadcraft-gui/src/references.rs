@@ -55,12 +55,12 @@ impl Session {
         point: Option<ConnectionPointId>,
         position: Point2D,
     ) -> Result<RepresentationId> {
-        let page = self
-            .active
-            .ok_or(DomainError::InvalidRelation("abra uma página para inserir"))?;
-        let project = self
-            .project()
-            .ok_or(DomainError::InvalidRelation("nenhum projeto aberto"))?;
+        let page = self.active.ok_or(DomainError::InvalidRelation(
+            crate::strings::OPEN_PAGE_TO_INSERT,
+        ))?;
+        let project = self.project().ok_or(DomainError::InvalidRelation(
+            crate::strings::NO_OPEN_PROJECT,
+        ))?;
         let definition = marker_definition(matches!(kind, MarkerKind::Potential { .. }))?;
         let representation = Representation::new_symbol(
             project.id(),
@@ -80,9 +80,9 @@ impl Session {
     }
     /// Resolve before changing tabs; navigation never mutates the document.
     pub fn navigate_reference(&mut self, id: RepresentationId) -> Result<()> {
-        let project = self
-            .project()
-            .ok_or(DomainError::InvalidRelation("nenhum projeto aberto"))?;
+        let project = self.project().ok_or(DomainError::InvalidRelation(
+            crate::strings::NO_OPEN_PROJECT,
+        ))?;
         let r = project
             .representation(id)
             .ok_or(DomainError::MissingRepresentation(id))?;

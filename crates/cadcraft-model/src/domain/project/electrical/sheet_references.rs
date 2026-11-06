@@ -1,42 +1,50 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (C) 2026 Vanderlei Braga e colaboradores do CAD-CRAFT
-//! Etapa 21: textos de referência desenhados na folha (referências cruzadas,
-//! espelho de contatos e interrupções), montados no Core para que a tela e o
-//! PDF mostrem o mesmo texto. Cada trecho guarda a ocorrência de destino.
+//! Sheet reference texts for cross-references, contact mirrors and interruptions; start with
+//! SheetReferenceText. The core builds them so screen and PDF show identical text. Each segment
+//! retains its target occurrence.
 use super::*;
 use std::collections::BTreeMap;
 
-/// Altura (mm) dos textos de referência na folha.
+/// Height of sheet reference text in millimetres.
 pub const SHEET_REFERENCE_HEIGHT: f64 = 2.5;
 
+/// Purpose of a reference annotation drawn on a sheet.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum SheetReferenceKind {
-    /// Abaixo da ocorrência: a principal lista as demais; as outras apontam a principal.
+    /// Below an occurrence: the main one lists the others, while others refer to the main one.
     CrossReference,
-    /// Espelho de contatos sob a função principal (Etapa 20).
+    /// Contact mirror below the main function.
     ContactMirror,
-    /// Interrupções de potencial do mesmo grupo.
+    /// Potential interruptions in the same group.
     Interruption,
 }
 
-/// Trecho do texto; `target` é a ocorrência para onde o trecho leva.
+/// Text segment; `target` is its navigation destination occurrence.
 #[derive(Clone, Debug, PartialEq)]
 pub struct SheetReferenceSegment {
+    /// Text displayed to the user.
     pub text: String,
+    /// Explicit target of this record or operation.
     pub target: Option<RepresentationId>,
 }
 
-/// Texto de referência ancorado numa ocorrência; `origin` é o canto superior
-/// esquerdo do texto (alinhamento `TopLeft`, altura [`SHEET_REFERENCE_HEIGHT`]).
+/// Reference text anchored to an occurrence; `origin` is its top-left corner, using TopLeft
+/// alignment and SHEET_REFERENCE_HEIGHT.
 #[derive(Clone, Debug, PartialEq)]
 pub struct SheetReference {
+    /// Occurrence to which this reference text is anchored.
     pub anchor: RepresentationId,
+    /// Declared category of this record or operation.
     pub kind: SheetReferenceKind,
+    /// Origin in millimetre coordinates.
     pub origin: Point2D,
+    /// Ordered text segments and their navigation targets.
     pub segments: Vec<SheetReferenceSegment>,
 }
 
 impl SheetReference {
+    /// Render this value as display text.
     pub fn text(&self) -> String {
         self.segments.iter().map(|s| s.text.as_str()).collect()
     }
@@ -55,7 +63,8 @@ fn link(text: impl Into<String>, target: RepresentationId) -> SheetReferenceSegm
     }
 }
 
-/// Tipo do contato no espelho, pelos rótulos dos pontos (13-14 NA, 21-22 NF).
+/// Contact mirror kind inferred from point labels, such as 13-14 normally open and 21-22 normally
+/// closed.
 pub fn contact_kind_label(kind: &FunctionKind, terminals: &[String]) -> &'static str {
     let ends = |c: char| terminals.iter().any(|s| s.ends_with(c));
     match kind {
@@ -67,7 +76,7 @@ pub fn contact_kind_label(kind: &FunctionKind, terminals: &[String]) -> &'static
 }
 
 impl Project {
-    /// Rótulo curto para a folha: `/página.coluna` ou, sem zona, `/página`.
+    /// Short sheet label: `/page.column`, or `/page` without zones.
     pub fn short_reference(&self, page: PageId, point: Point2D) -> String {
         let label = self.reference_label(page, point);
         if label.starts_with('/') {
@@ -85,7 +94,7 @@ impl Project {
         Some(self.short_reference(r.page_id(), r.transform().translation()))
     }
 
-    /// Todos os textos de referência da página, na ordem de desenho.
+    /// All reference texts on the page in drawing order.
     pub fn sheet_references(&self, page: PageId) -> Vec<SheetReference> {
         let mut out = self.cross_references_on(page);
         out.extend(self.contact_mirrors_on(page));

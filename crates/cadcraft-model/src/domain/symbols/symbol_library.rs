@@ -5,19 +5,22 @@ use super::*;
 use std::collections::BTreeMap;
 use std::sync::OnceLock;
 
-/// Dez desenhos originais de referência industrial; sem certificação normativa.
+/// Ten original industrial reference drawings, without normative certification.
 #[derive(Debug)]
 pub struct SymbolLibrary {
     definitions: BTreeMap<SymbolDefinitionId, SymbolDefinition>,
 }
 impl SymbolLibrary {
+    /// Return the shared built-in symbol library.
     pub fn builtin() -> &'static Self {
         static BUILTIN: OnceLock<SymbolLibrary> = OnceLock::new();
         BUILTIN.get_or_init(build_builtin)
     }
+    /// Iterate definitions without exposing mutable access.
     pub fn definitions(&self) -> impl Iterator<Item = &SymbolDefinition> {
         self.definitions.values()
     }
+    /// Find a symbol definition by its textual library ID.
     pub fn get(&self, id: &SymbolDefinitionId) -> Option<&SymbolDefinition> {
         self.definitions.get(id)
     }

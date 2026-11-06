@@ -2,22 +2,22 @@
 // Copyright (C) 2026 Vanderlei Braga e colaboradores do CAD-CRAFT
 //! QElectroTech project import. Start at `import`, then follow read, convert and report.
 //!
-//! Implementação própria a partir do formato dos arquivos (o código-fonte do
-//! QElectroTech, GPL, foi consultado só para entender o formato; nada foi
-//! copiado nem traduzido). Coordenadas QET: px, origem no canto superior
-//! esquerdo da cena, Y para baixo; a folha tem margem de 5 px, cabeçalhos de
-//! 20 px, a grade (colunas × linhas) e o carimbo embaixo. CAD-CRAFT: mm, Y
-//! para cima, escala do `.elmt` (Etapa 17).
+//! Independent implementation based on file structure. QElectroTech's GPL
+//! source was consulted only to understand the format; no code was copied
+//! or translated. QET uses pixels with the scene origin at the upper
+//! left and Y downward. Sheets have a 5 px margin, 20 px headers,
+//! a column/row grid and a bottom titleblock. CAD-CRAFT uses mm with Y
+//! upward and the `.elmt` scale.
 //!
-//! - Elementos embutidos (`<collection>`) → símbolos, pelo importador `.elmt`.
-//! - `<element>` → ocorrência; mestre e escravos (referências cruzadas) → um
-//!   dispositivo com função principal e auxiliares (decisão 3).
-//! - `<conductor>` → conexão lógica + rota; `num` → número do fio travado
-//!   (decisão 4).
-//! - Relatórios de folha (`next_report`/`previous_report`) → par de
-//!   interrupções agrupadas.
-//! - `<inputs>` → textos livres. Imagens, formas e o que não tiver
-//!   equivalente vão para o relatório.
+//! - Embedded `<collection>` elements → symbols through the `.elmt` importer.
+//! - `<element>` → occurrence; masters and slaves with cross-references share
+//!   a device with main and auxiliary functions.
+//! - `<conductor>` → logical connection and route; `num` → locked wire number.
+//!   Wire numbers retain their explicit source assignment.
+//! - Sheet reports (`next_report`/`previous_report`) → paired,
+//!   grouped interruptions.
+//! - `<inputs>` → free texts. Images, shapes and anything without an
+//!   equivalent are noted in the report.
 use crate::elmt::{self, ElmtOptions};
 use crate::titleblock::{self, TitleblockOptions};
 use crate::xml::{self, Element};
@@ -25,13 +25,13 @@ use crate::{ImportReport, ImportResult, check_size, fail};
 use cadcraft_model::domain::*;
 use std::collections::{BTreeMap, BTreeSet};
 
-/// Limite de nós XML (defesa contra arquivo malicioso).
+/// Maximum XML node count to bound malicious input.
 pub const MAX_QET_NODES: usize = 500_000;
 const MARGIN_PX: f64 = 5.0;
 const HEADER_PX: f64 = 20.0;
-/// Altura do carimbo quando o modelo não está embutido no projeto.
+/// Titleblock height when its template is not embedded in the project.
 const DEFAULT_TITLEBLOCK_PX: f64 = 50.0;
-/// Tolerância (mm) para casar o terminal da ocorrência com a porta.
+/// Tolerance in mm for matching occurrence terminals to ports.
 const PORT_TOLERANCE: f64 = 1e-6;
 
 #[derive(Debug, Clone)]
@@ -46,7 +46,7 @@ impl Default for QetOptions {
     }
 }
 
-/// Contagens do que foi convertido.
+/// Counts of converted content.
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct QetStats {
     pub pages: usize,
@@ -56,7 +56,7 @@ pub struct QetStats {
     pub conductors: usize,
     pub sheet_reports: usize,
     pub texts: usize,
-    /// Ocorrências sem terminais (desenhos), sem dispositivo.
+    /// Occurrences without terminals (drawings) and without a device.
     pub drawings: usize,
 }
 
@@ -71,11 +71,11 @@ struct Definition {
     symbol: SymbolDefinition,
     link: String,
     kind: String,
-    /// UUID do terminal (QElectroTech 0.9+) → posição local em px.
+    /// Terminal UUID (QElectroTech 0.9+) → local pixel position.
     terminals: BTreeMap<String, (f64, f64)>,
 }
 
-/// Geometria da folha em px.
+/// Sheet geometry in pixels.
 #[derive(Clone, Copy, PartialEq)]
 struct Sheet {
     cols: usize,
@@ -106,16 +106,16 @@ struct Instance {
     prefix: String,
     links: Vec<String>,
     terminals: Vec<(String, f64, f64)>,
-    /// Texto do rótulo guardado na ocorrência (QET 0.7+), em mm locais.
+    /// Label text stored on the occurrence (QET 0.7+), in local mm.
     label_text: Option<SymbolPrimitive>,
-    /// Textos de usuário da ocorrência: posição local (mm), texto, altura.
+    /// Occurrence user texts: local position in mm, text and height.
     user_texts: Vec<(f64, f64, String, f64)>,
 }
 
 struct Wire {
     page: usize,
-    /// UUIDs dos elementos (QElectroTech 0.9+); sem eles, `t1`/`t2` são
-    /// IDs de terminal da folha.
+    /// Element UUIDs (QElectroTech 0.9+); without them, `t1`/`t2` are
+    /// sheet terminal IDs.
     e1: Option<String>,
     e2: Option<String>,
     t1: String,
@@ -151,7 +151,7 @@ fn safe_id(s: &str) -> String {
         })
         .collect()
 }
-/// Texto sem marcação HTML (textos ricos do QElectroTech).
+/// Plain text without QElectroTech rich-text HTML markup.
 fn plain_text(text: &str) -> String {
     if !text.contains('<') {
         return text.trim().to_owned();
@@ -187,14 +187,14 @@ fn info(e: &Element, name: &str) -> String {
         .unwrap_or_default()
 }
 
-/// Rotação CAD-CRAFT (anti-horária) da orientação QET (passos de 90° no
-/// sentido horário da tela).
+/// CAD-CRAFT counterclockwise rotation from QET orientation, which uses
+/// clockwise quarter-turns on screen.
 fn rotation(orientation: u32) -> f64 {
     f64::from((4 - orientation % 4) % 4) * 90.0
 }
 
-/// Designação a partir do rótulo QET: `-K1`, `K1` ou `=A+B-K1` (só a parte
-/// do dispositivo); `None` quando não houver nome utilizável.
+/// Designation from a QET label: `-K1`, `K1` or `=A+B-K1` (device part only);
+/// `None` when no usable name exists.
 fn device_part(label: &str) -> Option<String> {
     let label = label.trim();
     let part = label.rsplit_once('-').map_or(label, |(_, d)| d).trim();

@@ -3,13 +3,15 @@
 //! Project symbol definitions and updates; start with update_symbol_definition.
 use super::*;
 impl Project {
+    /// Find the symbol definition by its stable identifier; return None when absent.
     pub fn symbol_definition(&self, id: &SymbolDefinitionId) -> Option<&SymbolDefinition> {
         self.symbol_definitions.get(id)
     }
+    /// Iterate symbol definitions without exposing mutable access.
     pub fn symbol_definitions(&self) -> impl Iterator<Item = &SymbolDefinition> {
         self.symbol_definitions.values()
     }
-    /// Validação completa precede tanto o registro da definição como a ocorrência.
+    /// Complete validation precedes definition registration and occurrence insertion.
     pub fn insert_symbol_representation(
         &mut self,
         representation: Representation,
@@ -37,7 +39,7 @@ impl Project {
         self.representations.insert(id, representation);
         Ok(id)
     }
-    /// Usada pelo histórico após remover uma ocorrência introduzida na transação.
+    /// Used by history after removing an occurrence introduced by the transaction.
     pub fn remove_unused_symbol_definition(
         &mut self,
         id: &SymbolDefinitionId,
@@ -90,7 +92,7 @@ impl Project {
     }
 }
 
-/// Etapa 17: troca reversível da definição de um símbolo por outra versão.
+/// Reversible replacement of a symbol definition with another version.
 #[derive(Clone, Debug, PartialEq)]
 pub struct SymbolUpdateDelta {
     project: ProjectId,
@@ -98,19 +100,22 @@ pub struct SymbolUpdateDelta {
     after: SymbolDefinition,
 }
 impl SymbolUpdateDelta {
+    /// Return the definition identifier.
     pub fn definition_id(&self) -> &SymbolDefinitionId {
         self.after.id()
     }
+    /// Borrow the symbol definition before replacement.
     pub fn before(&self) -> &SymbolDefinition {
         &self.before
     }
+    /// Borrow the symbol definition after replacement.
     pub fn after(&self) -> &SymbolDefinition {
         &self.after
     }
 }
 
 impl Project {
-    /// Ocorrências que usam a definição.
+    /// Occurrences using the definition.
     pub fn symbol_occurrences(&self, id: &SymbolDefinitionId) -> Vec<RepresentationId> {
         self.representations
             .values()
@@ -119,8 +124,8 @@ impl Project {
             .collect()
     }
 
-    /// Motivos que impedem trocar a definição registrada por `new` (vazio =
-    /// compatível): portas usadas que deixam de existir e orientações.
+    /// Reasons preventing replacement by `new`; empty means compatible. Checks removal of used ports
+    /// and allowed orientations.
     pub fn symbol_update_problems(&self, new: &SymbolDefinition) -> Vec<String> {
         let Some(old) = self.symbol_definition(new.id()) else {
             return vec![format!("símbolo '{}' não existe no projeto", new.id())];
@@ -183,9 +188,8 @@ impl Project {
         self.symbol_definitions.insert(id, definition);
     }
 
-    /// Troca a definição pela nova versão em todas as ocorrências (mesmos IDs
-    /// e vínculos). Recusa sem alterar nada se houver incompatibilidade ou se o
-    /// projeto resultante for inválido (ex.: fio ligado a porta deslocada).
+    /// Replace the definition for all occurrences, retaining IDs and bindings. Reject atomically on
+    /// incompatibility or an invalid resulting project, such as a wire bound to a moved port.
     pub fn update_symbol_definition(&mut self, new: SymbolDefinition) -> Result<SymbolUpdateDelta> {
         new.validate()?;
         if !self.symbol_update_problems(&new).is_empty() {
@@ -209,6 +213,8 @@ impl Project {
         })
     }
 
+    /// Replay the recorded symbol update change; forward reapplies it and false restores the prior
+    /// state. Reject a mismatched expected state.
     pub fn restore_symbol_update(
         &mut self,
         delta: &SymbolUpdateDelta,
@@ -233,8 +239,8 @@ impl Project {
         Ok(())
     }
 
-    /// Registra uma definição nova (biblioteca → projeto) sem ocorrências.
-    /// Recusa se já existir outra versão com o mesmo ID.
+    /// Register a new library definition without occurrences. Reject a different version sharing its
+    /// ID.
     pub fn add_symbol_definition(&mut self, definition: SymbolDefinition) -> Result<bool> {
         definition.validate()?;
         match self.symbol_definition(definition.id()) {

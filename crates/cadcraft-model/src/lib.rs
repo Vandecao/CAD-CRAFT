@@ -6,6 +6,8 @@
 //! and derives networks from logical connectivity. Everything that CAD-CRAFT
 //! imports or exports passes through this model. Start at [`domain::Project`].
 
+#![warn(missing_docs)]
+
 mod document_index;
 pub mod domain;
 pub mod dxf;

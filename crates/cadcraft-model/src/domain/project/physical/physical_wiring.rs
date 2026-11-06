@@ -4,31 +4,41 @@
 use super::*;
 
 impl Project {
+    /// Find the conductor by its stable identifier; return None when absent.
     pub fn conductor(&self, id: ConductorId) -> Option<&Conductor> {
         self.conductors.get(&id)
     }
+    /// Iterate conductors without exposing mutable access.
     pub fn conductors(&self) -> impl Iterator<Item = &Conductor> {
         self.conductors.values()
     }
+    /// Find the cable by its stable identifier; return None when absent.
     pub fn cable(&self, id: CableId) -> Option<&Cable> {
         self.cables.get(&id)
     }
+    /// Iterate cables without exposing mutable access.
     pub fn cables(&self) -> impl Iterator<Item = &Cable> {
         self.cables.values()
     }
+    /// Find the cable core by its stable identifier; return None when absent.
     pub fn cable_core(&self, id: CableCoreId) -> Option<&CableCore> {
         self.cable_cores.get(&id)
     }
+    /// Iterate cable cores without exposing mutable access.
     pub fn cable_cores(&self) -> impl Iterator<Item = &CableCore> {
         self.cable_cores.values()
     }
+    /// Find the terminal strip by its stable identifier; return None when absent.
     pub fn terminal_strip(&self, id: TerminalStripId) -> Option<&TerminalStrip> {
         self.terminal_strips.get(&id)
     }
+    /// Iterate terminal strips without exposing mutable access.
     pub fn terminal_strips(&self) -> impl Iterator<Item = &TerminalStrip> {
         self.terminal_strips.values()
     }
 
+    /// Validate and register conductor, rejecting duplicate IDs, foreign ownership or invalid
+    /// relations.
     pub fn insert_conductor(&mut self, conductor: Conductor) -> Result<ConductorId> {
         let id = conductor.id();
         if self.conductors.contains_key(&id) {
@@ -39,6 +49,7 @@ impl Project {
         self.conductors.insert(id, conductor);
         Ok(id)
     }
+    /// Validate and register cable, rejecting duplicate IDs, foreign ownership or invalid relations.
     pub fn insert_cable(&mut self, cable: Cable) -> Result<CableId> {
         let id = cable.id();
         if self.cables.contains_key(&id) {
@@ -48,6 +59,8 @@ impl Project {
         self.cables.insert(id, cable);
         Ok(id)
     }
+    /// Validate and register cable core, rejecting duplicate IDs, foreign ownership or invalid
+    /// relations.
     pub fn insert_cable_core(&mut self, core: CableCore) -> Result<CableCoreId> {
         let id = core.id();
         if self.cable_cores.contains_key(&id) {
@@ -58,6 +71,8 @@ impl Project {
         self.cable_cores.insert(id, core);
         Ok(id)
     }
+    /// Validate and register terminal strip, rejecting duplicate IDs, foreign ownership or invalid
+    /// relations.
     pub fn insert_terminal_strip(&mut self, strip: TerminalStrip) -> Result<TerminalStripId> {
         let id = strip.id();
         if self.terminal_strips.contains_key(&id) {
@@ -68,7 +83,7 @@ impl Project {
         self.terminal_strips.insert(id, strip);
         Ok(id)
     }
-    /// Acrescenta uma posição sem continuidade implícita. Posições não são removíveis.
+    /// Append a position without implicit continuity. Positions cannot be removed.
     pub fn add_terminal_position(
         &mut self,
         terminal: TerminalId,
@@ -83,7 +98,7 @@ impl Project {
         }
         Ok(())
     }
-    /// Acrescenta ao final da régua; um terminal só integra uma régua.
+    /// Append to the strip; a terminal belongs to at most one strip.
     pub fn attach_terminal(&mut self, strip: TerminalStripId, terminal: TerminalId) -> Result<()> {
         self.require(EntityRef::Terminal(terminal))?;
         if self
@@ -103,7 +118,7 @@ impl Project {
             .insert(terminal, strip);
         Ok(())
     }
-    /// Exige veia e condutor livres. Troca exige desvinculação explícita prévia.
+    /// Require both core and conductor to be free; replacement requires explicit unbinding first.
     pub fn assign_core_conductor(
         &mut self,
         core: CableCoreId,
@@ -135,7 +150,7 @@ impl Project {
             .insert(conductor, core);
         Ok(())
     }
-    /// Libera a veia sem remover o condutor. Veia já livre retorna None.
+    /// Free the core without deleting the conductor; an already free core returns None.
     pub fn unassign_core_conductor(&mut self, core: CableCoreId) -> Result<Option<ConductorId>> {
         let target = self
             .cable_cores
@@ -147,7 +162,7 @@ impl Project {
         }
         Ok(previous)
     }
-    /// Documenta uma conexão existente; não cria arestas nem altera redes.
+    /// Document an existing connection without creating edges or changing networks.
     pub fn assign_conductor_connection(
         &mut self,
         conductor: ConductorId,
@@ -173,7 +188,7 @@ impl Project {
             .link_connection(conductor, link.connection_id());
         Ok(())
     }
-    /// Retira só a documentação da ligação; condutor e conexão continuam existentes.
+    /// Remove only the binding, retaining both conductor and connection.
     pub fn unassign_conductor_connection(
         &mut self,
         conductor: ConductorId,

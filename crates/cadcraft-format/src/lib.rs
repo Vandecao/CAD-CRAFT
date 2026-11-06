@@ -8,6 +8,8 @@
 //! read as format 0 and migrated. All decoded projects are validated. This crate
 //! uses bounded readers and writers and never extracts archive entries to disk;
 //! the application owns file locks, atomic saves and recovery.
+#![warn(missing_docs)]
+
 use cadcraft_model::domain::{
     AssetId, FramePackage, FrameTemplate, ImageAsset, MAX_IMAGE_BYTES, MacroDefinition, Part,
     Project, SymbolDefinition,
@@ -20,18 +22,21 @@ use std::fmt;
 use std::io::{self, Read, Seek, SeekFrom, Write};
 use zip::{CompressionMethod, ZipArchive, ZipWriter, write::SimpleFileOptions};
 
-/// Formato gravado por esta versão.
+/// Format version written by this release.
 pub const FORMAT: u32 = 9;
-/// Formato mais antigo capaz de ler o que esta versão grava.
+/// Oldest reader format that can read files written by this release.
 pub const MIN_READER: u32 = 9;
-/// Formato mais recente que esta versão sabe ler.
+/// Newest format version accepted by this reader.
 pub const SUPPORTED_FORMAT: u32 = FORMAT;
+/// Content type of the native project ZIP container.
 pub const MIMETYPE: &str = "application/x-cad-craft-project+zip";
+/// Native project filename extension without a leading dot.
 pub const EXTENSION: &str = "cadcraft";
-/// Limites de segurança do contêiner, verificados antes de ler o projeto.
+/// Maximum archive entries, checked before reading project content.
 pub const MAX_ENTRIES: usize = 4096;
+/// Maximum aggregate declared uncompressed archive size.
 pub const MAX_UNPACKED_BYTES: u64 = 1 << 30;
-/// Limite de leitura de um snapshot JSON (v0) aberto como arquivo.
+/// Maximum size of a legacy JSON snapshot (format 0).
 pub const MAX_LEGACY_BYTES: u64 = 256 * 1024 * 1024;
 
 const MANIFEST: &str = "manifest.json";
@@ -39,15 +44,19 @@ const PROJECT: &str = "project.json";
 const MIMETYPE_ENTRY: &str = "mimetype";
 const MAX_MANIFEST_BYTES: u64 = 64 * 1024;
 
-/// Campos desconhecidos são tolerados: o manifesto pode crescer sem elevar
-/// `min_reader`. O conteúdo do projeto continua estrito.
+/// Unknown manifest fields are tolerated so the manifest can grow without raising
+/// `min_reader`. Project content remains strict.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Manifest {
+    /// Version of the content stored in this container.
     pub format: u32,
+    /// Minimum reader version required to interpret the content.
     pub min_reader: u32,
+    /// Application name and version that wrote the container.
     pub writer: String,
 }
 impl Manifest {
+    /// Manifest for projects written by this application release.
     pub fn current() -> Self {
         Self {
             format: FORMAT,
@@ -57,41 +66,60 @@ impl Manifest {
     }
 }
 
-/// Resultado de uma leitura bem-sucedida.
+/// Validated project and source metadata returned by a successful read.
 #[derive(Debug)]
 pub struct LoadedProject {
+    /// Decoded project with model invariants validated.
     pub project: Project,
-    /// 0 para o snapshot técnico JSON; caso contrário o `format` do manifesto.
+    /// Zero for a legacy JSON snapshot; otherwise the manifest's `format`.
     pub source_format: u32,
-    /// Verdadeiro quando o arquivo foi gravado por formato mais novo: salvar
-    /// por cima poderia descartar dados que esta versão não conhece.
+    /// True for files written in a newer format: overwriting them could
+    /// discard data unknown to this reader.
     pub read_only: bool,
+    /// Source manifest; absent for legacy JSON snapshots.
     pub manifest: Option<Manifest>,
 }
 impl LoadedProject {
-    /// Conteúdo gravado por formato anterior e convertido na leitura.
+    /// Whether older content was migrated during reading.
     pub fn migrated(&self) -> bool {
         self.source_format < FORMAT
     }
-    /// Snapshot técnico JSON (v0): precisa de "Salvar como" para virar `.cadcraft`.
-    /// Arquivos `.cadcraft` antigos continuam associados ao seu caminho.
+    /// Whether this is a legacy JSON snapshot requiring Save As to become `.cadcraft`.
+    /// Older `.cadcraft` files remain associated with their paths.
     pub fn is_legacy_snapshot(&self) -> bool {
         self.source_format == 0
     }
 }
 
+/// Failure reading, validating, migrating or writing native packages.
 #[derive(Debug)]
 pub enum PersistenceError {
+    /// Underlying reader or writer failed.
     Io(io::Error),
+    /// Input does not have a recognized native package or snapshot signature.
     NotAProject,
+    /// ZIP container is malformed or package content is incomplete.
     Container(String),
+    /// Archive entry has an unsafe path, duplicate name or unsupported encoding.
     UnsafeEntry(String),
+    /// A container or content resource limit was exceeded.
     TooLarge(&'static str),
+    /// A required package entry is missing.
     MissingEntry(&'static str),
+    /// Package content type does not match the requested reader.
     WrongMimetype,
+    /// Manifest JSON or version relationships are invalid.
     Manifest(String),
-    UnsupportedFormat { min_reader: u32, supported: u32 },
+    /// Package requires a newer reader than this application provides.
+    UnsupportedFormat {
+        /// Minimum reader version required by the file.
+        min_reader: u32,
+        /// Highest format version supported by this reader.
+        supported: u32,
+    },
+    /// Content JSON could not be decoded or migrated.
     Json(String),
+    /// Decoded or supplied content violates model invariants.
     Domain(DomainError),
 }
 impl fmt::Display for PersistenceError {
@@ -136,16 +164,17 @@ impl From<DomainError> for PersistenceError {
         Self::Domain(e)
     }
 }
+/// Result of reading or writing a native project or library package.
 pub type Result<T> = std::result::Result<T, PersistenceError>;
 
-/// Grava o formato atual. O projeto é validado antes de qualquer byte escrito.
+/// Writes the current format, validating the project before writing any bytes.
 pub fn write_project<W: Write + Seek>(project: &Project, writer: W) -> Result<W> {
     project.validate()?;
     let manifest = serde_json::to_vec_pretty(&Manifest::current())
         .map_err(|e| PersistenceError::Json(e.to_string()))?;
     let content = serde_json::to_vec(project).map_err(|e| PersistenceError::Json(e.to_string()))?;
-    // Etapa 14: imagens com conteúdo vão para `assets/`; sem conteúdo (lidas
-    // de snapshot técnico) não podem ser gravadas.
+    // Images with content are stored under `assets/`; metadata-only images
+    // from legacy snapshots cannot be saved.
     let assets: Vec<&ImageAsset> = project.assets().collect();
     if assets.iter().any(|a| a.bytes().is_none()) {
         return Err(PersistenceError::Container(
@@ -180,7 +209,7 @@ fn write_zip<W: Write + Seek>(
     zip.write_all(content)?;
     for asset in assets {
         if let Some(bytes) = asset.bytes() {
-            // PNG/JPEG já são comprimidos.
+            // PNG and JPEG content is already compressed.
             zip.start_file(asset_entry(asset), stored)?;
             zip.write_all(bytes)?;
         }
@@ -188,12 +217,12 @@ fn write_zip<W: Write + Seek>(
     Ok(zip.finish()?)
 }
 
-/// Conveniência para testes e memória.
+/// Serializes a project to an in-memory archive.
 pub fn write_project_to_vec(project: &Project) -> Result<Vec<u8>> {
     Ok(write_project(project, io::Cursor::new(Vec::new()))?.into_inner())
 }
 
-/// Lê v1 (ZIP) ou v0 (snapshot JSON). Nada é extraído para o disco.
+/// Reads a ZIP project or legacy JSON snapshot without extracting files to disk.
 pub fn read_project<R: Read + Seek>(mut reader: R) -> Result<LoadedProject> {
     let mut prefix = [0u8; 256];
     let read = read_prefix(&mut reader, &mut prefix)?;
@@ -211,6 +240,7 @@ pub fn read_project<R: Read + Seek>(mut reader: R) -> Result<LoadedProject> {
     Err(PersistenceError::NotAProject)
 }
 
+/// Reads a project from memory with the same checks as [`read_project`].
 pub fn read_project_from_slice(bytes: &[u8]) -> Result<LoadedProject> {
     read_project(io::Cursor::new(bytes))
 }
@@ -251,7 +281,7 @@ fn read_legacy(reader: impl Read) -> Result<LoadedProject> {
     })
 }
 
-/// Nome de entrada aceitável: relativo, sem componentes especiais.
+/// Accepts relative entry names without special path components.
 fn check_entry_name(name: &str) -> Result<()> {
     let unsafe_name = name.is_empty()
         || name.starts_with('/')
@@ -286,7 +316,7 @@ fn read_container<R: Read + Seek>(reader: R) -> Result<LoadedProject> {
     })
 }
 
-/// Contêiner ZIP com todas as verificações de segurança (Etapa 12).
+/// Opens a ZIP archive after validating its entries and resource limits.
 fn open_checked<R: Read + Seek>(reader: R) -> Result<ZipArchive<R>> {
     let mut archive = ZipArchive::new(reader)?;
     if archive.has_duplicate_names() {
@@ -303,7 +333,7 @@ fn open_checked<R: Read + Seek>(reader: R) -> Result<ZipArchive<R>> {
         let entry = archive.by_index_raw(index)?;
         let name = entry.name()?.into_owned();
         check_entry_name(&name)?;
-        // Nomes que só diferem por maiúsculas colidiriam em Windows.
+        // Names differing only in case would collide on Windows.
         if !names.insert(name.to_lowercase()) {
             return Err(PersistenceError::UnsafeEntry(name));
         }
@@ -374,15 +404,17 @@ fn read_entry<R: Read + Seek>(
     if entry.size() > limit {
         return Err(PersistenceError::TooLarge("entrada acima do limite"));
     }
-    // O tamanho declarado pode mentir; o limite também vale para os bytes reais.
+    // Declared sizes may be false; also bound the bytes actually read.
     read_bounded(entry, limit, "entrada acima do limite")
 }
 
 // ------------------------------------------------------------ .cadframe
 
-/// Etapa 14: moldura exportável (`.cadframe`).
+/// Content type of an exportable frame package (`.cadframe`).
 pub const FRAME_MIMETYPE: &str = "application/x-cad-craft-frame+zip";
+/// Frame package filename extension without a leading dot.
 pub const FRAME_EXTENSION: &str = "cadframe";
+/// Current frame package format version.
 pub const FRAME_FORMAT: u32 = 1;
 const FRAME: &str = "frame.json";
 
@@ -393,6 +425,7 @@ struct FrameFile {
     assets: Vec<ImageAsset>,
 }
 
+/// Serializes a validated frame and its image bytes into a frame package.
 pub fn write_frame_package(package: &FramePackage) -> Result<Vec<u8>> {
     package.frame.validate()?;
     if package.assets.iter().any(|a| a.bytes().is_none()) {
@@ -421,8 +454,8 @@ pub fn write_frame_package(package: &FramePackage) -> Result<Vec<u8>> {
     .into_inner())
 }
 
-/// Lê `.cadframe` com as mesmas defesas do `.cadcraft`; as imagens precisam
-/// estar presentes e corresponder aos metadados.
+/// Reads `.cadframe` with the same safeguards as `.cadcraft`; images must
+/// be present and match their metadata.
 pub fn read_frame_package(bytes: &[u8]) -> Result<FramePackage> {
     if !bytes.starts_with(b"PK\x03\x04") {
         return Err(PersistenceError::NotAProject);
@@ -450,9 +483,9 @@ pub fn read_frame_package(bytes: &[u8]) -> Result<FramePackage> {
     })
 }
 
-/// Migrações encadeadas `vN → vN+1` sobre o JSON do projeto.
-/// v0 (snapshot técnico) → v1: o conteúdo do projeto é idêntico; só o
-/// contêiner muda. Novas versões acrescentam um passo aqui.
+/// Applies chained `vN → vN+1` migrations to project JSON.
+/// v0 (legacy snapshot) → v1 preserves project content; only the
+/// container changes. Add a transition here for each new version.
 fn migrate(value: Value, from: u32) -> Result<Value> {
     let mut version = from;
     while version < FORMAT {
@@ -465,26 +498,26 @@ fn migrate(value: Value, from: u32) -> Result<Value> {
                 }
                 1
             }
-            // v1 (Etapa 12) → v2 (Etapa 13): molduras, moldura por página e
-            // formato de referência entram com valores padrão; nada a converter.
+            // v1 → v2: frames, page frame assignments and reference formatting
+            // use default values; no content conversion is needed.
             1 => 2,
-            // v2 (Etapa 13) → v3 (Etapa 14): imagens, elementos de imagem e marca
-            // d'água entram com valores padrão; nada a converter.
+            // v2 → v3: images, image elements and watermarks
+            // use default values; no content conversion is needed.
             2 => 3,
-            // v3 (Etapa 14/15) → v4 (Etapa 16): conteúdo livre é opcional
-            // nas representações existentes.
+            // v3 → v4: free drawing content is optional
+            // in existing representations.
             3 => 4,
-            // v4 (Etapa 16) → v5 (Etapa 17): estilos, elipse e textos dinâmicos
-            // de símbolo são opcionais; nada a converter.
+            // v4 → v5: styles, ellipses and dynamic symbol texts
+            // are optional; no content conversion is needed.
             4 => 5,
-            // v5 (Etapa 17) → v6 (Etapa 18): peças e atribuições são opcionais.
+            // v5 → v6: parts and assignments are optional.
             5 => 6,
-            // v6 → v7: esquema e rótulos são opcionais nas entidades antigas.
+            // v6 → v7: numbering schemes and labels are optional in existing entities.
             6 => 7,
-            // v7 → v8: definição de relatório opcional em cada página.
+            // v7 → v8: report definitions are optional on each page.
             7 => 8,
-            // v8 → v9 (Etapa 24): esquema de verificação opcional; acoplamentos
-            // sem `owned` recebem as conexões de posse na carga (DEC-11-01).
+            // v8 → v9: checking schemes are optional; couplings
+            // without `owned` acquire their owned connections during loading.
             8 => 9,
             _ => unreachable!("cada formato anterior possui migração"),
         };
@@ -501,13 +534,16 @@ fn decode_project(value: Value) -> Result<Project> {
 
 // ------------------------------------------------------------ .cadsym
 
-/// Etapa 17: símbolo de biblioteca (`.cadsym`): ZIP com `mimetype`,
-/// `manifest.json` e `symbol.json`, lido com as defesas do `.cadcraft`.
+/// Content type of a library symbol package (`.cadsym`): ZIP with `mimetype`,
+/// `manifest.json` and `symbol.json`, read with the `.cadcraft` safeguards.
 pub const SYMBOL_MIMETYPE: &str = "application/x-cad-craft-symbol+zip";
+/// Symbol package filename extension without a leading dot.
 pub const SYMBOL_EXTENSION: &str = "cadsym";
+/// Current symbol package format version.
 pub const SYMBOL_FORMAT: u32 = 1;
 const SYMBOL: &str = "symbol.json";
 
+/// Validates and serializes a symbol definition into a library package.
 pub fn write_symbol_package(definition: &SymbolDefinition) -> Result<Vec<u8>> {
     definition.validate()?;
     let manifest = serde_json::to_vec_pretty(&Manifest {
@@ -529,6 +565,7 @@ pub fn write_symbol_package(definition: &SymbolDefinition) -> Result<Vec<u8>> {
     .into_inner())
 }
 
+/// Reads a checked symbol package and validates its definition.
 pub fn read_symbol_package(bytes: &[u8]) -> Result<SymbolDefinition> {
     if !bytes.starts_with(b"PK\x03\x04") {
         return Err(PersistenceError::NotAProject);
@@ -544,11 +581,15 @@ pub fn read_symbol_package(bytes: &[u8]) -> Result<SymbolDefinition> {
 
 // ------------------------------------------------------------ .cadpart
 
+/// Content type of a library part package (`.cadpart`).
 pub const PART_MIMETYPE: &str = "application/x-cad-craft-part+zip";
+/// Part package filename extension without a leading dot.
 pub const PART_EXTENSION: &str = "cadpart";
+/// Current part package format version.
 pub const PART_FORMAT: u32 = 1;
 const PART: &str = "part.json";
 
+/// Validates and serializes a part into a library package.
 pub fn write_part_package(part: &Part) -> Result<Vec<u8>> {
     part.validate()?;
     let manifest = serde_json::to_vec_pretty(&Manifest {
@@ -570,6 +611,7 @@ pub fn write_part_package(part: &Part) -> Result<Vec<u8>> {
     .into_inner())
 }
 
+/// Reads a part from a checked library package.
 pub fn read_part_package(bytes: &[u8]) -> Result<Part> {
     if !bytes.starts_with(b"PK\x03\x04") {
         return Err(PersistenceError::NotAProject);
@@ -582,16 +624,19 @@ pub fn read_part_package(bytes: &[u8]) -> Result<Part> {
 
 // ------------------------------------------------------------ .cadmacro
 
-/// Etapa 19: macro de biblioteca (`.cadmacro`): ZIP com `mimetype`,
-/// `manifest.json` e `macro.json` (símbolos e peças embutidos), lido com as
-/// defesas do `.cadcraft` e validado por inserção num projeto de rascunho.
+/// Content type of a library macro package (`.cadmacro`): ZIP with `mimetype`,
+/// `manifest.json` and `macro.json` (embedded symbols and parts), read with
+/// the `.cadcraft` safeguards and validated by insertion into a scratch project.
 pub const MACRO_MIMETYPE: &str = "application/x-cad-craft-macro+zip";
+/// Macro package filename extension without a leading dot.
 pub const MACRO_EXTENSION: &str = "cadmacro";
+/// Current macro package format version.
 pub const MACRO_FORMAT: u32 = 1;
 const MACRO: &str = "macro.json";
-/// Tamanho máximo aceito para um `.cadmacro` (compactado).
+/// Maximum accepted compressed `.cadmacro` size.
 pub const MAX_MACRO_FILE_BYTES: u64 = 64 * 1024 * 1024;
 
+/// Validates and serializes a macro with its embedded symbols and parts.
 pub fn write_macro_package(definition: &MacroDefinition) -> Result<Vec<u8>> {
     definition.validate()?;
     let manifest = serde_json::to_vec_pretty(&Manifest {
@@ -613,6 +658,7 @@ pub fn write_macro_package(definition: &MacroDefinition) -> Result<Vec<u8>> {
     .into_inner())
 }
 
+/// Reads a size-bounded macro package and validates its definition.
 pub fn read_macro_package(bytes: &[u8]) -> Result<MacroDefinition> {
     if bytes.len() as u64 > MAX_MACRO_FILE_BYTES {
         return Err(PersistenceError::Container("macro grande demais".into()));

@@ -54,8 +54,7 @@ impl CadApp {
                     );
                     let tool = self.session.graphics.tool;
                     let faint = Stroke::new(1.5_f32, crate::theme::ACCENT.linear_multiply(0.65));
-                    // Prévias acima da folha (pintada depois desta interação),
-                    // recortadas à área do editor.
+                    // Paint previews above the sheet after this interaction, clipped to the editor area.
                     let overlay = ui
                         .ctx()
                         .layer_painter(egui::LayerId::new(
@@ -358,7 +357,7 @@ impl CadApp {
             self.session.graphics.click(hovered, ctrl);
             self.session.sync_graphic_selection();
         }
-        // Etapa 16: duplo clique em texto livre abre a edição do texto.
+        // Double-clicking free text opens its text editor.
         if response.double_clicked_by(PointerButton::Primary)
             && let Some(id) = hovered
             && let Some(SymbolPrimitive::Text { text, .. }) = self
@@ -499,8 +498,7 @@ impl CadApp {
 }
 
 impl CadApp {
-    /// Etapa 16: troca só o conteúdo do texto livre (altura, traço e
-    /// alinhamento mantidos), numa transação.
+    /// Replace only free-text content in one transaction, preserving height, stroke and alignment.
     pub(crate) fn edit_free_text(
         &mut self,
         id: RepresentationId,
@@ -528,8 +526,7 @@ impl CadApp {
     }
 }
 
-/// Etapa 19: desenho da macro em posicionamento (símbolos, conteúdo livre e
-/// fios), usado pela ferramenta de inserção e pelas miniaturas.
+/// Paint the macro being positioned, including symbols, free graphics and wires; used by insertion and thumbnails.
 pub(crate) fn paint_macro_preview(
     painter: &egui::Painter,
     definition: &MacroDefinition,

@@ -171,7 +171,7 @@ impl Session {
         self.changed();
         Ok(())
     }
-    /// Etapa 12: documentos e páginas são reversíveis pelo histórico comum.
+    /// Documents and pages are reversible through the shared history.
     pub fn new_document(&mut self, name: &str) -> Result<DocumentId> {
         let p = self.project_mut()?;
         let document = Document::new(p.id(), name)?;
@@ -191,7 +191,7 @@ impl Session {
         size: Size2D,
     ) -> Result<PageId> {
         let p = self.project_mut()?;
-        // Etapa 13: sem moldura padrão compatível, usa a moldura do mesmo tamanho.
+        // Without a compatible default frame, use one matching the sheet size.
         let default_fits = p
             .default_frame()
             .and_then(|id| p.frame(id))
@@ -236,8 +236,11 @@ impl Session {
         Ok(())
     }
     pub fn snapshot(&self) -> std::result::Result<String, String> {
-        serde_json::to_string_pretty(self.project().ok_or("Nenhum projeto aberto")?)
-            .map_err(|e| e.to_string())
+        serde_json::to_string_pretty(
+            self.project()
+                .ok_or(crate::strings::NO_OPEN_PROJECT_TITLE)?,
+        )
+        .map_err(|e| e.to_string())
     }
     pub fn import_snapshot(&mut self, json: &str) -> std::result::Result<(), String> {
         if json.len() > 8 * 1024 * 1024 {

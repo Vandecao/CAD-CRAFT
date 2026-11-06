@@ -1,5 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (C) 2026 Vanderlei Braga e colaboradores do CAD-CRAFT
+// Synthetic test fixtures intentionally fail fast when setup is invalid.
+#![allow(clippy::unwrap_used)]
+
 mod common;
 use cad_craft::{domain::*, error::DomainError};
 use common::{connect, fixture};
@@ -112,7 +115,7 @@ fn removing_bridge_preserves_pair_and_isolates_last_point() {
     let bc = connect(&mut p, ids[1], ids[2]);
     let previous = p.network_for_point(ids[0]).unwrap();
     p.remove_connection(bc).unwrap();
-    assert_eq!(previous.points().len(), 3); // Resultado possuído é uma fotografia.
+    assert_eq!(previous.points().len(), 3); // The owned result is a snapshot.
     assert_eq!(p.networks().len(), 2);
     assert_eq!(p.network_for_point(ids[0]).unwrap().connections(), &[ab]);
     assert_eq!(p.network_for_point(ids[2]).unwrap().points(), &[ids[2]]);

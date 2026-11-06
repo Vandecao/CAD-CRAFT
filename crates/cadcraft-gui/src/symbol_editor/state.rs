@@ -4,7 +4,7 @@
 
 use super::*;
 
-/// Grade do editor de símbolos (mm).
+/// Symbol-editor grid spacing in millimetres.
 pub(in crate::symbol_editor) const GRID_MM: f64 = 1.0;
 pub(in crate::symbol_editor) const MAX_UNDO: usize = 200;
 
@@ -97,7 +97,7 @@ pub(in crate::symbol_editor) struct Draft {
     pub(in crate::symbol_editor) ports: Vec<SymbolPort>,
 }
 
-/// Campo escolhido para novos textos dinâmicos.
+/// Field chosen for new dynamic text.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub enum FieldChoice {
     #[default]
@@ -111,7 +111,7 @@ pub enum FieldChoice {
 #[derive(Default)]
 pub struct SymbolEditor {
     pub(in crate::symbol_editor) open: bool,
-    /// Definição de origem (edição gera nova versão com o mesmo ID).
+    /// Source definition; editing creates a new version with the same ID.
     pub(in crate::symbol_editor) base: Option<SymbolDefinition>,
     pub(in crate::symbol_editor) id: Option<SymbolDefinitionId>,
     pub(in crate::symbol_editor) draft: Option<Draft>,
@@ -119,13 +119,13 @@ pub struct SymbolEditor {
     pub selection: Option<SymbolItem>,
     pub camera: Camera,
     pub needs_fit: bool,
-    /// Área de desenho do último quadro (testes e automação).
+    /// Drawing area of the latest frame, for tests and automation.
     pub viewport: Option<Rect>,
     pub(in crate::symbol_editor) pending: Vec<Point2D>,
     pub(in crate::symbol_editor) drag: Option<(Point2D, Point2D)>,
     pub(in crate::symbol_editor) undo: Vec<Draft>,
     pub(in crate::symbol_editor) redo: Vec<Draft>,
-    /// Texto usado pela ferramenta Texto.
+    /// Text used by the text tool.
     pub new_text: String,
     pub field: FieldChoice,
     pub field_key: String,
@@ -135,7 +135,7 @@ impl SymbolEditor {
     pub fn is_open(&self) -> bool {
         self.open
     }
-    /// Cancela a ferramenta/pontos pendentes; `true` se havia algo.
+    /// Cancel the tool and pending points; return true if anything was canceled.
     pub fn cancel(&mut self) -> bool {
         let busy =
             !self.pending.is_empty() || self.drag.is_some() || self.tool != SymbolTool::Select;
@@ -144,7 +144,7 @@ impl SymbolEditor {
         self.tool = SymbolTool::Select;
         busy
     }
-    /// Definição resultante do rascunho (validada), com versão nova.
+    /// Validated definition produced by the draft, with a new version.
     pub fn definition(&self) -> Option<SymbolDefinition> {
         self.build().ok()
     }
@@ -233,7 +233,7 @@ impl SymbolEditor {
             }
         }
     }
-    /// Altera o rascunho com ponto de Desfazer; recusa resultado inválido.
+    /// Modify the draft with an undo point; reject invalid results.
     pub(in crate::symbol_editor) fn change(&mut self, f: impl FnOnce(&mut Draft)) -> bool {
         let Some(before) = self.draft.clone() else {
             return false;
@@ -243,7 +243,7 @@ impl SymbolEditor {
         if after == before {
             return false;
         }
-        // Primitivas/portas precisam continuar válidas isoladamente.
+        // Primitives and ports must remain individually valid.
         if after.primitives.iter().any(|p| p.bounds().is_err())
             || after
                 .styles

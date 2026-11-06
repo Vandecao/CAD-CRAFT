@@ -42,7 +42,7 @@ fn style_of(e: &Element, s: f64, report: &mut ImportReport) -> PrimitiveStyle {
     style
 }
 
-/// Altura em mm a partir de `font="Família,tamanho,…"`.
+/// Height in mm from `font="Family,size,…"`.
 pub(crate) fn font_height(e: &Element, s: f64) -> f64 {
     e.attr("font")
         .and_then(|f| f.split(',').nth(1))
@@ -70,7 +70,7 @@ pub(crate) fn align_of(e: &Element) -> TextAlign {
     }
 }
 
-/// Nome preferido: pt-BR, pt, en, primeiro.
+/// Preferred name: pt-BR, pt, en, then the first available.
 fn name_of(root: &Element) -> Option<String> {
     let names = root.child("names")?;
     let all: Vec<(&str, &str)> = names

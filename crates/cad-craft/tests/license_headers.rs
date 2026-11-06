@@ -2,6 +2,9 @@
 // Copyright (C) 2026 Vanderlei Braga e colaboradores do CAD-CRAFT
 //! Every Rust source file in the workspace starts with the SPDX license
 //! header, and the license text is present at the repository root.
+// Synthetic test fixtures intentionally fail fast when setup is invalid.
+#![allow(clippy::unwrap_used)]
+
 use std::path::{Path, PathBuf};
 
 const HEADER: &str = "// SPDX-License-Identifier: GPL-3.0-or-later";

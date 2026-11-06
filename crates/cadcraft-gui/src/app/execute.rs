@@ -58,8 +58,7 @@ impl CadApp {
                 if let Err(e) = self.session.capture_selection(id == C::Cut) {
                     self.log(Level::Error, e.to_string());
                 } else {
-                    // Texto no clipboard do sistema: garante o evento Paste do
-                    // Ctrl+V no Windows (o conteúdo real fica na sessão).
+                    // System clipboard text ensures Windows emits Paste for Ctrl+V; the actual content stays in the session.
                     let n = self.session.clipboard.as_ref().map_or(0, |c| c.len());
                     ctx.copy_text(format!("CAD-CRAFT: {n} item(ns) na área de transferência"));
                     self.log(
@@ -205,7 +204,7 @@ impl CadApp {
             C::Rotate90 | C::Rotate180 | C::Rotate270 | C::MirrorHorizontal | C::MirrorVertical
                 if self.session.graphics.macro_draft.is_some() =>
             {
-                // Etapa 19: giro/espelho da macro ainda em posicionamento.
+                // Rotate or mirror the macro while positioning it.
                 let draft = self
                     .session
                     .graphics
@@ -250,8 +249,8 @@ impl CadApp {
             }
             C::NewProject => self.dialogs_state.dialog = Some(Dialog::NewProject(String::new())),
             C::Demo => self.request(PendingAction::Demo, ctx),
-            C::OpenSnapshot => self.dialogs_state.backstage = Some("Importar"),
-            C::ImportQet => self.dialogs_state.backstage = Some("Importar"),
+            C::OpenSnapshot => self.dialogs_state.backstage = Some(crate::strings::IMPORT),
+            C::ImportQet => self.dialogs_state.backstage = Some(crate::strings::IMPORT),
             C::ImportEdz => self.edz.open = true,
             C::OpenProject => self.open_project_dialog(ctx),
             C::FrameEditor
@@ -307,7 +306,7 @@ impl CadApp {
                 self.save_project_as();
             }
             C::ExportSnapshot => {
-                self.dialogs_state.backstage = Some("Exportar");
+                self.dialogs_state.backstage = Some(crate::strings::EXPORT);
                 match self.session.snapshot() {
                     Ok(json) => self.dialogs_state.snapshot_text = json,
                     Err(e) => self.log(Level::Error, e),
@@ -315,7 +314,7 @@ impl CadApp {
             }
             C::CloseProject => self.request(PendingAction::Close, ctx),
             C::Exit => self.request(PendingAction::Exit, ctx),
-            C::Settings => self.dialogs_state.backstage = Some("Configurações"),
+            C::Settings => self.dialogs_state.backstage = Some(crate::strings::SETTINGS),
             C::NewDocument => self.dialogs_state.dialog = Some(Dialog::NewDocument(String::new())),
             C::NewPage => {
                 if let Some(doc) = self.session.selected_document() {

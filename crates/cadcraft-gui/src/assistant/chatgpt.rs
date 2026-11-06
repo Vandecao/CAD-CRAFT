@@ -23,7 +23,9 @@ fn agent() -> ureq::Agent {
 
 /// Valid access token, refreshing it first when needed.
 fn access_token(tokens: &Mutex<Option<Tokens>>) -> Result<String, String> {
-    let mut guard = tokens.lock().map_err(|_| "sessão indisponível")?;
+    let mut guard = tokens
+        .lock()
+        .map_err(|_| crate::strings::SESSION_UNAVAILABLE)?;
     let current = guard.as_ref().ok_or("entre com a conta ChatGPT")?;
     if current.expired() {
         let next = oauth::refresh(current)?;
@@ -124,7 +126,7 @@ impl Provider for ChatGpt {
             let code = json["error"]["code"].as_str().unwrap_or("");
             let message = json["error"]["message"].as_str().unwrap_or("");
             return Err(if status == 401 {
-                "sessão expirada: entre de novo".into()
+                crate::strings::SESSION_EXPIRED.into()
             } else {
                 plan_error(code, format!("HTTP {status} {message}").trim())
             });

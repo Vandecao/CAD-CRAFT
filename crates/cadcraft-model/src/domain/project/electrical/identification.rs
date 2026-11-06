@@ -12,8 +12,8 @@ fn changed<T: PartialEq>(before: T, after: T) -> Option<IdentificationChange<T>>
 }
 
 impl Project {
-    /// Unicidade para novas escritas; snapshots antigos podem conservar conflitos
-    /// que continuam visíveis em designation_conflicts, sem fundir identidades.
+    /// Require uniqueness for new writes. Legacy snapshots may retain conflicts exposed by
+    /// designation_conflicts without merging identities.
     pub(in crate::domain::project) fn check_new_device_designation(
         &self,
         device: &Device,
@@ -28,6 +28,7 @@ impl Project {
         }
         Ok(())
     }
+    /// Return groups of distinct devices sharing the same full designation.
     pub fn designation_conflicts(&self) -> Vec<Vec<DeviceId>> {
         let mut names: BTreeMap<String, Vec<DeviceId>> = BTreeMap::new();
         for d in self.devices() {
@@ -47,12 +48,14 @@ impl Project {
         }
         Ok(())
     }
+    /// Return the explicitly assigned main function of a registered device, if present.
     pub fn main_function(&self, device: DeviceId) -> Result<Option<&Function>> {
         self.require(EntityRef::Device(device))?;
         Ok(self
             .functions_for_device(device)
             .find(|f| f.role() == FunctionRole::Main))
     }
+    /// Resolve the function explicitly associated with a representation target.
     pub fn function_for_target(&self, target: RepresentationTarget) -> Option<FunctionId> {
         match target {
             RepresentationTarget::Function(id) => self.function(id).map(Function::id),
@@ -75,6 +78,7 @@ impl Project {
             _ => None,
         }
     }
+    /// Resolve the device explicitly associated with a representation target.
     pub fn device_for_target(&self, target: RepresentationTarget) -> Option<DeviceId> {
         match target {
             RepresentationTarget::Device(id) => self.device(id).map(Device::id),
@@ -89,6 +93,7 @@ impl Project {
                 .map(Function::device_id),
         }
     }
+    /// Derive graphical references for the registered device.
     pub fn device_references(&self, device: DeviceId) -> Result<Vec<DeviceReference>> {
         self.require(EntityRef::Device(device))?;
         let mut result = Vec::new();
@@ -101,6 +106,7 @@ impl Project {
         result.sort_by_key(|r| (r.page, r.representation));
         Ok(result)
     }
+    /// Derive graphical references for the registered function.
     pub fn function_references(&self, function: FunctionId) -> Result<Vec<DeviceReference>> {
         let f = self
             .function(function)
@@ -111,6 +117,7 @@ impl Project {
             .filter(|r| r.function == Some(function))
             .collect())
     }
+    /// Derive contact rows and occurrence references for the registered device.
     pub fn contact_mirror(&self, device: DeviceId) -> Result<Vec<ContactMirrorRow>> {
         self.require(EntityRef::Device(device))?;
         let mut rows = Vec::new();
@@ -172,6 +179,7 @@ impl Project {
             terminals,
         })
     }
+    /// Validate and apply the device operation, returning the recorded reversible change.
     pub fn edit_device(&mut self, edit: DeviceEdit) -> Result<DeviceDelta> {
         let mut delta = DeviceDelta::new(self.id());
         match edit {
@@ -331,6 +339,8 @@ impl Project {
         self.restore_device_edit(&delta, true)?;
         Ok(delta)
     }
+    /// Replay the recorded device edit change; forward reapplies it and false restores the prior
+    /// state. Reject a mismatched expected state.
     pub fn restore_device_edit(&mut self, delta: &DeviceDelta, forward: bool) -> Result<()> {
         self.check_project(delta.project)?;
         macro_rules! check {

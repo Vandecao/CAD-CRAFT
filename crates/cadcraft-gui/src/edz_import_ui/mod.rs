@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (C) 2026 Vanderlei Braga e colaboradores do CAD-CRAFT
-//! Etapa 26: análise EDZ em lote, prévia e confirmação na biblioteca.
+//! Batch EDZ analysis, preview and library confirmation; start with the workflow module.
 use crate::{
     app::CadApp,
     error::{GuiError, GuiResult},
@@ -279,7 +279,7 @@ fn read_package(path: &Path) -> GuiResult<EdzImport> {
     edz::import(&bytes).map_err(GuiError::from)
 }
 
-/// Nenhum nome vindo do arquivo é usado diretamente como caminho.
+/// Never use a name from the imported file directly as a path.
 fn stem(id: &str) -> String {
     let s: String = id
         .chars()

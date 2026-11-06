@@ -40,7 +40,7 @@ impl CadApp {
         let mut apply = false;
         let mut style_change: Option<PrimitiveStyle> = None;
         ui.collapsing("Conteúdo livre", |ui| {
-            // Etapa 17: padrão do traço e preenchimento (aplicação imediata).
+            // Apply stroke pattern and fill changes immediately.
             let mut style = graphic.style();
             egui::ComboBox::from_id_salt("free_graphic_dash")
                 .selected_text(style.dash.label())

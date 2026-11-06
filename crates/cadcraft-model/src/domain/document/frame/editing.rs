@@ -7,7 +7,7 @@ fn moved(p: Point2D, dx: f64, dy: f64) -> Result<Point2D> {
     p.translated(dx, dy)
 }
 impl FrameElement {
-    /// Mesmo elemento deslocado (mm).
+    /// The same element translated in millimetres.
     pub fn translated(&self, dx: f64, dy: f64) -> Result<Self> {
         Ok(match self.clone() {
             Self::Line { start, end, width } => Self::Line {
@@ -67,7 +67,7 @@ impl FrameElement {
             },
         })
     }
-    /// Ponto de referência usado para mover, alinhar e selecionar.
+    /// Reference point for movement, alignment and selection.
     pub fn anchor(&self) -> Point2D {
         match self {
             Self::Line { start, .. } => *start,
@@ -76,12 +76,14 @@ impl FrameElement {
             Self::Text { origin, .. } | Self::Special { origin, .. } => *origin,
         }
     }
+    /// Return the referenced image asset, if any.
     pub fn asset(&self) -> Option<AssetId> {
         match self {
             Self::Image { asset, .. } => Some(*asset),
             _ => None,
         }
     }
+    /// Return the pt-BR element-kind label.
     pub fn kind_label(&self) -> &'static str {
         match self {
             Self::Line { .. } => "Linha",
@@ -95,18 +97,25 @@ impl FrameElement {
     }
 }
 
-/// Conteúdo editável de uma moldura; `FrameTemplate::edited` valida e gera a
-/// versão seguinte com o mesmo ID.
+/// Editable frame content. FrameTemplate::edited validates it and produces the next version with
+/// the same ID.
 #[derive(Clone, Debug, PartialEq)]
 pub struct FrameDraft {
+    /// Human-readable name.
     pub name: String,
+    /// Descriptive text.
     pub description: String,
+    /// Sheet extent in millimetres.
     pub sheet: Size2D,
+    /// Frame usable area in millimetres.
     pub usable: Rect2D,
+    /// Column and row zone divisions.
     pub zones: ZoneLayout,
+    /// Ordered drawable frame elements.
     pub elements: Vec<FrameElement>,
 }
 impl FrameTemplate {
+    /// Copy this template into an editable draft.
     pub fn draft(&self) -> FrameDraft {
         FrameDraft {
             name: self.name.as_str().to_owned(),
@@ -117,6 +126,7 @@ impl FrameTemplate {
             elements: self.elements.clone(),
         }
     }
+    /// Validate a draft and create the next version with the same template identity.
     pub fn edited(&self, draft: FrameDraft) -> Result<Self> {
         let frame = Self {
             id: self.id,
@@ -131,7 +141,7 @@ impl FrameTemplate {
         frame.validate()?;
         Ok(frame)
     }
-    /// Cópia independente: novo ID e versão 1.
+    /// Independent copy with a new ID and version one.
     pub fn duplicate(&self, name: impl Into<String>) -> Result<Self> {
         let frame = Self {
             id: FrameTemplateId::new(),
@@ -142,7 +152,7 @@ impl FrameTemplate {
         frame.validate()?;
         Ok(frame)
     }
-    /// Moldura em branco: borda a 5 mm e área útil igual à borda, sem zonas.
+    /// Blank frame: 5 mm border, usable area equal to that border, and no zones.
     pub fn blank(name: impl Into<String>, sheet: Size2D) -> Result<Self> {
         let (w, h) = (sheet.width(), sheet.height());
         let inset = 5.0_f64.min(w / 4.0).min(h / 4.0);
@@ -164,10 +174,11 @@ impl FrameTemplate {
             }],
         )
     }
+    /// Iterate image assets referenced by this template or registered in this project.
     pub fn assets(&self) -> impl Iterator<Item = AssetId> + '_ {
         self.elements.iter().filter_map(FrameElement::asset)
     }
-    /// Mesmo conteúdo com IDs de imagem trocados (importação).
+    /// The same content with image IDs remapped for import.
     pub fn with_assets_remapped(
         &self,
         map: &BTreeMap<AssetId, AssetId>,

@@ -3,49 +3,77 @@
 //! Transactional physical engineering edits; start with PhysicalEdit and edit_physical.
 use super::*;
 
+/// Physical engineering operation applied through validated transactional editing.
 #[derive(Clone, Debug, PartialEq)]
 pub enum PhysicalEdit {
+    /// Insert or replace the terminal after validation.
     UpsertTerminal(Terminal),
+    /// Delete terminal.
     DeleteTerminal(TerminalId),
+    /// Insert or replace the strip after validation.
     UpsertStrip(TerminalStrip),
+    /// Delete strip.
     DeleteStrip(TerminalStripId),
+    /// Insert or replace the cable after validation.
     UpsertCable(Cable),
+    /// Delete cable.
     DeleteCable(CableId),
+    /// Insert or replace the core after validation.
     UpsertCore(CableCore),
+    /// Delete core.
     DeleteCore(CableCoreId),
+    /// Insert or replace the conductor after validation.
     UpsertConductor(Conductor),
+    /// Delete conductor.
     DeleteConductor(ConductorId),
+    /// Set core conductor.
     SetCoreConductor {
+        /// Associated cable core.
         core: CableCoreId,
+        /// Associated physical conductor.
         conductor: Option<ConductorId>,
     },
+    /// Set conductor connection.
     SetConductorConnection {
+        /// Associated physical conductor.
         conductor: ConductorId,
+        /// Explicit logical connection binding for the conductor.
         link: Option<ConductorConnection>,
     },
+    /// Insert or replace the bridge after validation.
     UpsertBridge(TerminalBridge),
+    /// Create bridge.
     CreateBridge {
+        /// Terminal strip associated with the record.
         strip: TerminalStripId,
+        /// Explicit source endpoint.
         source: ConnectionPointId,
+        /// Explicit target of this record or operation.
         target: ConnectionPointId,
+        /// Declared category of this record or operation.
         kind: TerminalBridgeKind,
     },
+    /// Delete bridge.
     DeleteBridge(ConnectionId),
-    /// Cria ou altera conector (designação, gênero, relações, ordem de contatos).
+    /// Create or edit a connector's designation, gender, relations and contact order.
     UpsertConnector(Connector),
-    /// Remove somente o agrupamento; recusado se houver acoplamento.
+    /// Remove only the grouping; reject if a mating exists.
     DeleteConnector(ConnectorId),
-    /// Acoplamento documental explícito; não cria conexões lógicas.
+    /// Explicit documentary mating without implicit logical connection creation.
     UpsertMating(ConnectorMating),
+    /// Delete mating.
     DeleteMating(ConnectorMatingId),
-    /// Associa (ou desassocia, com `None`) ponto funcional a borne/contato e,
-    /// para borne multinível, ao nível. Não cria nem remove conexões.
+    /// Bind a functional point to a terminal/contact, or unbind with `None`; multilevel terminals also
+    /// require a level. Creates or removes no connections.
     SetPointTerminal {
+        /// Explicit functional connection point.
         point: ConnectionPointId,
+        /// Associated physical terminal or contact.
         terminal: Option<TerminalId>,
+        /// Explicit level of a multilevel terminal.
         level: Option<TerminalLevelId>,
     },
-    /// Edições aplicadas atomicamente como uma única transação reversível.
+    /// Edits applied atomically as a single reversible transaction.
     Batch(Vec<PhysicalEdit>),
 }
 
@@ -56,6 +84,7 @@ struct PhysicalChange<K, V> {
     after: Option<V>,
 }
 
+/// Physical entities and relations touched by a reversible transaction.
 #[derive(Clone, Debug, PartialEq)]
 pub struct PhysicalDelta {
     project: ProjectId,
@@ -71,6 +100,7 @@ pub struct PhysicalDelta {
     points: Vec<PhysicalChange<ConnectionPointId, ConnectionPoint>>,
 }
 impl PhysicalDelta {
+    /// Return the number of contained entries or entity changes recorded by this value.
     pub fn len(&self) -> usize {
         self.terminals.len()
             + self.strips.len()
@@ -83,6 +113,7 @@ impl PhysicalDelta {
             + self.matings.len()
             + self.points.len()
     }
+    /// Whether this collection or recorded edit contains no effective entries or changes.
     pub fn is_empty(&self) -> bool {
         self.len() == 0
     }
@@ -133,7 +164,7 @@ fn change<K: Copy, V: PartialEq>(
     (before != after).then_some(PhysicalChange { key, before, after })
 }
 
-/// Compõe mudanças sucessivas por chave: primeiro `before`, último `after`.
+/// Compose successive changes by key, keeping the first `before` and final `after`.
 fn merge<'a, K: Ord + Copy + 'a, V: PartialEq + Clone + 'a>(
     parts: impl Iterator<Item = &'a Vec<PhysicalChange<K, V>>>,
 ) -> Vec<PhysicalChange<K, V>> {
@@ -155,13 +186,15 @@ fn merge<'a, K: Ord + Copy + 'a, V: PartialEq + Clone + 'a>(
 }
 
 impl Project {
+    /// Find the terminal bridge by its stable identifier; return None when absent.
     pub fn terminal_bridge(&self, id: ConnectionId) -> Option<&TerminalBridge> {
         self.terminal_bridges.get(&id)
     }
+    /// Iterate terminal bridges without exposing mutable access.
     pub fn terminal_bridges(&self) -> impl Iterator<Item = &TerminalBridge> {
         self.terminal_bridges.values()
     }
-    /// Aplica uma edição física validada. Erros não deixam mutação parcial.
+    /// Apply a validated physical edit; errors leave no partial mutation.
     pub fn edit_physical(&mut self, edit: PhysicalEdit) -> Result<PhysicalDelta> {
         if let PhysicalEdit::Batch(edits) = edit {
             return self.edit_physical_batch(edits);
@@ -170,8 +203,8 @@ impl Project {
         self.restore_physical(&delta, true)?;
         Ok(delta)
     }
-    /// Lote atômico: estados intermediários não são publicados nem validados
-    /// isoladamente; somente o estado final é verificado e vira um único delta.
+    /// Atomic batch: intermediate states are neither published nor independently validated. Only the
+    /// final state is checked and stored in one delta.
     fn edit_physical_batch(&mut self, edits: Vec<PhysicalEdit>) -> Result<PhysicalDelta> {
         let graph_before = self.graph.clone();
         let physical_before = self.physical_index.clone();
@@ -453,8 +486,8 @@ impl Project {
                 });
             }
             PhysicalEdit::UpsertMating(value) => {
-                // Etapa 24 (DEC-11-01): o acoplamento possui uma conexão por par
-                // de contatos com ponto; as que ligam os mesmos pontos são mantidas.
+                // A mating owns one connection per contact pair with points; retain connections having the same
+                // endpoints.
                 let id = value.id();
                 let before = self.connector_mating(id).cloned();
                 let (owned, created, removed) =
@@ -528,6 +561,8 @@ impl Project {
         }
         Ok(delta)
     }
+    /// Replay the recorded physical change; forward reapplies it and false restores the prior state.
+    /// Reject a mismatched expected state.
     pub fn restore_physical(&mut self, delta: &PhysicalDelta, forward: bool) -> Result<()> {
         self.check_project(delta.project)?;
         preflight(&self.terminals, &delta.terminals, forward)?;

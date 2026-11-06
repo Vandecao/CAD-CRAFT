@@ -245,9 +245,9 @@ impl Session {
                     "porta sem associação elétrica; vincule um ponto nas propriedades",
                 ));
             }
-            let p = self
-                .project()
-                .ok_or(DomainError::InvalidRelation("nenhum projeto aberto"))?;
+            let p = self.project().ok_or(DomainError::InvalidRelation(
+                crate::strings::NO_OPEN_PROJECT,
+            ))?;
             let position = p.port_position(&port)?;
             if let Some(source) = &draft.source {
                 let mut anchors = draft.anchors.clone();

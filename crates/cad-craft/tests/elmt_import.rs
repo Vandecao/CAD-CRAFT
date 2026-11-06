@@ -1,8 +1,11 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (C) 2026 Vanderlei Braga e colaboradores do CAD-CRAFT
-//! Etapa 17: importação de elementos `.elmt` do QElectroTech.
-//! A coleção de referência (CC-BY 3.0) não é versionada: o teste da amostra
-//! real só roda quando a pasta local existe. Não é usada como dado de IA.
+//! Import QElectroTech .elmt definitions.
+//! The CC-BY 3.0 reference collection is not versioned; optional sample checks run only when its
+//! local folder exists. Samples are not AI training data.
+// Synthetic test fixtures intentionally fail fast when setup is invalid.
+#![allow(clippy::unwrap_used)]
+
 use cad_craft::domain::*;
 use cad_craft::interchange::elmt::{DEFAULT_MM_PER_PX, ElmtOptions, import};
 
@@ -31,7 +34,7 @@ fn synthetic_element_converts_geometry_ports_texts_and_styles() {
     assert_eq!(d.name(), "Bobina");
     assert_eq!(d.id().as_str(), "qet.11111111-2222-3333-4444-555555555555");
     let s = DEFAULT_MM_PER_PX;
-    // Retângulo: y = -8 (para baixo) → topo em +4 mm, base em -4 mm.
+    // The rectangle at downward Y=-8 maps to a top at +4 mm and a bottom at -4 mm.
     let SymbolPrimitive::Rectangle { rect } = &d.primitives()[0] else {
         panic!("retângulo")
     };
@@ -43,7 +46,7 @@ fn synthetic_element_converts_geometry_ports_texts_and_styles() {
         (rect.size().width(), rect.size().height()),
         (28.0 * s, 16.0 * s)
     );
-    // Linha tracejada e espessa; elipse preenchida; polígono fechado.
+    // Cover a thick dashed line, filled ellipse and closed polygon.
     assert_eq!(d.style(1).dash, LineDash::Dashed);
     assert!(d.style(1).width_mm.is_some());
     assert!(matches!(d.primitives()[2], SymbolPrimitive::Ellipse { .. }));
@@ -64,7 +67,7 @@ fn synthetic_element_converts_geometry_ports_texts_and_styles() {
             .iter()
             .any(|p| matches!(p, SymbolPrimitive::Text { text, .. } if text == "A2"))
     );
-    // Terminais: A1 em cima (Y+) apontando para cima, A2 embaixo.
+    // A1 is above the origin (Y+) and points up; A2 is below it.
     let a1 = d.ports().iter().find(|p| p.id() == "A1").unwrap();
     assert_eq!(a1.position().y(), 20.0 * s);
     assert_eq!(a1.orientation_degrees(), 90.0);
@@ -76,9 +79,9 @@ fn synthetic_element_converts_geometry_ports_texts_and_styles() {
             .orientation_degrees(),
         270.0
     );
-    // Entrada QET desconhecida vai para o relatório.
+    // Unknown QET input is included in the report.
     assert!(imported.report.lines().iter().any(|l| l.contains("input")));
-    // Escala ajustável.
+    // The import scale is configurable.
     let mut options = ElmtOptions::new("bobina");
     options.mm_per_px = 1.0;
     let big = import(SYNTHETIC.as_bytes(), &options).unwrap().definition;
@@ -95,10 +98,10 @@ fn invalid_elements_are_refused() {
     assert!(import(xxe.as_bytes(), &ElmtOptions::new("x")).is_err());
 }
 
-/// Amostra real (≥ 50 elementos) da coleção de referência, quando presente.
+/// Read the optional reference collection sample when available.
 #[test]
 fn reference_collection_sample_imports_without_errors() {
-    // Coleção de elementos fora do Git: `CADCRAFT_SAMPLES/elmt`.
+    // The external element collection is under CADCRAFT_SAMPLES/elmt.
     let Some(root) =
         std::env::var_os("CADCRAFT_SAMPLES").map(|r| std::path::Path::new(&r).join("elmt"))
     else {

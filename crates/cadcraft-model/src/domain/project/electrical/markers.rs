@@ -52,15 +52,19 @@ fn write<K: Ord + Clone, V: Clone>(
     }
 }
 impl Project {
+    /// Find the marker by its stable identifier; return None when absent.
     pub fn marker(&self, id: RepresentationId) -> Option<&ElectricalMarker> {
         self.markers.get(&id)
     }
+    /// Iterate markers without exposing mutable access.
     pub fn markers(&self) -> impl Iterator<Item = &ElectricalMarker> {
         self.markers.values()
     }
+    /// Find the marker group by its stable identifier; return None when absent.
     pub fn marker_group(&self, id: ReferenceGroupId) -> Option<&MarkerGroup> {
         self.marker_groups.get(&id)
     }
+    /// Iterate marker groups without exposing mutable access.
     pub fn marker_groups(&self) -> impl Iterator<Item = &MarkerGroup> {
         self.marker_groups.values()
     }
@@ -163,6 +167,7 @@ impl Project {
         }
         Ok(())
     }
+    /// Return other marker occurrences in the same explicit reference group.
     pub fn marker_references(&self, id: RepresentationId) -> Result<Vec<RepresentationId>> {
         let m = self.marker(id).ok_or(invalid())?;
         if matches!(m.kind(), MarkerKind::Potential { .. }) {
@@ -243,6 +248,7 @@ impl Project {
         result.sort_by_key(|c| (c.first, c.second));
         result
     }
+    /// Validate and apply the marker operation, returning the recorded reversible change.
     pub fn edit_marker(&mut self, edit: MarkerEdit) -> Result<MarkerDelta> {
         let mut d = MarkerDelta::new(self.id());
         match edit {
@@ -431,6 +437,8 @@ impl Project {
         write(&mut self.port_bindings, &d.bindings, forward);
         write(&mut self.connections, &d.connections, forward);
     }
+    /// Replay the recorded marker change; forward reapplies it and false restores the prior state.
+    /// Reject a mismatched expected state.
     pub fn restore_marker(&mut self, d: &MarkerDelta, forward: bool) -> Result<()> {
         self.check_project(d.project)?;
         check(&self.markers, &d.markers, forward)?;

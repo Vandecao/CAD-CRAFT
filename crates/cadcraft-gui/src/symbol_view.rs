@@ -387,8 +387,7 @@ fn paint_text(
     );
 }
 
-/// Texto com a caixa nominal `[0, largura] × [0, altura]` levada ao mundo por
-/// `local` (alinhamento/rotação) e depois por `t`.
+/// Text with nominal bounds [0, width] by [0, height], transformed to world space by local alignment and rotation, then by t.
 #[allow(clippy::too_many_arguments)]
 fn paint_text_mapped(
     painter: &Painter,
@@ -442,9 +441,9 @@ fn paint_text_mapped(
     )));
 }
 
-// ---------------------------------------------------------------- Etapa 17
+// Styled geometry.
 
-/// Pontos locais de uma elipse (fechada), com quantidade pela escala.
+/// Closed local ellipse points, with sample count chosen by scale.
 fn ellipse_points(center: Point2D, rx: f64, ry: f64, rotation: f64, pixels: f64) -> Vec<Point2D> {
     let n = ((rx.max(ry) * pixels).sqrt() * 6.0).clamp(24.0, 720.0) as usize;
     let (s, c) = rotation.to_radians().sin_cos();
@@ -457,8 +456,7 @@ fn ellipse_points(center: Point2D, rx: f64, ry: f64, rotation: f64, pixels: f64)
         .collect()
 }
 
-/// Contorno da primitiva no mundo (pontos e se fecha); `None` para textos e
-/// âncora.
+/// World-space primitive outline: points and closure flag; None for text and anchors.
 fn outline(
     primitive: &SymbolPrimitive,
     t: Transform2D,
@@ -492,7 +490,7 @@ fn outline(
             let points: Vec<Point2D> = (0..=n)
                 .filter_map(|i| curve_point(center, radius, start + sweep * i as f64 / n as f64))
                 .collect();
-            // Já no mundo; o círculo fecha pelo último ponto.
+            // Already in world space; the last point closes the circle.
             return Some((points, matches!(primitive, P::Circle { .. })));
         }
         _ => return None,
@@ -501,7 +499,7 @@ fn outline(
     Some((world?, closed))
 }
 
-/// Segmento em tela com padrão de traço (comprimentos em pontos lógicos).
+/// Screen segment with a dash pattern measured in logical points.
 fn dashed(
     painter: &Painter,
     a: egui::Pos2,
@@ -538,7 +536,7 @@ fn dashed(
     }
 }
 
-/// Desenha a primitiva com estilo; `text` dá o valor de textos dinâmicos.
+/// Paint a styled primitive; text supplies dynamic-text values.
 #[allow(clippy::too_many_arguments)]
 pub fn paint_styled(
     painter: &Painter,
@@ -625,7 +623,7 @@ pub fn paint_styled(
     }
 }
 
-/// Símbolo com estilos; `text` resolve os textos dinâmicos da ocorrência.
+/// Styled symbol; text resolves dynamic text for the occurrence.
 #[allow(clippy::too_many_arguments)]
 pub fn paint_symbol_with(
     painter: &Painter,
@@ -656,7 +654,7 @@ pub fn paint_symbol_with(
     }
 }
 
-/// Valor mostrado quando não há ocorrência (editor, biblioteca, prévia).
+/// Displayed value without an occurrence, such as in an editor, library or preview.
 pub fn placeholder(field: &SymbolTextField) -> String {
     field.placeholder()
 }

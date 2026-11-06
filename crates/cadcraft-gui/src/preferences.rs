@@ -105,21 +105,20 @@ pub struct Preferences {
     pub snap_enabled: bool,
     pub junction_outline: bool,
     pub thumbnails_grid: bool,
-    /// Etapa 14: pasta inicial para importar/exportar `.cadframe`.
+    /// Initial directory for .cadframe import and export.
     pub frame_library: String,
-    /// Etapa 17: pasta da biblioteca de símbolos (`.cadsym`).
+    /// Symbol-library directory containing .cadsym files.
     #[serde(default)]
     pub symbol_library: String,
-    /// Etapa 18: pasta da biblioteca de peças (`.cadpart`).
+    /// Part-library directory containing .cadpart files.
     pub part_library: String,
-    /// Etapa 19: pasta da biblioteca de macros (`.cadmacro`).
+    /// Macro-library directory containing .cadmacro files.
     pub macro_library: String,
-    /// Etapa 22: caminho do conversor DWG externo (ODA File Converter).
+    /// External DWG converter path, normally ODA File Converter.
     pub dwg_converter: String,
-    /// Etapa 17: escala de importação `.elmt` (mm por px do QElectroTech).
+    /// QElectroTech .elmt import scale in millimetres per pixel.
     pub elmt_mm_per_px: f64,
-    /// Etapa 27: identificador opaco desta instalação exigido pelo login
-    /// "Sign in with ChatGPT" (`urn:uuid:…`). Não identifica o usuário.
+    /// Opaque installation identifier required by Sign in with ChatGPT (urn:uuid). It does not identify the user.
     pub assistant_host_id: String,
 }
 impl Default for Preferences {

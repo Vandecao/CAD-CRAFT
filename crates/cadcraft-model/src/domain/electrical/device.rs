@@ -5,7 +5,7 @@ use super::*;
 use crate::error::Result;
 use serde::{Deserialize, Serialize};
 
-/// Entidade destacada; relações são validadas por Project na inserção/importação.
+/// Detached entity; Project validates relations on insertion or import.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Device {
@@ -18,6 +18,7 @@ pub struct Device {
     pub(in crate::domain) designation_locked: bool,
 }
 impl Device {
+    /// Create a detached logical device with fresh identity and validated classification.
     pub fn new(
         project_id: ProjectId,
         designation: Designation,
@@ -32,25 +33,32 @@ impl Device {
             designation_locked: false,
         })
     }
+    /// Return this entity or definition's stable identifier.
     pub fn id(&self) -> DeviceId {
         self.id
     }
+    /// Return the project identifier.
     pub fn project_id(&self) -> ProjectId {
         self.project_id
     }
+    /// Return the properties.
     pub fn properties(&self) -> &TechnicalProperties {
         &self.properties
     }
+    /// Return this value with properties replaced.
     pub fn with_properties(mut self, properties: TechnicalProperties) -> Self {
         self.properties = properties;
         self
     }
+    /// Return the designation.
     pub fn designation(&self) -> &Designation {
         &self.designation
     }
+    /// Return the classification.
     pub fn classification(&self) -> &Text {
         &self.classification
     }
+    /// Whether automatic numbering must preserve this device designation.
     pub fn designation_locked(&self) -> bool {
         self.designation_locked
     }

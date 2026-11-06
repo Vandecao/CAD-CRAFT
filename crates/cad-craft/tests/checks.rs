@@ -1,7 +1,10 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (C) 2026 Vanderlei Braga e colaboradores do CAD-CRAFT
-//! Etapa 24: verificações de consistência, DEC-11-01 (acoplamento com
-//! continuidade), DEC-11-02 (seccionável documental), CON-001 e esquema.
+//! Consistency checks, connector continuity, documentary disconnects and configurable rule
+//! schemes.
+// Synthetic test fixtures intentionally fail fast when setup is invalid.
+#![allow(clippy::unwrap_used)]
+
 mod output_common;
 mod physical_common;
 
@@ -52,7 +55,7 @@ fn base() -> (Project, DocumentId, PageId) {
     (p, doc, page)
 }
 
-/// Dispositivo com uma função e `n` pontos (sem representação).
+/// Create a device with one function and n points, without a representation.
 fn device(
     p: &mut Project,
     name: &str,
@@ -90,8 +93,7 @@ fn reload(value: serde_json::Value) -> Project {
     serde_json::from_value(value).unwrap()
 }
 
-/// VER-001 (projeto antigo com designação repetida), VER-003 (página
-/// repetida) e VER-002/CON-001 (conectores homônimos não unem redes).
+/// Duplicate device/page designations are detected; equal connector names never join networks.
 #[test]
 fn designation_page_and_connector_duplicates_are_reported() {
     let (mut p, doc, _) = base();
@@ -128,7 +130,7 @@ fn designation_page_and_connector_duplicates_are_reported() {
             .all(|t| matches!(t, CheckTarget::Page(_)))
     );
 
-    // CON-001: dois conectores -X1, sem continuidade pelo nome.
+    // Two connectors named -X1 have no continuity merely because their names match.
     let (a, pa) = device(&mut p, "X1", FunctionRole::Main, 1);
     let (b, pb) = device(&mut p, "X9", FunctionRole::Main, 1);
     let mut edits = vec![];
@@ -163,8 +165,7 @@ fn designation_page_and_connector_duplicates_are_reported() {
     );
 }
 
-/// VER-004 (auxiliar sem principal), VER-006 (função de peça não
-/// representada) e VER-018 (sem peça).
+/// Check auxiliaries without a principal, unrepresented part functions and missing parts.
 #[test]
 fn function_and_part_rules() {
     let (mut p, _, page) = base();
@@ -185,7 +186,7 @@ fn function_and_part_rules() {
         .unwrap();
     let _ = main;
     assert!(!codes(&p).contains("VER-004"));
-    // Peça com duas funções: as não representadas viram informação.
+    // The two unrepresented part functions produce informational diagnostics.
     let part_value = Part::new("ACME.K1", "ACME", "K1", "Contator", "Contator")
         .unwrap()
         .with_functions(vec![
@@ -221,8 +222,7 @@ fn function_and_part_rules() {
     );
 }
 
-/// VER-007 (porta sem conexão), VER-008 (fio sem número com numeração
-/// aplicada) e VER-009 (potenciais diferentes na mesma rede).
+/// Check unconnected ports, missing assigned wire numbers and conflicting network potentials.
 #[test]
 fn connection_rules() {
     let (mut p, _, page) = base();
@@ -259,7 +259,7 @@ fn connection_rules() {
         2,
         "sobram as portas externas"
     );
-    // Dois fios em redes diferentes; numerar só um.
+    // Number only one of two wires in separate networks.
     let (_, pts) = device(&mut p, "K9", FunctionRole::Main, 4);
     let a = p
         .insert_connection(Connection::new(p.id(), pts[0], pts[1]).unwrap())
@@ -279,7 +279,7 @@ fn connection_rules() {
     let preview = p.preview_connection_numbering().unwrap();
     p.apply_connection_numbering(&preview).unwrap();
     assert!(!codes(&p).contains("VER-008"));
-    // Dois potenciais diferentes na mesma rede.
+    // Two different potentials belong to the same network.
     for (name, point) in [("L1", pts[0]), ("L2", pts[1])] {
         let def = SymbolDefinition::new(
             SymbolDefinitionId::new("teste.potencial").unwrap(),
@@ -325,8 +325,7 @@ fn p_(x: f64, y: f64) -> Point2D {
     Point2D::new(x, y).unwrap()
 }
 
-/// VER-010 (interrupção sem par) desaparece ao agrupar; VER-011 (potencial
-/// sem ponto).
+/// Grouping resolves an unpaired interruption; a potential without a point remains invalid.
 #[test]
 fn marker_rules() {
     let f = fixture("Marcadores");
@@ -374,8 +373,7 @@ fn marker_rules() {
     assert_eq!(messages(&p, "VER-011").len(), 1);
 }
 
-/// Monta X1 (macho, 2 contatos) e X2 (fêmea, 2 contatos) com pontos
-/// associados; devolve pontos e contatos.
+/// Build male X1 and female X2 with two contacts and associated points; return both.
 #[allow(clippy::type_complexity)]
 fn connectors(
     p: &mut Project,
@@ -416,8 +414,8 @@ fn connectors(
     (x1, x2)
 }
 
-/// Critério 3 (DEC-11-01): acoplar une as redes pelo mapa explícito;
-/// desacoplar separa; Desfazer exato; arquivo antigo recebe as conexões.
+/// Mating joins networks through the explicit map; unmating separates them. Undo is exact and
+/// old files gain owned connections.
 #[test]
 fn mating_gives_continuity_and_unmating_separates() {
     let (mut p, _, _) = base();
@@ -441,7 +439,7 @@ fn mating_gives_continuity_and_unmating_separates() {
     assert!(!p.are_connected(p1[0], p2[1]).unwrap());
     let owned = p.connector_mating(id).unwrap().owned_connections().to_vec();
     assert_eq!(owned.len(), 2);
-    // Número de fio sobrevive a reeditar o acoplamento com os mesmos pares.
+    // Re-editing the same contact pairs preserves the wire number.
     p.set_connection_number(owned[0], Some(Text::new("7").unwrap()), false)
         .unwrap();
     let again = p.connector_mating(id).unwrap().clone();
@@ -454,7 +452,7 @@ fn mating_gives_continuity_and_unmating_separates() {
         p.connection(owned[0]).unwrap().number().unwrap().as_str(),
         "7"
     );
-    // Mudar o ponto de um contato acoplado é recusado (desacoplar antes).
+    // Changing a mated contact point is refused until it is unmated.
     let snapshot = p.clone();
     assert!(
         p.edit_physical(PhysicalEdit::SetPointTerminal {
@@ -465,17 +463,17 @@ fn mating_gives_continuity_and_unmating_separates() {
         .is_err()
     );
     assert_eq!(p, snapshot);
-    // Desacoplar separa as redes.
+    // Unmating separates the networks.
     p.edit_physical(PhysicalEdit::DeleteMating(id)).unwrap();
     assert!(!p.are_connected(p1[0], p2[0]).unwrap());
     assert!(owned.iter().all(|c| p.connection(*c).is_none()));
-    // Desfazer do acoplamento original.
+    // Undo the original mating.
     let mut q = before.clone();
     q.restore_physical(&delta, true).unwrap();
     assert!(q.are_connected(p1[0], p2[0]).unwrap());
     q.restore_physical(&delta, false).unwrap();
     assert_eq!(q, before);
-    // Projeto v8 (sem `owned`): a carga cria as conexões de posse.
+    // Loading a v8 project without owned edges creates the owned connections.
     let mut legacy = before.clone();
     legacy
         .edit_physical(PhysicalEdit::UpsertMating(mating))
@@ -505,8 +503,7 @@ fn mating_gives_continuity_and_unmating_separates() {
     );
 }
 
-/// VER-014 (borne sem destino), VER-016 (seccionável aberto, DEC-11-02:
-/// rede inalterada) e VER-017 (contato acoplado sem ponto).
+/// Check unterminated terminals, documentary open disconnects and mated contacts without points.
 #[test]
 fn physical_rules() {
     let (mut p, _, _) = base();
@@ -558,7 +555,7 @@ fn physical_rules() {
             .iter()
             .any(|m| m.targets == vec![CheckTarget::Terminal(open_id)])
     );
-    // Contato acoplado sem ponto: sem continuidade e com aviso.
+    // A mated contact without a point produces a warning and no continuity.
     let ((x1, c1, _), (x2, c2, p2)) = connectors(&mut p);
     let x1_device = p.connector(x1).unwrap().device().unwrap();
     let unassociated = Terminal::new(p.id(), TerminalOwner::Device(x1_device), part("3"))
@@ -591,7 +588,7 @@ fn physical_rules() {
     let _ = c1[1];
 }
 
-/// VER-020: relatório desatualizado.
+/// A stale report produces VER-020.
 #[test]
 fn stale_report_is_reported() {
     let f = fixture("Relatório");
@@ -620,8 +617,7 @@ fn stale_report_is_reported() {
     assert!(matches!(stale[0].targets[0], CheckTarget::Page(_)));
 }
 
-/// Critério 5: desativar, mudar gravidade, ignorar com justificativa,
-/// Desfazer e salvar/reabrir (formato 9, fixture v9).
+/// Disable rules, change severity, ignore with a reason, undo, then save/reopen the v9 fixture.
 #[test]
 fn scheme_disables_changes_severity_and_ignores_with_undo_and_persistence() {
     let (mut p, _, page) = base();
@@ -667,9 +663,9 @@ fn scheme_disables_changes_severity_and_ignores_with_undo_and_persistence() {
     assert_eq!(still[0].severity, CheckSeverity::Error);
     assert_eq!(report.ignored, 1);
     assert_eq!(report.count(CheckSeverity::Error), 1);
-    // Página: a mensagem fica no alcance da página da ocorrência.
+    // Page-scoped diagnostics belong to the page containing the occurrence.
     assert_eq!(p.check(CheckScope::Page(page)).messages.len(), 1);
-    // Regra desconhecida é recusada.
+    // Unknown rules are refused.
     let mut bad = scheme.clone();
     bad.rules.insert(
         "VER-999".into(),
@@ -679,7 +675,7 @@ fn scheme_disables_changes_severity_and_ignores_with_undo_and_persistence() {
         },
     );
     assert!(p.set_check_scheme(bad).is_err());
-    // Persistência formato 9.
+    // Persist in native format 9.
     let bytes = persistence::write_project_to_vec(&p).unwrap();
     let fixture = format!("{FIXTURES}/etapa24-v9.cadcraft");
     if std::env::var_os("CAD_CRAFT_WRITE_ETAPA24_FIXTURE").is_some() {
@@ -697,14 +693,14 @@ fn scheme_disables_changes_severity_and_ignores_with_undo_and_persistence() {
     .unwrap();
     assert_eq!(v8.source_format, 8);
     assert!(v8.migrated());
-    // Desfazer restaura o esquema.
+    // Undo restores the rule scheme.
     p.restore_check_scheme(&delta, false).unwrap();
     assert_eq!(p.check_scheme(), &original);
     p.restore_check_scheme(&delta, true).unwrap();
     assert_eq!(p.check_scheme(), &scheme);
 }
 
-/// Critério 7: 10.000 ocorrências (334 páginas × 30 bobinas + fios).
+/// Scale checks cover 10,000 occurrences across 334 pages with coils and wires.
 #[test]
 fn ten_thousand_occurrences_are_checked_within_budget() {
     let project = scale_project(334);
@@ -712,7 +708,7 @@ fn ten_thousand_occurrences_are_checked_within_budget() {
     let start = Instant::now();
     let report = project.check(CheckScope::Project);
     let elapsed = start.elapsed();
-    println!(
+    eprintln!(
         "Verificação: {} ocorrências, {} mensagens, {elapsed:?}",
         project.representations().count(),
         report.messages.len()

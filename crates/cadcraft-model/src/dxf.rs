@@ -6,10 +6,14 @@
 //! Writers retain their own numeric rounding and text encoding policies.
 use std::fmt;
 
+/// Malformed or oversized DXF group-protocol input.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum DxfError {
+    /// Group code is not a valid integer.
     InvalidGroupCode(String),
+    /// A group code has no following value.
     Truncated,
+    /// Input exceeds the group-protocol size limit.
     TooLarge,
 }
 impl fmt::Display for DxfError {

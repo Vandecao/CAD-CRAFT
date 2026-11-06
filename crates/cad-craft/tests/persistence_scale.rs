@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (C) 2026 Vanderlei Braga e colaboradores do CAD-CRAFT
-//! Etapa 12: projeto acima do antigo limite de 8 MiB do snapshot técnico.
+//! Native projects larger than the old 8 MiB technical-snapshot limit.
+// Synthetic test fixtures intentionally fail fast when setup is invalid.
+#![allow(clippy::unwrap_used)]
+
 mod common;
 
 use cad_craft::persistence;
@@ -21,7 +24,7 @@ fn project_larger_than_eight_mebibytes_round_trips_with_measured_time() {
     let loaded = persistence::read_project_from_slice(&bytes).unwrap();
     let read = start.elapsed();
     assert_eq!(loaded.project, project);
-    println!(
+    eprintln!(
         "persistência: JSON {:.1} MiB, .cadcraft {:.1} MiB, gravação {:?}, leitura {:?}",
         json as f64 / 1048576.0,
         bytes.len() as f64 / 1048576.0,

@@ -3,7 +3,7 @@
 //! Converts parsed DXF entities and metadata into neutral frame geometry; start at `convert`.
 use super::*;
 
-/// Transformação afim 2D: `p' = m · p + t`.
+/// 2D affine transformation: `p' = m · p + t`.
 #[derive(Clone, Copy)]
 struct Xf {
     m: [[f64; 2]; 2],
@@ -44,7 +44,7 @@ impl Xf {
     fn det(&self) -> f64 {
         self.m[0][0] * self.m[1][1] - self.m[0][1] * self.m[1][0]
     }
-    /// Escalas ao longo dos eixos locais.
+    /// Scale factors along the local axes.
     fn scales(&self) -> (f64, f64) {
         (
             self.m[0][0].hypot(self.m[1][0]),
@@ -71,7 +71,7 @@ fn width_of(e: &Entity) -> f64 {
     }
 }
 
-/// Remove códigos de formatação e traduz escapes de texto DXF.
+/// Removes formatting codes and decodes DXF text escapes.
 pub(super) fn clean_text(raw: &str, mtext: bool) -> String {
     let mut out = String::new();
     let chars: Vec<char> = raw.chars().collect();
@@ -147,7 +147,7 @@ pub(super) fn clean_text(raw: &str, mtext: bool) -> String {
     out
 }
 
-/// `<<código>>`, `%{código}` → campo especial.
+/// `<<code>>`, `%{code}` → special field.
 fn placeholder(text: &str) -> Option<(SpecialField, Option<u32>)> {
     let t = text.trim();
     if let Some(inner) = t.strip_prefix("<<").and_then(|r| r.strip_suffix(">>")) {
@@ -280,7 +280,7 @@ fn emit(ctx: &mut Ctx<'_>, list: &[Entity], xf: &Xf, depth: usize) -> ImportResu
                     if sweep < 1e-9 {
                         sweep = 360.0;
                     }
-                    // Direção do início após a transformação (espelho inverte o sentido).
+                    // Transformed start direction; mirroring reverses the sweep.
                     let dir = |deg: f64| {
                         let (s, c0) = deg.to_radians().sin_cos();
                         let q = xf.apply((c0, s));
@@ -338,7 +338,7 @@ fn emit(ctx: &mut Ctx<'_>, list: &[Entity], xf: &Xf, depth: usize) -> ImportResu
                     matches!(e.kind.as_str(), "ATTDEF" | "ATTRIB").then(|| e.get(2).unwrap_or(""));
                 let tag = tag.filter(|t| !t.trim().is_empty());
                 if e.kind == "ATTDEF" && depth > 0 {
-                    continue; // definição de atributo dentro de bloco inserido
+                    continue; // attribute definition inside an inserted block
                 }
                 if tag.is_none() && raw.trim().is_empty() {
                     continue;
@@ -455,7 +455,7 @@ fn polyline(ctx: &mut Ctx<'_>, xf: &Xf, v: &[((f64, f64), f64)], closed: bool, w
     }
     let pts: Vec<(f64, f64)> = v.iter().map(|(p, _)| xf.apply(*p)).collect();
     let flip = if xf.det() < 0.0 { -1.0 } else { 1.0 };
-    // Polilinha fechada de 4 lados retos e alinhados aos eixos = retângulo.
+    // A closed polyline with four straight, axis-aligned sides is a rectangle.
     let mut ring = pts.clone();
     if ring.len() == 5
         && (ring[0].0 - ring[4].0).abs() < 1e-9
@@ -525,7 +525,7 @@ pub(super) fn convert(parsed: Parsed, options: &DxfImportOptions) -> ImportResul
         .meta
         .as_deref()
         .and_then(|m| serde_json::from_str(m).ok());
-    // Folha: imposta, limites do desenho ($LIMMIN/$LIMMAX) ou envoltória.
+    // Sheet: explicit size, drawing limits ($LIMMIN/$LIMMAX) or bounding box.
     let limits = match (
         header_num("$LIMMIN", 10),
         header_num("$LIMMIN", 20),

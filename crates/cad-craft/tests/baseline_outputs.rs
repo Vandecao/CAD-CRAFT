@@ -1,15 +1,14 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (C) 2026 Vanderlei Braga e colaboradores do CAD-CRAFT
-//! Saídas de referência (bloco R0.0): rede de segurança da reorganização.
+//! Exact output baselines for versioned fixtures with fixed identifiers.
 //!
-//! Para cada fixture versionada (`.cadcraft` v0–v9, IDs fixos), grava a
-//! "impressão digital" de tudo o que o programa produz a partir dela: o
-//! `.cadcraft` regravado no formato atual, o JSON do projeto, a lista de
-//! exibição de cada página, o PDF (com `/CreationDate` mascarado, porque traz
-//! a data do dia) e o DXF de cada página. Qualquer mudança de bytes falha.
+//! Each fixture pins native project bytes, JSON, page display lists, PDF (with the current
+//! creation date masked), and per-page DXF. Any unexpected byte change fails.
 //!
-//! Mudança intencional de saída: regravar com `CAD_CRAFT_WRITE_BASELINE=1`
-//! e justificar no relatório da etapa.
+//! Intentional output changes require CAD_CRAFT_WRITE_BASELINE=1 and a documented explanation.
+// Synthetic test fixtures intentionally fail fast when setup is invalid.
+#![allow(clippy::unwrap_used)]
+
 use cad_craft::display::PageDisplayList;
 use cad_craft::dxf_export;
 use cad_craft::pdf::{self, PdfOptions, PdfScope};
@@ -22,7 +21,7 @@ const HASHES: &str = concat!(
     "/tests/fixtures/baseline/hashes.txt"
 );
 
-/// FNV-1a de 64 bits: detecta qualquer mudança; não é uso criptográfico.
+/// FNV-1a detects byte changes; this hash is not used for cryptography.
 fn fnv(bytes: &[u8]) -> String {
     let mut h: u64 = 0xcbf2_9ce4_8422_2325;
     for b in bytes {
@@ -32,7 +31,7 @@ fn fnv(bytes: &[u8]) -> String {
     format!("{h:016x}")
 }
 
-/// Troca o conteúdo de `/CreationDate (…)` por zeros do mesmo tamanho.
+/// Replace the PDF creation date with zeros of the same length.
 fn mask_creation_date(pdf: &[u8]) -> Vec<u8> {
     let mut out = pdf.to_vec();
     let key = b"/CreationDate (";
@@ -106,7 +105,7 @@ fn current_hashes() -> String {
 #[cfg_attr(not(windows), ignore = "baseline recorded on Windows")]
 fn outputs_match_the_recorded_baseline() {
     let current = current_hashes();
-    // A mesma entrada gera a mesma saída duas vezes (determinismo).
+    // Identical input must produce identical output on repeated runs.
     assert_eq!(current, current_hashes(), "saída não determinística");
     if std::env::var_os("CAD_CRAFT_WRITE_BASELINE").is_some() {
         std::fs::create_dir_all(std::path::Path::new(HASHES).parent().unwrap()).unwrap();

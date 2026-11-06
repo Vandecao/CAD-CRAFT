@@ -52,7 +52,7 @@ pub(super) const SYMBOL_LIBRARY: CommandSpec = (
 
 pub(super) const MACRO_NAVIGATOR: CommandSpec = (
     C::MacroNavigator,
-    "Navegador de macros",
+    crate::strings::MACRO_NAVIGATOR,
     "Abre a biblioteca de macros: categorias, busca, miniatura, importar e exportar",
     T::Insert,
     "Macros",

@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (C) 2026 Vanderlei Braga e colaboradores do CAD-CRAFT
-//! Converts raw QElectroTech XML in ordered semantic stages; start at `convert`.
+//! Converts raw QElectroTech XML in semantic order; start at `convert`.
 use super::*;
 mod connections;
 mod definitions;

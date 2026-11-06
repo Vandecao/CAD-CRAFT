@@ -8,10 +8,13 @@ use serde::{Deserialize, Serialize};
 /// identity is the ID of the logical Connection it owns, never a graphic line.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub enum TerminalBridgeKind {
+    /// Fixed bridge.
     Fixed,
+    /// Removable inserted bridge.
     Inserted,
 }
 
+/// Physical bridge owning an explicit logical connection within a strip.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct TerminalBridge {
@@ -36,25 +39,32 @@ impl TerminalBridge {
             properties: TechnicalProperties::default(),
         }
     }
+    /// Return this entity or definition's stable identifier.
     pub fn id(&self) -> ConnectionId {
         self.connection_id
     }
+    /// Return the project identifier.
     pub fn project_id(&self) -> ProjectId {
         self.project_id
     }
+    /// Return the strip identifier.
     pub fn strip_id(&self) -> TerminalStripId {
         self.strip_id
     }
+    /// Return the kind.
     pub fn kind(&self) -> TerminalBridgeKind {
         self.kind
     }
+    /// Return the properties.
     pub fn properties(&self) -> &TechnicalProperties {
         &self.properties
     }
+    /// Return this value with kind replaced.
     pub fn with_kind(mut self, kind: TerminalBridgeKind) -> Self {
         self.kind = kind;
         self
     }
+    /// Return this value with properties replaced.
     pub fn with_properties(mut self, properties: TechnicalProperties) -> Self {
         self.properties = properties;
         self

@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (C) 2026 Vanderlei Braga e colaboradores do CAD-CRAFT
-//! Índice privado reconstruível; somente as conexões são fonte persistente.
+//! Rebuildable private connectivity index; start with ConnectivityGraph. Only connections are persistent.
 use crate::{
     domain::{Connection, ConnectionId, ConnectionPointId},
     error::{DomainError, Result},
@@ -23,8 +23,8 @@ impl ConnectivityGraph {
             .flat_map(|neighbors| neighbors.iter().map(|(&point, &edge)| (point, edge)))
     }
 
-    /// DFS iterativa. Marca na descoberta para limitar a pilha a O(V).
-    /// Ausência no índice significa vértice isolado; o Project valida o ID.
+    /// Iterative DFS marks vertices on discovery to bound the stack by O(V). A missing index entry
+    /// means an isolated vertex; Project validates its ID.
     pub(crate) fn component(
         &self,
         start: ConnectionPointId,
@@ -67,7 +67,7 @@ impl ConnectivityGraph {
         false
     }
 
-    /// Valida duplicação antes de escrever as duas incidências.
+    /// Check for duplicates before writing either incidence.
     pub(crate) fn insert(&mut self, connection: &Connection) -> Result<()> {
         let (source, target) = connection.endpoints();
         if self

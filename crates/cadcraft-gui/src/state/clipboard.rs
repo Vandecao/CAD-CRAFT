@@ -4,9 +4,7 @@
 use super::*;
 
 impl Session {
-    /// Copiar (`cut = false`) não altera o projeto. Recortar remove a seleção
-    /// na hora, numa transação que pode ser desfeita. Em caso de recusa, a
-    /// área de transferência e o histórico anteriores ficam intactos.
+    /// Copy leaves the project unchanged. Cut removes the selection immediately in one reversible transaction. Rejection preserves the previous clipboard and history.
     pub fn capture_selection(&mut self, cut: bool) -> Result<()> {
         let ids = self.clipboard_selection()?;
         let clipboard = if cut {
@@ -34,12 +32,12 @@ impl Session {
         Ok(())
     }
     pub fn clipboard_preview(&self, at: Point2D) -> Result<Vec<Representation>> {
-        let p = self
-            .project()
-            .ok_or(DomainError::InvalidRelation("nenhum projeto aberto"))?;
+        let p = self.project().ok_or(DomainError::InvalidRelation(
+            crate::strings::NO_OPEN_PROJECT,
+        ))?;
         let page = self
             .active
-            .ok_or(DomainError::InvalidRelation("abra uma página"))?;
+            .ok_or(DomainError::InvalidRelation(crate::strings::OPEN_PAGE))?;
         let clip = self
             .clipboard
             .as_ref()
@@ -70,9 +68,7 @@ impl Session {
             })
             .collect()
     }
-    /// Cola com o canto inferior esquerdo do conjunto em `at`. Símbolos de
-    /// função criam dispositivos novos (ou funções do mesmo dispositivo com
-    /// `keep_device`); um recorte volta com os mesmos IDs na primeira colagem.
+    /// Paste with the set's lower-left corner at at. Function symbols create new devices or functions of the same device with keep_device. The first paste after cutting restores the same IDs.
     pub fn confirm_paste(&mut self, at: Point2D) -> Result<bool> {
         self.clipboard_preview(at)?;
         let page = self.active.expect("conferido na prévia");
@@ -104,8 +100,7 @@ impl Session {
         self.changed();
         Ok(true)
     }
-    /// Etapa 19: macro de janela a partir da seleção; o ponto base é o canto
-    /// inferior esquerdo do conjunto, ajustado à grade.
+    /// Window macro from the selection, using the set's grid-snapped lower-left corner as its base point.
     pub fn macro_from_selection(
         &self,
         id: &str,
@@ -124,7 +119,7 @@ impl Session {
             .with_description(description)?;
         Ok((definition, report))
     }
-    /// Etapa 19: macro de página a partir da página ativa (sem a moldura).
+    /// Page macro from the active page, excluding its frame.
     pub fn macro_from_page(
         &self,
         id: &str,
@@ -132,13 +127,13 @@ impl Session {
         category: &str,
         description: &str,
     ) -> Result<(MacroDefinition, MacroReport)> {
-        let p = self
-            .project()
-            .ok_or(DomainError::InvalidRelation("nenhum projeto aberto"))?;
+        let p = self.project().ok_or(DomainError::InvalidRelation(
+            crate::strings::NO_OPEN_PROJECT,
+        ))?;
         let page = self
             .active
             .and_then(|id| p.page(id))
-            .ok_or(DomainError::InvalidRelation("abra uma página"))?;
+            .ok_or(DomainError::InvalidRelation(crate::strings::OPEN_PAGE))?;
         let (content, report) = p.capture_page_macro(page.id())?;
         let definition = MacroDefinition::new(
             id,
@@ -155,8 +150,7 @@ impl Session {
         .with_description(description)?;
         Ok((definition, report))
     }
-    /// Etapa 19: insere a macro de janela na página ativa com o ponto base em
-    /// `transform.translation()`.
+    /// Insert a window macro on the active page with its base point at transform.translation().
     pub fn insert_macro(
         &mut self,
         definition: &MacroDefinition,
@@ -169,7 +163,7 @@ impl Session {
         }
         let page = self
             .active
-            .ok_or(DomainError::InvalidRelation("abra uma página"))?;
+            .ok_or(DomainError::InvalidRelation(crate::strings::OPEN_PAGE))?;
         let p = self.project_mut()?;
         let (delta, report) = p.insert_macro(definition, page, transform)?;
         let ids = delta.representation_ids();
@@ -178,8 +172,7 @@ impl Session {
         self.changed();
         Ok(report)
     }
-    /// Etapa 19: insere a macro de página como página nova no documento da
-    /// página ativa (ou no primeiro documento) e a abre.
+    /// Insert a page macro as a new page in the active page's document, or the first document, then open it.
     pub fn insert_page_macro(
         &mut self,
         definition: &MacroDefinition,
@@ -187,9 +180,9 @@ impl Session {
         let MacroKind::Page { size, .. } = definition.kind() else {
             return Err(DomainError::InvalidRelation("a macro não é de página"));
         };
-        let p = self
-            .project()
-            .ok_or(DomainError::InvalidRelation("nenhum projeto aberto"))?;
+        let p = self.project().ok_or(DomainError::InvalidRelation(
+            crate::strings::NO_OPEN_PROJECT,
+        ))?;
         let document = self
             .active
             .and_then(|id| p.page(id))

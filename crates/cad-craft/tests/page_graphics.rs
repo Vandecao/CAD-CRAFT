@@ -1,5 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (C) 2026 Vanderlei Braga e colaboradores do CAD-CRAFT
+// Synthetic test fixtures intentionally fail fast when setup is invalid.
+#![allow(clippy::unwrap_used)]
+
 mod document_common;
 use cad_craft::{domain::*, persistence};
 use document_common::{fixture, transform};
@@ -154,14 +157,14 @@ fn clipboard_cut_paste_round_trip_and_refusals_leave_project_unchanged() {
         )
         .unwrap();
     let original = project.clone();
-    // Seleção vazia e grande demais são recusadas antes de qualquer alteração.
+    // Empty or oversized selections are refused before any mutation.
     assert!(project.clipboard_items(&[]).is_err());
     let many = vec![id; MAX_CLIPBOARD_ITEMS + 1];
     assert!(project.cut_representations(&many).is_err());
     assert_eq!(project, original);
     let (items, cut) = project.cut_representations(&[id]).unwrap();
     assert!(items[0].is_cut() && project.representation(id).is_none());
-    // Página inexistente: colagem recusada, nada muda.
+    // Pasting into a missing page fails without changes.
     let after_cut = project.clone();
     let missing = PageId::new();
     assert!(

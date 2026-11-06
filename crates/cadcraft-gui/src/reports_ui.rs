@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (C) 2026 Vanderlei Braga e colaboradores do CAD-CRAFT
-//! Diálogos de geração, atualização e exportação de relatórios tabulares.
+//! Dialogs for generating, updating and exporting tabular reports; start with the report workflow.
 use crate::error::{GuiError, GuiResult};
 use crate::{project_file::FileServices, state::Session};
 use cad_craft::domain::*;
@@ -111,7 +111,7 @@ impl ReportWindow {
                     let cancelled = work.cancel.load(Ordering::Relaxed);
                     self.work = None;
                     self.result = Some(if cancelled {
-                        Err("Operação cancelada".to_owned())
+                        Err(crate::strings::OPERATION_CANCELED.to_owned())
                     } else {
                         match result {
                             Ok(WorkResult::Generate(delta)) => {
@@ -173,9 +173,9 @@ impl ReportWindow {
         let mut action: Option<ReportAction> = None;
         let mut open = true;
         egui::Window::new(match mode {
-            ReportMode::Generate => "Gerar relatório",
+            ReportMode::Generate => crate::strings::GENERATE_REPORT,
             ReportMode::Update => "Atualizar relatórios",
-            ReportMode::Export => "Exportar lista",
+            ReportMode::Export => crate::strings::EXPORT_LIST,
         })
         .open(&mut open)
         .default_width(510.0)
@@ -185,7 +185,7 @@ impl ReportWindow {
                     "Processando relatório: etapa {}/2",
                     work.progress.load(Ordering::Relaxed)
                 ));
-                if ui.button("Cancelar operação").clicked() {
+                if ui.button(crate::strings::CANCEL_OPERATION).clicked() {
                     work.cancel.store(true, Ordering::Relaxed);
                 }
                 return;
@@ -303,7 +303,7 @@ impl ReportWindow {
                                     "Prévia: {} página(s), {} linha(s)",
                                     preview.pages, preview.rows
                                 ));
-                                if ui.button("Gerar relatório").clicked() {
+                                if ui.button(crate::strings::GENERATE_REPORT).clicked() {
                                     action = Some(ReportAction::Generate(request));
                                 }
                             }
@@ -334,7 +334,7 @@ impl ReportWindow {
                         ui.radio_value(&mut self.xlsx, false, "CSV");
                         ui.radio_value(&mut self.xlsx, true, "XLSX");
                     });
-                    if ui.button("Exportar lista").clicked() {
+                    if ui.button(crate::strings::EXPORT_LIST).clicked() {
                         action = Some(ReportAction::Export);
                     }
                 }
@@ -351,7 +351,9 @@ impl ReportWindow {
                 let mut project = project.clone();
                 self.start_work(ctx, move |progress, cancel| {
                     if cancel.load(Ordering::Relaxed) {
-                        return Err(GuiError::Report("Operação cancelada".to_owned()));
+                        return Err(GuiError::Report(
+                            crate::strings::OPERATION_CANCELED.to_owned(),
+                        ));
                     }
                     progress.store(1, Ordering::Relaxed);
                     let delta = project.generate_report(&request).map_err(GuiError::from)?;
@@ -367,7 +369,9 @@ impl ReportWindow {
                 let mut project = project.clone();
                 self.start_work(ctx, move |progress, cancel| {
                     if cancel.load(Ordering::Relaxed) {
-                        return Err(GuiError::Report("Operação cancelada".to_owned()));
+                        return Err(GuiError::Report(
+                            crate::strings::OPERATION_CANCELED.to_owned(),
+                        ));
                     }
                     progress.store(1, Ordering::Relaxed);
                     let delta = project.update_reports(&groups).map_err(GuiError::from)?;
@@ -387,7 +391,9 @@ impl ReportWindow {
                     let xlsx = self.xlsx;
                     self.start_work(ctx, move |progress, cancel| {
                         if cancel.load(Ordering::Relaxed) {
-                            return Err(GuiError::Report("Operação cancelada".to_owned()));
+                            return Err(GuiError::Report(
+                                crate::strings::OPERATION_CANCELED.to_owned(),
+                            ));
                         }
                         let tables = kinds
                             .iter()
@@ -396,7 +402,9 @@ impl ReportWindow {
                             .map_err(GuiError::from)?;
                         progress.store(1, Ordering::Relaxed);
                         if cancel.load(Ordering::Relaxed) {
-                            return Err(GuiError::Report("Operação cancelada".to_owned()));
+                            return Err(GuiError::Report(
+                                crate::strings::OPERATION_CANCELED.to_owned(),
+                            ));
                         }
                         let bytes = if xlsx {
                             export_xlsx(&tables)
@@ -404,7 +412,9 @@ impl ReportWindow {
                             export_csv(&tables[0])
                         }?;
                         if cancel.load(Ordering::Relaxed) {
-                            return Err(GuiError::Report("Operação cancelada".to_owned()));
+                            return Err(GuiError::Report(
+                                crate::strings::OPERATION_CANCELED.to_owned(),
+                            ));
                         }
                         std::fs::write(&path, bytes).map_err(GuiError::from)?;
                         progress.store(2, Ordering::Relaxed);

@@ -1,6 +1,6 @@
 # Roadmap — evolução do CAD-CRAFT
 
-R4/R5 executados nesta sessão conforme prompts aprovados; relatórios R4_IMPORTADORES_EXPORTADORES.md e R5_GUI.md registram validação e teste específico no app. Publicação final autorizada nos dois repositórios com históricos separados. R6 e Etapa 28 permanecem sem início; nenhuma homologação geral é inferida desses testes.
+R0–R6 concluídos tecnicamente em 2026-11-06. R4/R5 publicados nos dois repositórios; R6 implementado, validado (729 verificações), documentado e conferido rapidamente no app, aguardando revisão e OK específico de commit + push. Relatório R6_LIMPEZA.md. Etapa 28 não iniciada; nenhuma homologação geral é inferida desses testes.
 
 Etapas 1–12 receberam prompts. Em 2026-11-03 o usuário aprovou o **Plano
 Mestre** com as Etapas 13–28 abaixo. As linhas 13–28 são **planejamento

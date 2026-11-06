@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (C) 2026 Vanderlei Braga e colaboradores do CAD-CRAFT
-//! Etapa 21: diálogo Exportar PDF / Imprimir com eventos egui reais. O
-//! sistema (abrir/imprimir) é substituído por um gravador.
+//! PDF export and print dialogs driven by real egui events. A recorder replaces system open and print calls.
+// Fixture helpers use validated synthetic inputs and fail immediately on setup errors.
+#![allow(clippy::unwrap_used)]
 use cad_craft::domain::*;
 use cad_gui::{
     app::CadApp, commands::CommandId, pdf_export::SystemShell, project_file::ScriptedPicker,
@@ -30,8 +31,7 @@ fn labels(out: &egui::FullOutput) -> Vec<String> {
         .filter_map(|(_, n)| n.label().or_else(|| n.value()).map(str::to_owned))
         .collect()
 }
-/// Clica no widget com o rótulo, dentro da janela do PDF (o mais à direita
-/// entre homônimos não importa: os rótulos do diálogo são únicos).
+/// Click the labeled widget within the PDF window; the dialog's labels are unique.
 fn click(app: &mut CadApp, ctx: &Context, label: &str) {
     frame(app, ctx, vec![]);
     let out = frame(app, ctx, vec![]);
@@ -60,7 +60,7 @@ fn click(app: &mut CadApp, ctx: &Context, label: &str) {
     frame(app, ctx, vec![event(false)]);
     frame(app, ctx, vec![]);
 }
-/// Espera a thread de geração terminar (quadros reais até o resultado).
+/// Wait for generation using real frames until the result arrives.
 fn finish(app: &mut CadApp, ctx: &Context) -> String {
     for _ in 0..1000 {
         frame(app, ctx, vec![]);
@@ -117,8 +117,7 @@ fn pdf_pages(path: &Path) -> usize {
         .count()
 }
 
-/// Critério 7: exporta a página ativa e depois o projeto; mostra o relatório;
-/// "Abrir ao terminar" chama o sistema (substituído).
+/// Export the active page and then the project, display the report and invoke the substituted system opener when requested.
 #[test]
 fn export_dialog_writes_active_page_then_project_and_reports() {
     let dir = tempfile::tempdir().unwrap();
@@ -158,8 +157,7 @@ fn export_dialog_writes_active_page_then_project_and_reports() {
     assert_eq!(*recorder.0.lock().unwrap(), vec![("abrir", second)]);
 }
 
-/// Critério 7: Imprimir gera o PDF temporário no papel escolhido e o
-/// entrega ao sistema; nada é impresso de verdade.
+/// Printing generates a temporary PDF on the chosen paper and hands it to the substituted system; no real printing occurs.
 #[test]
 fn print_dialog_builds_temporary_pdf_and_hands_it_to_the_system() {
     let (project, _) = project();
@@ -182,7 +180,7 @@ fn print_dialog_builds_temporary_pdf_and_hands_it_to_the_system() {
     assert_eq!(*action, "imprimir");
     assert!(path.extension().is_some_and(|e| e == "pdf"));
     assert_eq!(pdf_pages(path), 2);
-    // A3 deitado (A4 da folha ampliado para caber).
+    // Landscape A3, enlarging the page's A4 content to fit.
     let bytes = std::fs::read(path).unwrap();
     assert!(bytes.windows(7).any(|w| w == b"1190.55"));
     std::fs::remove_file(path).unwrap();

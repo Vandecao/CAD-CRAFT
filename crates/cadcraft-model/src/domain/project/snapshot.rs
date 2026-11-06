@@ -4,7 +4,7 @@
 use super::*;
 use serde::{Deserialize, Serialize, Serializer, ser::SerializeSeq};
 
-/// DTO interno independente de JSON/arquivo. Listas tornam duplicação de ID detectável.
+/// Internal DTO independent of JSON and files. Lists make duplicate IDs detectable.
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
 pub(super) struct ProjectData {
@@ -247,8 +247,7 @@ impl TryFrom<ProjectData> for Project {
                 ));
             }
         }
-        // Etapa 24 (DEC-11-01, migração 8→9): acoplamentos antigos recebem as
-        // conexões de posse na carga.
+        // Reconstruct owned connections for legacy matings when loading older snapshots.
         let legacy: Vec<_> = project
             .connector_matings
             .values()

@@ -4,7 +4,7 @@
 use super::*;
 
 impl Project {
-    /// Resultado por RepresentationId, incluindo ocorrências invisíveis.
+    /// Results sorted by RepresentationId, including invisible occurrences.
     pub fn representations_on_page(&self, page: PageId) -> Result<Vec<&Representation>> {
         self.require(EntityRef::Page(page))?;
         Ok(self
@@ -16,6 +16,7 @@ impl Project {
             .filter_map(|id| self.representation(*id))
             .collect())
     }
+    /// Iterate occurrences explicitly associated with the typed entity reference.
     pub fn representations_for_entity(
         &self,
         target: RepresentationTarget,
@@ -30,7 +31,7 @@ impl Project {
             .filter_map(|id| self.representation(*id))
             .collect())
     }
-    /// Outras ocorrências do MESMO alvo; não infere relação por rótulo/designação.
+    /// Other occurrences of the same target; labels and designations never imply relations.
     pub fn related_representations(&self, id: RepresentationId) -> Result<Vec<&Representation>> {
         let target = self
             .representation(id)
@@ -42,13 +43,14 @@ impl Project {
             .filter(|r| r.id() != id)
             .collect())
     }
+    /// Return the page and anchor position of a registered graphical occurrence.
     pub fn representation_location(&self, id: RepresentationId) -> Result<(PageId, Point2D)> {
         let r = self
             .representation(id)
             .ok_or(DomainError::MissingRepresentation(id))?;
         Ok((r.page_id(), r.transform().translation()))
     }
-    /// A união pode exceder f64 mesmo se cada representação for válida: retorna erro.
+    /// The union may exceed f64 even when each occurrence is valid; return an error.
     pub fn document_bounds(&self, page: PageId) -> Result<DocumentBounds> {
         let sheet = self
             .page(page)

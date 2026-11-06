@@ -22,14 +22,14 @@ mod execute;
 mod files;
 mod ui;
 
-/// Etapa 12: como tratar a trava ao abrir um `.cadcraft`.
+/// File-lock policy when opening a .cadcraft project.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum LockMode {
-    /// Adquire a trava; se outra sessão a mantém, pergunta ao usuário.
+    /// Acquire the lock; ask the user if another session holds it.
     Normal,
-    /// Abre sem trava, somente leitura.
+    /// Open read-only without a lock.
     ReadOnly,
-    /// Assume a trava existente por decisão explícita do usuário.
+    /// Take over the existing lock following an explicit user decision.
     TakeOver,
 }
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
@@ -53,21 +53,21 @@ pub struct CadApp {
     pub(crate) panels_state: PanelState,
     pub(crate) dialogs_state: DialogState,
     pub(crate) free_content: FreeContentState,
-    /// Etapa 12: seletor de arquivos, recuperação, recentes e salvamento automático.
+    /// File picker, recovery, recent files and autosave.
     pub files: crate::project_file::FileServices,
-    /// Etapa 14: editor de molduras (fechado quando `frame` é `None`).
+    /// Frame editor; closed when frame is None.
     pub frame_editor: crate::frame_editor::FrameEditor,
-    /// Etapa 17: editor de símbolos.
+    /// Symbol editor.
     pub symbol_editor: crate::symbol_editor::SymbolEditor,
     pub part_editor: crate::part_editor::PartEditor,
     pub macro_library: crate::macro_library::MacroLibrary,
-    /// Etapa 21: exportar PDF e imprimir.
+    /// PDF export and printing.
     pub pdf: crate::pdf_export::PdfWindow,
-    /// Etapa 24: painel Verificações.
+    /// Validation panel.
     pub checks: crate::checks_ui::CheckPanel,
-    /// Etapa 25: importação de projeto do QElectroTech.
+    /// QElectroTech project import.
     pub qet: crate::qet_import_ui::QetImportPanel,
-    /// Etapa 27: assistente de IA e ajuda (aba ao lado do Centro de inserção).
+    /// AI assistant and help tab next to the insertion centre.
     pub assistant: crate::assistant::AssistantPanel,
     pub edz: crate::edz_import_ui::EdzImportPanel,
     pub reports: crate::reports_ui::ReportWindow,
@@ -103,7 +103,7 @@ impl CadApp {
         );
         app
     }
-    /// Ativa a pasta de recuperação e oferece a cópia mais recente, se houver.
+    /// Enable the recovery directory and offer its latest copy, if any.
     pub fn enable_recovery(&mut self, recovery: crate::project_file::Recovery) {
         let entries = recovery.entries();
         self.files.recovery = Some(recovery);
@@ -135,7 +135,7 @@ impl CadApp {
             Err(e) => self.log(Level::Error, e.to_string()),
         }
     }
-    /// Etapa 19: liga a ferramenta de inserção de macro na página ativa.
+    /// Activate macro insertion on the active page.
     pub fn start_macro_insertion(&mut self, definition: MacroDefinition) {
         if self.session.active.is_none() {
             self.log(Level::Warning, "Abra uma página para inserir a macro.");
@@ -167,7 +167,7 @@ impl CadApp {
             self.log(Level::Error, e.to_string());
         }
     }
-    /// Há diálogo modal aberto (confirmação, edição etc.).
+    /// Whether a modal confirmation or editor is open.
     pub fn dialog_open(&self) -> bool {
         self.dialogs_state.dialog.is_some()
     }

@@ -1,5 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (C) 2026 Vanderlei Braga e colaboradores do CAD-CRAFT
+// Synthetic test fixtures intentionally fail fast when setup is invalid.
+#![allow(clippy::unwrap_used)]
+
 use cad_craft::domain::*;
 
 #[test]
@@ -157,7 +160,7 @@ fn page_removal_rejects_external_property_references_without_partial_change() {
     assert_eq!(p, before);
     p.set_properties(EntityRef::Project(p.id()), TechnicalProperties::default())
         .unwrap();
-    // A referência da própria página desaparece com ela e não bloqueia remoção.
+    // A page-owned reference disappears with its page and does not block removal.
     p.set_properties(EntityRef::Page(ids[0]), props).unwrap();
     assert_eq!(p.remove_page(ids[0]).unwrap().id(), ids[0]);
     assert!(p.remove_page(ids[0]).is_err());

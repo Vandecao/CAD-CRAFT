@@ -12,14 +12,14 @@ use std::fmt::Write as _;
 
 const LAYER_PREFIX: &str = "CAD-CRAFT ";
 
-/// O que a exportação fez e o que precisou adaptar.
+/// Export summary and required adaptations.
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct DxfReport {
     pub pages: usize,
     pub entities: usize,
-    /// Caracteres fora do ANSI 1252, gravados como `\U+XXXX`.
+    /// Characters outside ANSI 1252, encoded as `\U+XXXX`.
     pub escaped: BTreeSet<char>,
-    /// Imagens desenhadas como caixa (o R12 não tem `IMAGE`).
+    /// Images rendered as boxes because R12 has no `IMAGE` entity.
     pub images: usize,
 }
 
@@ -51,7 +51,7 @@ impl DxfReport {
     }
 }
 
-/// Um arquivo DXF por página.
+/// One DXF file per page.
 #[derive(Clone, Debug)]
 pub struct DxfFile {
     pub page: PageId,
@@ -59,7 +59,7 @@ pub struct DxfFile {
     pub bytes: Vec<u8>,
 }
 
-/// Cor ACI da categoria.
+/// ACI color for a category.
 fn layer_color(layer: DisplayLayer) -> u8 {
     match layer {
         DisplayLayer::Frame | DisplayLayer::Symbols | DisplayLayer::Texts => 7,
@@ -68,7 +68,7 @@ fn layer_color(layer: DisplayLayer) -> u8 {
         DisplayLayer::Guides => 8,
     }
 }
-/// Cor própria da entidade quando difere da camada (marca d'água, guia).
+/// Entity color overriding its layer for watermarks or guides.
 fn entity_color(color: DisplayColor) -> Option<u8> {
     match color {
         DisplayColor::Watermark => Some(9),
@@ -93,8 +93,8 @@ fn layer_name(layer: DisplayLayer, width: Option<f64>) -> String {
     }
 }
 
-/// Texto em ANSI 1252; fora dele `\U+XXXX`. Se houver `%%` (prefixo de
-/// código de controle no DXF), cada `%` vira `%%%`, que é o `%` literal.
+/// ANSI 1252 text with `\U+XXXX` for other characters. If `%%` appears (a DXF
+/// control-code prefix), each `%` becomes `%%%`, the literal percent escape.
 fn encode_text(text: &str, escaped: &mut BTreeSet<char>) -> Vec<u8> {
     let mut out = Vec::with_capacity(text.len());
     let literal_percent = text.contains("%%");
@@ -115,7 +115,7 @@ fn encode_text(text: &str, escaped: &mut BTreeSet<char>) -> Vec<u8> {
 struct Writer {
     out: Vec<u8>,
     report: DxfReport,
-    /// Tipos de linha: padrão (mm, em milésimos) → nome.
+    /// Line types: pattern in thousandths of mm → name.
     dashes: BTreeMap<Vec<i64>, String>,
     layers: BTreeSet<(DisplayLayer, Option<String>)>,
 }
@@ -131,7 +131,7 @@ impl Writer {
     }
 }
 
-/// Adaptador `fmt::Write` sobre o buffer de bytes.
+/// `fmt::Write` adapter over a byte buffer.
 struct Line<'a>(&'a mut Vec<u8>);
 impl std::fmt::Write for Line<'_> {
     fn write_str(&mut self, s: &str) -> std::fmt::Result {
@@ -140,7 +140,7 @@ impl std::fmt::Write for Line<'_> {
     }
 }
 
-/// DXF de uma página.
+/// DXF for one page.
 pub fn export_dxf_list(list: &DisplayList) -> (Vec<u8>, DxfReport) {
     let mut body = Writer {
         out: vec![],
@@ -193,7 +193,7 @@ pub fn export_dxf_list(list: &DisplayList) -> (Vec<u8>, DxfReport) {
     head.pair(0, "ENDSEC");
     head.pair(0, "SECTION");
     head.pair(2, "TABLES");
-    // Tipos de linha.
+    // Line types.
     head.pair(0, "TABLE");
     head.pair(2, "LTYPE");
     head.pair(70, &(body.dashes.len() + 1).to_string());
@@ -214,12 +214,12 @@ pub fn export_dxf_list(list: &DisplayList) -> (Vec<u8>, DxfReport) {
         head.pair(73, &lengths.len().to_string());
         head.pair(40, &num(lengths.iter().sum()));
         for (i, l) in lengths.iter().enumerate() {
-            // Traços positivos, vãos negativos.
+            // Positive dashes, negative gaps.
             head.pair(49, &num(if i % 2 == 0 { *l } else { -l }));
         }
     }
     head.pair(0, "ENDTAB");
-    // Camadas.
+    // Layers.
     head.pair(0, "TABLE");
     head.pair(2, "LAYER");
     head.pair(70, &(body.layers.len() + 1).to_string());
@@ -240,7 +240,7 @@ pub fn export_dxf_list(list: &DisplayList) -> (Vec<u8>, DxfReport) {
         head.pair(6, "CONTINUOUS");
     }
     head.pair(0, "ENDTAB");
-    // Estilo de texto padrão.
+    // Default text style.
     head.pair(0, "TABLE");
     head.pair(2, "STYLE");
     head.pair(70, "1");
@@ -272,7 +272,7 @@ pub fn export_dxf_list(list: &DisplayList) -> (Vec<u8>, DxfReport) {
     (bytes, body.report)
 }
 
-/// Parte segura de nome de arquivo (sem caracteres reservados do Windows).
+/// Safe filename component without Windows reserved characters.
 fn safe(part: &str) -> String {
     let cleaned: String = part
         .chars()
@@ -292,8 +292,8 @@ fn safe(part: &str) -> String {
     }
 }
 
-/// Nomes `<projeto>_<documento>_<página>.dxf`, seguros e únicos
-/// (repetidos ganham `_2`, `_3`…; comparação sem diferenciar maiúsculas).
+/// Safe, unique `<project>_<document>_<page>.dxf` names;
+/// case-insensitive duplicates gain `_2`, `_3`, and so on.
 pub fn dxf_file_names(project: &Project, pages: &[PageId]) -> Vec<(PageId, String)> {
     let mut used = BTreeSet::new();
     let mut out = vec![];
@@ -322,8 +322,8 @@ pub fn dxf_file_names(project: &Project, pages: &[PageId]) -> Vec<(PageId, Strin
     out
 }
 
-/// Exporta o alcance: um DXF por página. `progress(feitas, total)` devolve
-/// `false` para cancelar.
+/// Exports the range with one DXF per page. `progress(done, total)` returns
+/// `false` to cancel.
 pub fn export_dxf_pages(
     project: &Project,
     scope: &PdfScope,

@@ -21,7 +21,7 @@ impl CadApp {
         let id = self.frame_editor.frame?;
         self.session.project()?.frame(id).cloned()
     }
-    /// Confirma o rascunho como nova versão; `extra` vem antes (ex.: imagem).
+    /// Commit the draft as a new version; extra edits, such as an image, come first.
     pub fn commit_frame_draft(&mut self, draft: FrameDraft, extra: Vec<FrameEdit>) -> bool {
         let Some(frame) = self.editor_frame() else {
             return false;
@@ -134,7 +134,7 @@ impl CadApp {
             .map(|(i, _)| i)
     }
 
-    /// Elemento da ferramenta atual com os pontos dados (prévia aceita menos).
+    /// Current tool element from the supplied points; previews accept fewer points.
     pub(in crate::frame_editor) fn build_tool_element(
         &self,
         points: &[Point2D],
@@ -226,7 +226,7 @@ impl CadApp {
                     .find(|a| a.same_content(bytes))
                     .map(ImageAsset::id)
             }) {
-                // Imagem igual já está no projeto: reaproveita.
+                // Reuse identical image content already present in the project.
                 Some(existing) => *asset = existing,
                 None => extra.push(FrameEdit::AddAsset(image)),
             }
@@ -237,7 +237,7 @@ impl CadApp {
         if self.commit_frame_draft(draft, extra) {
             self.frame_editor.selection = BTreeSet::from([index]);
             if self.frame_editor.tool == FrameTool::Image {
-                // A mesma imagem pode ser colocada de novo; o projeto já a tem.
+                // The image can be placed again; the project already contains it.
                 if let Some(id) = self.session.project().and_then(|p| {
                     let bytes = self.frame_editor.pending_image.as_ref()?.bytes()?;
                     p.assets()
@@ -251,7 +251,7 @@ impl CadApp {
         }
     }
 
-    // -------------------------------------------------------- propriedades
+    // Properties.
 }
 impl CadApp {
     pub(crate) fn frame_command(&mut self, id: crate::commands::CommandId) {
@@ -363,7 +363,7 @@ impl CadApp {
                     return;
                 };
                 let result = read_frame_file(&path).and_then(|pkg| {
-                    // As imagens do pacote também precisam decodificar.
+                    // Images in the package must also decode successfully.
                     for a in &pkg.assets {
                         frame_view::decode_image(a.bytes().unwrap_or_default())?;
                     }

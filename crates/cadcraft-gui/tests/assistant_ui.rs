@@ -1,9 +1,11 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (C) 2026 Vanderlei Braga e colaboradores do CAD-CRAFT
-//! Etapa 27: "Assistente" tab with real egui events and a scripted provider
+//! Assistant tab with real egui events and a scripted provider
 //! (no network): open from the status bar, ask, see the answer, show a
 //! command in the ribbon, go to a page, apply a proposal and undo it; and
 //! the OAuth helpers (PKCE, callback, authorization URL, no secrets kept).
+// Fixture helpers use validated synthetic inputs and fail immediately on setup errors.
+#![allow(clippy::unwrap_used)]
 use cad_craft::assistant::conversation::{Provider, Request};
 use cad_gui::assistant::oauth;
 use cad_gui::{app::CadApp, editing::GraphicEdit, preferences::RibbonTab};
@@ -136,7 +138,7 @@ fn ask_answer_show_command_navigate_apply_and_undo() {
         block(r#"{"propor": {"tipo": "novo_documento", "nome": "Comando"}}"#),
     );
     app.assistant.test_provider = Some(Box::new(move || Box::new(Script(vec![answer.clone()]))));
-    // Abre pela barra de status.
+    // Open through the status bar.
     click(&mut app, &ctx, "✦ Assistente");
     assert!(app.assistant.open);
     assert!(shows(&mut app, &ctx, "ChatGPT (OpenAI)"));
@@ -145,14 +147,14 @@ fn ask_answer_show_command_navigate_apply_and_undo() {
     wait(&mut app, &ctx);
     assert!(shows(&mut app, &ctx, "Use o comando de numeração"));
     assert!(shows(&mut app, &ctx, "Proposta: Novo documento"));
-    // Mostrar comando: abre a aba da faixa e destaca o botão.
+    // Showing a command opens its ribbon tab and highlights its button.
     click(&mut app, &ctx, "Mostrar \"Numerar conexões\"");
     assert_eq!(app.preferences.ribbon_tab, RibbonTab::Connections);
     assert!(app.assistant.highlight.is_some());
-    // Navegação: abre a folha 1.
+    // Navigation opens sheet 1.
     click(&mut app, &ctx, "Ir à folha 1");
     assert!(app.session.active.is_some());
-    // Proposta: nada muda até aplicar; aplicar cria; Ctrl+Z desfaz.
+    // A proposal changes nothing until applied; applying creates content and Ctrl+Z undoes it.
     let before = app.session.project().unwrap().documents().count();
     click(&mut app, &ctx, "Aplicar");
     assert_eq!(
@@ -181,7 +183,7 @@ fn proposal_goes_stale_when_the_project_changes_and_can_be_discarded() {
         shows(&mut app, &ctx, "proposta recusada"),
         "proposta inválida vira nota"
     );
-    // O projeto muda depois da proposta: ela não pode mais ser aplicada.
+    // The project changes after the proposal, so it can no longer be applied.
     app.session.new_document("Outro").unwrap();
     let count = app.session.project().unwrap().documents().count();
     click(&mut app, &ctx, "Descartar");
@@ -200,9 +202,9 @@ fn without_sign_in_the_input_is_disabled_and_no_account_data_is_kept() {
     assert!(!app.assistant.ready());
     app.assistant.input = "oi".into();
     click(&mut app, &ctx, "✦ Assistente");
-    // Nada é enviado sem login.
+    // Nothing is sent without signing in.
     assert!(app.assistant.entries.is_empty());
-    // As preferências salvas não têm token, e-mail nem conversa.
+    // Saved preferences contain no token, email or conversation.
     let saved = serde_json::to_string(&app.preferences).unwrap();
     for secret in ["token", "Bearer", "@", "refresh"] {
         assert!(
@@ -214,7 +216,7 @@ fn without_sign_in_the_input_is_disabled_and_no_account_data_is_kept() {
 
 #[test]
 fn oauth_helpers_follow_pkce_and_the_loopback_contract() {
-    // Vetor de exemplo da RFC 7636 (apêndice B).
+    // RFC 7636 example vector from Appendix B.
     assert_eq!(
         oauth::s256("dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk"),
         "E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM"
@@ -258,7 +260,7 @@ fn oauth_helpers_follow_pkce_and_the_loopback_contract() {
     let denied =
         oauth::parse_callback("GET /auth/callback?error=access_denied&state=st HTTP/1.1").unwrap();
     assert_eq!(denied.error.as_deref(), Some("access_denied"));
-    // Tokens nunca aparecem em logs ou mensagens de depuração.
+    // Tokens never appear in logs or debug messages.
     let tokens = oauth::Tokens {
         client_id: "oaiapp_1".into(),
         access_token: "segredo-de-acesso".into(),

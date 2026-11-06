@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (C) 2026 Vanderlei Braga e colaboradores do CAD-CRAFT
-//! Etapa 17: desenho de elipse, estilos, preenchimento e texto dinâmico; hit
-//! test pelo traço em dois zooms.
+//! Ellipse drawing, styles, fill and dynamic text; stroke hit testing at two zoom levels.
+// Fixture helpers use validated synthetic inputs and fail immediately on setup errors.
+#![allow(clippy::unwrap_used)]
 use cad_craft::domain::*;
 use cad_gui::{app::CadApp, camera::Camera};
 use eframe::egui::{self, Context, Pos2, Rect, vec2};
@@ -61,7 +62,7 @@ fn lamp(dash: LineDash) -> SymbolDefinition {
     .unwrap()
 }
 
-/// Projeto com o sinaleiro inserido como -H1; devolve app, contexto e ocorrência.
+/// Project with the indicator inserted as -H1; return app, context and occurrence.
 fn app(dash: LineDash) -> (CadApp, Context, RepresentationId) {
     let mut project = Project::new("Render").unwrap();
     let doc = project
@@ -149,7 +150,7 @@ fn dynamic_text_dashes_and_fill_are_painted_on_the_sheet() {
 fn ellipse_is_hit_by_its_outline_at_two_zooms() {
     let d = lamp(LineDash::Solid);
     let ellipse = &d.primitives()[0];
-    // Ponto no contorno (8, 0) e no centro (0, 0).
+    // Point on the outline at (8, 0) and in the center at (0, 0).
     for tolerance in [0.5, 0.1] {
         assert!(cad_gui::symbol_view::primitive_distance(ellipse, p(8.0, 0.0)) < tolerance);
         assert!(cad_gui::symbol_view::primitive_distance(ellipse, p(0.0, 5.0)) < tolerance);

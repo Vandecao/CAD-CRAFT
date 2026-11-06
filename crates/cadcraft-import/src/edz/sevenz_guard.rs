@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (C) 2026 Vanderlei Braga e colaboradores do CAD-CRAFT
-//! Preflight dos recursos que o leitor 7z aloca antes de expor o catálogo.
+//! Preflights resources allocated by the 7z reader before exposing entries; start at `preflight`.
 use super::EdzLimits;
 use crate::{ImportResult, fail};
 
@@ -45,8 +45,8 @@ impl<'a> Header<'a> {
         }
         Ok(value)
     }
-    // PackInfo e UnpackInfo podem conter CRC opcional. O subconjunto
-    // admitido tem exatamente um stream/bloco, portanto um único bit/CRC.
+    // PackInfo and UnpackInfo may contain optional CRCs. The accepted subset
+    // has exactly one stream/block, hence one bit/CRC.
     fn end_with_optional_crc(&mut self) -> ImportResult<()> {
         let mut next = self.byte()?;
         if next == 10 {
@@ -69,9 +69,11 @@ impl<'a> Header<'a> {
 fn dictionary(method: &[u8], props: &[u8]) -> ImportResult<u64> {
     match method {
         [0] => Ok(0),
-        [3, 1, 1] if props.len() == 5 && props[0] < 225 => {
-            Ok(u32::from_le_bytes(props[1..5].try_into().unwrap()) as u64)
-        }
+        [3, 1, 1] if props.len() == 5 && props[0] < 225 => Ok(u32::from_le_bytes(
+            props[1..5]
+                .try_into()
+                .expect("LZMA properties were checked to contain five bytes"),
+        ) as u64),
         [0x21] if props.len() == 1 && props[0] <= 40 => {
             let p = props[0] as u32;
             Ok(if p == 40 {
@@ -80,7 +82,7 @@ fn dictionary(method: &[u8], props: &[u8]) -> ImportResult<u64> {
                 ((2 | (p & 1)) as u64) << (p / 2 + 11)
             })
         }
-        // Filtros de estado pequeno; não incluem o decodificador BCJ2 multistream.
+        // Small-state filters; excludes the multistream BCJ2 decoder.
         [3] if props.len() == 1 => Ok(256),
         [0x0a]
         | [0x0b]
@@ -103,17 +105,31 @@ fn memory_limit(limits: &EdzLimits) -> u64 {
     limits.max_total_bytes.min(64 * 1024 * 1024)
 }
 
-/// Executar antes de ArchiveReader::new: este já descomprime o cabeçalho.
+/// Run before ArchiveReader::new, which already decompresses the header.
 pub(super) fn preflight(bytes: &[u8], limits: &EdzLimits) -> ImportResult<()> {
     if bytes.len() < 32 || !bytes.starts_with(b"7z\xbc\xaf\x27\x1c") {
         return Err(fail("cabeçalho 7z inválido ou truncado"));
     }
-    // Impede a recuperação heurística da crate de abrir outro cabeçalho sem preflight.
-    if crc32(&bytes[12..32]) != u32::from_le_bytes(bytes[8..12].try_into().unwrap()) {
+    // Prevent heuristic recovery from opening another header without preflight checks.
+    if crc32(&bytes[12..32])
+        != u32::from_le_bytes(
+            bytes[8..12]
+                .try_into()
+                .expect("the checked 32-byte signature header contains a four-byte CRC"),
+        )
+    {
         return Err(fail("CRC do cabeçalho inicial 7z inválido"));
     }
-    let offset = u64::from_le_bytes(bytes[12..20].try_into().unwrap());
-    let size = u64::from_le_bytes(bytes[20..28].try_into().unwrap());
+    let offset = u64::from_le_bytes(
+        bytes[12..20]
+            .try_into()
+            .expect("the checked 32-byte signature header contains an eight-byte offset"),
+    );
+    let size = u64::from_le_bytes(
+        bytes[20..28]
+            .try_into()
+            .expect("the checked 32-byte signature header contains an eight-byte size"),
+    );
     let metadata_limit = limits
         .max_item_bytes
         .min(limits.max_total_bytes)
@@ -129,16 +145,22 @@ pub(super) fn preflight(bytes: &[u8], limits: &EdzLimits) -> ImportResult<()> {
         return Err(fail("cabeçalho 7z acima do limite"));
     }
     let raw = &bytes[start as usize..end as usize];
-    if crc32(raw) != u32::from_le_bytes(bytes[28..32].try_into().unwrap()) {
+    if crc32(raw)
+        != u32::from_le_bytes(
+            bytes[28..32]
+                .try_into()
+                .expect("the checked 32-byte signature header contains a four-byte header CRC"),
+        )
+    {
         return Err(fail("CRC do cabeçalho 7z inválido"));
     }
     let mut h = Header(raw);
     match h.byte()? {
-        1 => return Ok(()), // Metadados sem compressão: limitados acima.
+        1 => return Ok(()), // Uncompressed metadata is bounded above.
         0x17 => {}
         _ => return Err(fail("tipo de cabeçalho 7z não suportado")),
     }
-    // Subconjunto observado: um stream e um codec simples no cabeçalho comprimido.
+    // Observed subset: one stream and one simple codec in the compressed header.
     h.expect(6)?;
     let pack_pos = h.number()?;
     if h.number()? != 1 {
@@ -159,7 +181,7 @@ pub(super) fn preflight(bytes: &[u8], limits: &EdzLimits) -> ImportResult<()> {
     if h.number()? != 1 {
         return Err(fail("blocos de cabeçalho 7z não suportados"));
     }
-    h.expect(0)?; // Sem referência externa.
+    h.expect(0)?; // No external reference.
     if h.number()? != 1 {
         return Err(fail("cadeia de codecs de cabeçalho 7z não suportada"));
     }
@@ -187,8 +209,8 @@ pub(super) fn preflight(bytes: &[u8], limits: &EdzLimits) -> ImportResult<()> {
         return Err(fail("cabeçalho 7z descomprimido acima do limite"));
     }
     h.end_with_optional_crc()?;
-    // O writer também pode guardar o CRC do único stream em SubStreamsInfo,
-    // em vez de UnpackInfo. Não há tamanhos adicionais com apenas um stream.
+    // The writer may store the only stream's CRC in SubStreamsInfo
+    // instead of UnpackInfo. One stream needs no additional sizes.
     if h.0.first() == Some(&8) {
         h.byte()?;
         if h.0.first() == Some(&13) {
@@ -206,7 +228,7 @@ pub(super) fn preflight(bytes: &[u8], limits: &EdzLimits) -> ImportResult<()> {
     Ok(())
 }
 
-/// Limita memória dos codecs de dados antes de construir os decodificadores.
+/// Bounds data codec memory before constructing decoders.
 pub(super) fn post_archive(
     archive: &sevenz_rust2::Archive,
     limits: &EdzLimits,

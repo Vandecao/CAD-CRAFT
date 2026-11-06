@@ -10,8 +10,8 @@ pub(super) fn convert(importer: &mut Importer<'_>, state: &mut DiagramState) {
     } = state;
     let s = importer.s;
     let world = |page, x, y| super::world(pages, s, page, x, y);
-    // Textos livres: os da folha e os de usuário das ocorrências (posição
-    // local levada à folha pela transformação da ocorrência).
+    // Free texts from the sheet and user texts from occurrences; transform
+    // local positions onto the sheet using the occurrence transform.
     let mut free: Vec<(usize, Point2D, String, f64)> = vec![];
     for (page, x, y, text, size) in texts {
         if let Ok(origin) = Point2D::new(x * s, (pages[page].1.height_px() - y) * s) {

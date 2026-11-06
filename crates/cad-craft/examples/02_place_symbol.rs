@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (C) 2026 Vanderlei Braga e colaboradores do CAD-CRAFT
 //! Place a coil and read its display list; start with main.
+// Examples present their results on standard output.
+#![allow(clippy::print_stdout)]
+
 use cad_craft::{
     display::{DisplayItem, DisplayLayer},
     domain::*,

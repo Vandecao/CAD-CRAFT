@@ -1,5 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (C) 2026 Vanderlei Braga e colaboradores do CAD-CRAFT
+// Synthetic test fixtures intentionally fail fast when setup is invalid.
+#![allow(clippy::unwrap_used)]
+
 mod physical_common;
 use cad_craft::domain::*;
 use physical_common::*;
@@ -70,7 +73,7 @@ fn growing_cabled_wiring_keeps_traceability_and_logical_topology() {
             assert_eq!(loaded.conductors().count(), n);
             loaded.validate().unwrap();
         }
-        println!(
+        eprintln!(
             "WIRES n={n} build_ms={:.3} query_ms={:.3} validate_ms={:.3} import_ms={:.3}",
             median(builds),
             median(queries),
@@ -119,7 +122,7 @@ fn growing_terminal_strips_preserve_order_without_implicit_continuity() {
             imports.push(start.elapsed().as_secs_f64() * 1000.0);
             assert_eq!(loaded, p);
         }
-        println!(
+        eprintln!(
             "STRIP n={n} build_ms={:.3} query_ms={:.3} validate_ms={:.3} import_ms={:.3}",
             median(builds),
             median(queries),

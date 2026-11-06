@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (C) 2026 Vanderlei Braga e colaboradores do CAD-CRAFT
 //! Enforce source module introductions; start with the workspace scan test.
+// Synthetic test fixtures intentionally fail fast when setup is invalid.
+#![allow(clippy::unwrap_used)]
+
 use std::path::{Path, PathBuf};
 
 fn rust_files(dir: &Path, files: &mut Vec<PathBuf>) {

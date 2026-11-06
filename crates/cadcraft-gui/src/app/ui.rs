@@ -5,7 +5,7 @@ use super::*;
 
 impl CadApp {
     pub fn show(&mut self, ctx: &Context) {
-        // Etapa 17: carrega a biblioteca de símbolos quando a pasta muda.
+        // Reload the symbol library when its directory changes.
         let folder = self.preferences.symbol_library.trim().to_owned();
         if self.chrome.symbol_library_seen.as_deref() != Some(folder.as_str()) {
             self.chrome.symbol_library_seen = Some(folder.clone());
@@ -190,7 +190,7 @@ impl CadApp {
         }
     }
     fn shortcuts(&mut self, ctx: &Context) {
-        // Etapa 24: navegar pelas mensagens de verificação.
+        // Navigate validation messages.
         if ctx.input_mut(|i| i.consume_key(egui::Modifiers::SHIFT, Key::F8)) {
             self.step_check(-1);
         } else if ctx.input_mut(|i| i.consume_key(egui::Modifiers::NONE, Key::F8)) {
@@ -236,7 +236,7 @@ impl CadApp {
         {
             return;
         }
-        // Etapa 17: o editor de símbolos trata Ctrl+Z/Ctrl+Y/Delete no próprio canvas.
+        // The symbol editor handles Ctrl+Z/Ctrl+Y/Delete on its own canvas.
         if self.symbol_editor.is_open() {
             return;
         }
@@ -269,10 +269,7 @@ impl CadApp {
                 self.execute(command, ctx);
             }
         }
-        // Etapa 16: no Windows/winit, Ctrl+C/X/V chegam como eventos de
-        // área de transferência (Copy/Cut/Paste), não como teclas; o Paste só
-        // existe quando a área de transferência do sistema tem texto (ver
-        // `copy_marker`).
+        // On Windows/winit, Ctrl+C/X/V arrive as clipboard events (Copy/Cut/Paste), rather than keys. Paste requires text in the system clipboard; see copy_marker.
         let clipboard_commands: Vec<CommandId> = ctx.input_mut(|i| {
             let mut found = Vec::new();
             i.events.retain(|e| {
@@ -309,7 +306,7 @@ impl CadApp {
             }
         }
     }
-    /// Há um diálogo modal aberto (usado também pelos testes de interface).
+    /// Whether a modal dialog is open; also used by GUI tests.
     pub(crate) fn toggle_panel(&mut self, id: PanelId) {
         let p = self.preferences.panel_mut(id);
         p.visible = !p.visible;

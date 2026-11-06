@@ -1,9 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (C) 2026 Vanderlei Braga e colaboradores do CAD-CRAFT
-//! Etapa 14 — critérios de aceitação do editor de molduras com eventos egui
-//! reais: criar do zero (geometria, textos, textos especiais, logotipo),
-//! editar moldura em uso, Desfazer/Refazer, exportar/importar `.cadframe` e
-//! recusar imagens inválidas.
+//! Frame-editor acceptance tests using real egui events: create geometry, text, special text and a logo; edit an assigned frame; undo/redo; export/import .cadframe and reject invalid images.
+// Fixture helpers use validated synthetic inputs and fail immediately on setup errors.
+#![allow(clippy::unwrap_used)]
 use cad_craft::domain::*;
 use cad_gui::{
     app::CadApp, camera::Camera, commands::CommandId, editing::GraphicEdit,
@@ -86,7 +85,7 @@ impl Ui {
         let at = self.screen(w);
         self.press_at(at);
     }
-    /// Arraste real no editor (botão primário).
+    /// Real primary-button drag in the editor.
     fn drag_world(&mut self, from: Point2D, to: Point2D) {
         let (a, b) = (self.screen(from), self.screen(to));
         let ev = |pos, pressed| Event::PointerButton {
@@ -105,7 +104,7 @@ impl Ui {
         self.settle(2);
     }
     fn tool(&mut self, tool: FrameTool) {
-        // Rótulos como "Texto" também existem na faixa de opções: usa a barra do editor.
+        // Labels such as the text tool also appear in the ribbon; use the editor toolbar.
         let out = self.settle(1);
         let at = nodes(&out)
             .into_iter()
@@ -132,7 +131,7 @@ impl Ui {
     fn project(&self) -> &Project {
         self.app.session.project().unwrap()
     }
-    /// Escolhe uma opção de um seletor das propriedades do editor.
+    /// Choose an option from an editor-properties selector.
     fn choose(&mut self, current: &str, option: &str) {
         let out = self.settle(1);
         let combo = nodes(&out)
@@ -148,7 +147,7 @@ impl Ui {
         let at = find(&out, option);
         self.press_at(at);
     }
-    /// Substitui o texto do campo na linha do rótulo indicado.
+    /// Replace text in the field on the specified label's row.
     fn type_in_row(&mut self, label: &str, text: &str) {
         let out = self.settle(1);
         let right = self.app.frame_editor.viewport.unwrap().right();
@@ -339,7 +338,7 @@ fn changing_dxf_options_requires_updated_preview() {
     );
 }
 
-/// Critério 1 (e 3 para inserções): moldura criada do zero pela interface.
+/// Create a frame from scratch through the interface, including insertions.
 #[test]
 fn frame_is_created_from_scratch_with_texts_specials_and_logo() {
     let dir = tempfile::tempdir().unwrap();
@@ -354,7 +353,7 @@ fn frame_is_created_from_scratch_with_texts_specials_and_logo() {
     ui.app.execute(CommandId::FrameNew, &ui.ctx.clone());
     ui.settle(3);
     let id = ui.app.frame_editor.frame.expect("editor aberto");
-    assert_eq!(ui.frame_now(id).elements().len(), 1); // borda da moldura em branco
+    assert_eq!(ui.frame_now(id).elements().len(), 1); // border of the blank frame
 
     ui.tool(FrameTool::Line);
     ui.click_world(p(5.0, 40.0));
@@ -428,7 +427,7 @@ fn frame_is_created_from_scratch_with_texts_specials_and_logo() {
         _ => unreachable!(),
     }
 
-    // Atribui à página e confere o desenho com os valores do projeto.
+    // Assign it to the page and verify painting with project values.
     ui.app
         .graphic_edit(GraphicEdit::Frame(FrameEdit::SetDefaultFrame(Some(id))));
     ui.press("Fechar editor");
@@ -442,7 +441,7 @@ fn frame_is_created_from_scratch_with_texts_specials_and_logo() {
     }
     assert!(frame_view::texture(&ui.ctx, ui.project(), asset).is_some());
 
-    // Desfazer: atribuição e depois a imagem (com o arquivo) saem juntas.
+    // Undo removes the assignment, then the image and its content together.
     let with_image = ui.project().clone();
     ui.key(Key::Z, Modifiers::CTRL);
     assert_eq!(
@@ -463,14 +462,14 @@ fn frame_is_created_from_scratch_with_texts_specials_and_logo() {
     assert_eq!(ui.project(), &with_image);
 }
 
-/// Critérios 2 e 3: editar moldura em uso atualiza páginas e referências.
+/// Editing an assigned frame updates pages and references.
 #[test]
 fn editing_a_frame_in_use_updates_pages_and_references() {
     let (project, page) = base_project();
     let mut ui = Ui::new(project);
     ui.app.session.open_page(page).unwrap();
     ui.settle(2);
-    // Bobina na coluna 4 (x 128..169) do A3 de fábrica.
+    // Coil in column 4, x 128..169, of the factory A3 frame.
     ui.app
         .session
         .begin_device_insertion(
@@ -499,7 +498,7 @@ fn editing_a_frame_in_use_updates_pages_and_references() {
     ui.settle(3);
     let id = ui.app.frame_editor.frame.unwrap();
     let before = ui.frame_now(id);
-    // Seleciona a linha do carimbo (y = 35) com clique real e exclui.
+    // Select the title-block line at y = 35 with a real click and delete it.
     ui.click_world(p(200.0, 35.0));
     assert_eq!(ui.app.frame_editor.selection.len(), 1);
     let selected = *ui.app.frame_editor.selection.iter().next().unwrap();
@@ -512,7 +511,7 @@ fn editing_a_frame_in_use_updates_pages_and_references() {
     assert_eq!(after_delete.elements().len(), before.elements().len() - 1);
     assert_eq!(after_delete.version(), before.version() + 1);
 
-    // Arrasta o texto "Projeto" 10 mm para a direita.
+    // Drag the project text 10 mm to the right.
     let label = after_delete
         .elements()
         .iter()
@@ -528,14 +527,14 @@ fn editing_a_frame_in_use_updates_pages_and_references() {
     let moved = ui.frame_now(id).elements()[label].anchor();
     assert!((moved.x() - anchor.x() - 10.0).abs() < 1e-9, "{moved:?}");
 
-    // Mudar as zonas (8 colunas de 51,25 mm) recalcula a referência.
+    // Changing zones to eight 51.25 mm columns recalculates the reference.
     let frame = ui.frame_now(id);
     let mut draft = frame.draft();
     draft.zones.columns = ZoneAxis::uniform(8, 51.25, ZoneLabelStyle::Numbers { start: 1 });
     assert!(ui.app.commit_frame_draft(draft, vec![]));
     assert_eq!(reference(&ui), "/1.3");
 
-    // Desfazer as três edições devolve a moldura original e a referência.
+    // Undoing all three edits restores the original frame and reference.
     for _ in 0..3 {
         ui.key(Key::Z, Modifiers::CTRL);
     }
@@ -543,7 +542,7 @@ fn editing_a_frame_in_use_updates_pages_and_references() {
     assert_eq!(reference(&ui), "/1.4");
 }
 
-/// Critério 4: exportar `.cadframe` e importar em outro projeto.
+/// Export .cadframe and import into another project.
 #[test]
 fn cadframe_export_and_import_between_projects() {
     let dir = tempfile::tempdir().unwrap();
@@ -589,7 +588,7 @@ fn cadframe_export_and_import_between_projects() {
         second.project().asset(asset).unwrap().bytes(),
         Some(logo_bytes.as_slice())
     );
-    // Importar de novo no mesmo projeto: nova moldura, mesma imagem.
+    // Import again into the same project: new frame, same image.
     second.app.files.picker = Box::new(ScriptedPicker {
         frames_open: [file].into(),
         ..Default::default()
@@ -601,7 +600,7 @@ fn cadframe_export_and_import_between_projects() {
     assert_eq!(second.project().frames().count(), 4);
 }
 
-/// Critério 5: imagens e arquivos inválidos são recusados sem alterar nada.
+/// Reject invalid images and files without changing anything.
 #[test]
 fn invalid_images_and_frame_files_are_refused_without_changes() {
     let dir = tempfile::tempdir().unwrap();

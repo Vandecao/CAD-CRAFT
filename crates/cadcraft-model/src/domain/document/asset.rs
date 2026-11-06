@@ -1,29 +1,32 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (C) 2026 Vanderlei Braga e colaboradores do CAD-CRAFT
-//! Etapa 14: imagens de molduras (logotipos).
-//!
-//! O Core reconhece PNG e JPEG pelo cabeçalho (assinatura e dimensões) e
-//! aplica os limites aprovados; a decodificação completa (conteúdo válido,
-//! textura) é responsabilidade da aplicação. Os bytes não fazem parte do
-//! JSON do projeto: o `.cadcraft` os grava como `assets/<id>.<ext>`.
+//! Frame image assets such as logos; start with ImageAsset. The core recognizes PNG and JPEG
+//! signatures and dimensions and enforces size limits. Full decoding and texture creation belong to
+//! the application. Bytes are stored outside project JSON as `assets/<id>.<ext>` in `.cadcraft`
+//! files.
 use super::*;
 use crate::error::{DomainError, Result};
 use serde::{Deserialize, Serialize};
 
-/// Limites aprovados na Etapa 14.
+/// Image resource limits enforced by the model.
 pub const MAX_IMAGE_BYTES: usize = 10 * 1024 * 1024;
+/// Maximum supported image width or height, in pixels.
 pub const MAX_IMAGE_SIDE: u32 = 4096;
 
 fn invalid(reason: &'static str) -> DomainError {
     DomainError::InvalidRelation(reason)
 }
 
+/// Image formats recognized from their header signatures.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub enum ImageFormat {
+    /// Portable Network Graphics image.
     Png,
+    /// JPEG image.
     Jpeg,
 }
 impl ImageFormat {
+    /// Return the conventional filename extension without a dot.
     pub fn extension(self) -> &'static str {
         match self {
             Self::Png => "png",
@@ -32,8 +35,8 @@ impl ImageFormat {
     }
 }
 
-/// Tipo e dimensões (px) lidos do cabeçalho; recusa formatos desconhecidos,
-/// cabeçalhos truncados e imagens fora dos limites.
+/// Read format and pixel dimensions from the header; reject unknown formats, truncated headers and
+/// images exceeding limits.
 pub fn inspect_image(bytes: &[u8]) -> Result<(ImageFormat, u32, u32)> {
     if bytes.len() > MAX_IMAGE_BYTES {
         return Err(invalid("imagem acima de 10 MB"));
@@ -57,7 +60,7 @@ fn be16(b: &[u8]) -> u16 {
     u16::from_be_bytes([b[0], b[1]])
 }
 fn png_size(b: &[u8]) -> Result<(ImageFormat, u32, u32)> {
-    // Assinatura (8) + comprimento (4) + "IHDR" (4) + largura (4) + altura (4).
+    // Signature (8) + length (4) + IHDR (4) + width (4) + height (4).
     if b.len() < 24 || &b[12..16] != b"IHDR" {
         return Err(invalid("cabeçalho PNG inválido"));
     }
@@ -99,8 +102,7 @@ fn jpeg_size(b: &[u8]) -> Result<(ImageFormat, u32, u32)> {
     Err(invalid("cabeçalho JPEG sem dimensões"))
 }
 
-/// Imagem guardada no projeto. `bytes` não é serializado no JSON; um
-/// projeto lido de snapshot técnico tem os metadados sem o conteúdo.
+/// Project image. JSON omits `bytes`, so technical snapshots contain metadata without content.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(try_from = "AssetData")]
 pub struct ImageAsset {
@@ -144,6 +146,7 @@ impl TryFrom<AssetData> for ImageAsset {
     }
 }
 impl ImageAsset {
+    /// Inspect image bytes, enforce resource limits and create an asset with fresh identity.
     pub fn from_bytes(bytes: Vec<u8>) -> Result<Self> {
         let (format, width_px, height_px) = inspect_image(&bytes)?;
         Ok(Self {
@@ -155,38 +158,44 @@ impl ImageAsset {
             bytes: Some(std::sync::Arc::new(bytes)),
         })
     }
+    /// Return this entity or definition's stable identifier.
     pub fn id(&self) -> AssetId {
         self.id
     }
+    /// Return the format.
     pub fn format(&self) -> ImageFormat {
         self.format
     }
+    /// Return the width px.
     pub fn width_px(&self) -> u32 {
         self.width_px
     }
+    /// Return the height px.
     pub fn height_px(&self) -> u32 {
         self.height_px
     }
+    /// Return the byte len.
     pub fn byte_len(&self) -> u64 {
         self.byte_len
     }
+    /// Return the optional bytes; absence represents an unset value or relation.
     pub fn bytes(&self) -> Option<&[u8]> {
         self.bytes.as_deref().map(Vec::as_slice)
     }
-    /// Proporção largura/altura da imagem.
+    /// Image width divided by height.
     pub fn aspect(&self) -> f64 {
         self.width_px as f64 / self.height_px as f64
     }
-    /// Mesmo conteúdo (para reaproveitar imagens iguais).
+    /// Whether the image content matches, for deduplication.
     pub fn same_content(&self, bytes: &[u8]) -> bool {
         self.bytes().is_some_and(|b| b == bytes)
     }
-    /// Cópia com outro ID (importação de `.cadframe` com colisão de ID).
+    /// Copy with a different ID for `.cadframe` import collisions.
     pub fn with_id(mut self, id: AssetId) -> Self {
         self.id = id;
         self
     }
-    /// Liga o conteúdo lido do arquivo; tem de coincidir com os metadados.
+    /// Attach file content after checking that it matches the metadata.
     pub fn attach(&mut self, bytes: Vec<u8>) -> Result<()> {
         let (format, w, h) = inspect_image(&bytes)?;
         if format != self.format

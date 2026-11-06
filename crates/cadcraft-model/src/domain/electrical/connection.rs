@@ -5,11 +5,10 @@ use super::{ConnectionId, ConnectionPointId, ProjectId, Text};
 use crate::error::{DomainError, Result};
 use serde::{Deserialize, Serialize};
 
-/// Aresta lógica não direcionada; não é linha gráfica nem condutor físico.
-/// A existência dos extremos e o pertencimento são verificados pelo `Project`.
-/// Não há propriedades físicas ou referências de `EntityRef` para conexões.
-/// IDs de conexão não são intercambiáveis com IDs de pontos:
+/// Undirected logical edge. Project validates endpoint existence and membership. Connections have
+/// neither physical properties nor EntityRef references, and their IDs differ from point IDs:
 /// ```compile_fail
+/// # use cadcraft_model as cad_craft;
 /// use cad_craft::domain::{ConnectionId, ConnectionPointId};
 /// let point: ConnectionPointId = ConnectionId::new();
 /// ```
@@ -27,6 +26,7 @@ pub struct Connection {
 }
 
 impl Connection {
+    /// Create a logical edge with fresh identity; reject identical endpoints.
     pub fn new(
         project_id: ProjectId,
         source: ConnectionPointId,
@@ -42,20 +42,24 @@ impl Connection {
         })
     }
 
+    /// Return this entity or definition's stable identifier.
     pub fn id(&self) -> ConnectionId {
         self.id
     }
+    /// Return the project identifier.
     pub fn project_id(&self) -> ProjectId {
         self.project_id
     }
 
-    /// Extremos em ordem crescente de ID; não expressam sentido de corrente.
+    /// Endpoints in ascending ID order, independent of current direction.
     pub fn endpoints(&self) -> (ConnectionPointId, ConnectionPointId) {
         (self.source, self.target)
     }
+    /// Return the documentary number, when assigned.
     pub fn number(&self) -> Option<&Text> {
         self.number.as_ref()
     }
+    /// Whether automatic numbering must preserve the assigned wire number.
     pub fn number_locked(&self) -> bool {
         self.number_locked
     }

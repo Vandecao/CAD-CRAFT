@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (C) 2026 Vanderlei Braga e colaboradores do CAD-CRAFT
+// Fixture helpers use validated synthetic inputs and fail immediately on setup errors.
+#![allow(clippy::unwrap_used)]
 use cad_craft::domain::*;
 use cad_gui::{app::CadApp, commands::CommandId};
 use eframe::egui::{self, Context, Event, Modifiers, PointerButton, Pos2, Rect, vec2};
@@ -313,8 +315,7 @@ fn designation(app: &CadApp, id: DeviceId) -> String {
     p.device(id).unwrap().designation().to_string()
 }
 
-/// Critério 1: -K9/-K5/-K2 em três páginas → -K1/-K2/-K3 pela ordem das
-/// páginas; função auxiliar e peça acompanham; Desfazer/Refazer exatos.
+/// Renumber -K9/-K5/-K2 on three pages to -K1/-K2/-K3 in page order; auxiliary functions and parts follow, with exact undo/redo.
 #[test]
 fn three_pages_are_numbered_in_page_order_and_undo_redo_are_exact() {
     let (mut project, [p1, p2, p3]) = three_pages();
@@ -369,8 +370,7 @@ fn three_pages_are_numbered_in_page_order_and_undo_redo_are_exact() {
     assert_eq!(app.session.project().unwrap(), &numbered);
 }
 
-/// Critério 2: o conflito com designação travada aparece e Aplicar fica
-/// desabilitado; nada muda.
+/// Conflict with a locked designation appears and disables Apply without changes.
 #[test]
 fn locked_conflict_is_shown_and_apply_does_nothing() {
     let (mut project, [p1, p2, _]) = three_pages();
@@ -399,8 +399,7 @@ fn locked_conflict_is_shown_and_apply_does_nothing() {
     assert_eq!(app.session.history.undo_len(), 0);
 }
 
-/// Critério 6: o espelho lista o contato representado com tipo, pontos e
-/// /página.coluna e o não representado sem referência; clicar navega.
+/// The mirror lists represented contacts with type, points and page-column references, and unrepresented contacts without references; clicking navigates.
 #[test]
 fn contact_mirror_lists_contacts_and_navigates_on_click() {
     let (mut project, [p1, p2, _]) = three_pages();
@@ -483,7 +482,7 @@ fn contact_mirror_lists_contacts_and_navigates_on_click() {
     ] {
         assert!(shown.iter().any(|l| l == expected), "{expected}: {shown:?}");
     }
-    // O mesmo texto aparece em "Ocorrências e contatos"; o espelho vem depois.
+    // The same text appears in the occurrences and contacts section; the mirror follows.
     let link = out
         .platform_output
         .accesskit_update
@@ -521,8 +520,7 @@ fn contact_mirror_lists_contacts_and_navigates_on_click() {
     );
 }
 
-/// Número de fio editado à mão: uma transação, desfeita e refeita
-/// exatamente; a rede não muda.
+/// Manual wire-number editing is one exactly reversible transaction; the network stays unchanged.
 #[test]
 fn manual_wire_number_is_one_undoable_transaction() {
     let mut project = Project::new("Fio").unwrap();
@@ -576,8 +574,7 @@ fn manual_wire_number_is_one_undoable_transaction() {
     assert_eq!(number(&app), (Some("L1".into()), true));
 }
 
-/// Tela alta: o espelho fica no fim do painel de propriedades e precisa estar
-/// dentro da área visível para receber o clique.
+/// On a tall screen, the mirror at the end of the properties panel must be visible to receive a click.
 fn tall(app: &mut CadApp, ctx: &Context, events: Vec<Event>) -> egui::FullOutput {
     ctx.run(
         egui::RawInput {

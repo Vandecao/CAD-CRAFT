@@ -556,13 +556,13 @@ impl CadApp {
                             response.context_menu(|ui| {
                                 for (cmd, label) in [
                                     (CommandId::OpenPage, "Abrir"),
-                                    (CommandId::NewPage, "Nova página"),
+                                    (CommandId::NewPage, crate::strings::NEW_PAGE),
                                     (CommandId::RenamePage, "Renomear"),
                                     (CommandId::IdentifyPage, "Alterar identificação"),
                                     (CommandId::Properties, "Propriedades"),
                                     (CommandId::PageUp, "Reordenar acima"),
                                     (CommandId::PageDown, "Reordenar abaixo"),
-                                    (CommandId::DeletePage, "Excluir"),
+                                    (CommandId::DeletePage, crate::strings::DELETE),
                                 ] {
                                     if ui.button(label).clicked() {
                                         select = Some(Selection::Page(id));

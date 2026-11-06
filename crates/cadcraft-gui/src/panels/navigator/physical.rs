@@ -148,7 +148,7 @@ pub(crate) fn physical_tree(p: &Project, tab: NavigatorTab) -> Vec<PhysicalTreeR
                 for (index, id) in strip.terminals.iter().enumerate() {
                     if let Some(t) = by_id.get(id) {
                         rows.push(terminal_row(t, 1, format!("{}. ", index + 1)));
-                        // Régua → Borne → Níveis/Posições.
+                        // Terminal strip, terminal, then levels and positions.
                         for level in &t.levels {
                             rows.push(row(
                                 2,
@@ -184,8 +184,7 @@ pub(crate) fn physical_tree(p: &Project, tab: NavigatorTab) -> Vec<PhysicalTreeR
                     ));
                 }
             }
-            // Conector → Contatos/Posições. The connector row targets its
-            // documental device; contacts target their own terminal.
+            // Connector, then contacts and positions. The connector row targets its documentary device; contacts target their own terminal.
             for c in &lists.connectors {
                 let free = c.contacts.iter().filter(|x| x.is_free()).count();
                 rows.push(row(
@@ -255,7 +254,7 @@ pub(crate) fn physical_tree(p: &Project, tab: NavigatorTab) -> Vec<PhysicalTreeR
 impl CadApp {
     pub(super) fn physical_navigator(&mut self, ui: &mut Ui) {
         let Some(p) = self.session.project() else {
-            ui.weak("Nenhum projeto aberto.");
+            ui.weak(crate::strings::NO_OPEN_PROJECT_NOTICE);
             return;
         };
         let key = (p.id(), self.session.revision, self.navigator.tab);

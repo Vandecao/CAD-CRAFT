@@ -4,7 +4,7 @@
 use super::*;
 
 impl Project {
-    /// Captura a seleção de uma página como conteúdo de macro.
+    /// Capture a page selection as macro content.
     pub fn capture_macro(&self, ids: &[RepresentationId]) -> Result<(MacroContent, MacroReport)> {
         if ids.is_empty() {
             return Err(macro_error("selecione símbolos, fios ou conteúdo livre"));
@@ -25,7 +25,7 @@ impl Project {
         self.capture_on(page, ids.iter().copied().collect())
     }
 
-    /// Captura a página inteira (sem a moldura, que é propriedade da página).
+    /// Capture an entire page excluding its frame, which belongs to page metadata.
     pub fn capture_page_macro(&self, page: PageId) -> Result<(MacroContent, MacroReport)> {
         self.require(EntityRef::Page(page))?;
         let ids: BTreeSet<_> = self
@@ -51,7 +51,7 @@ impl Project {
             .copied()
             .filter(|id| self.connection_routes.contains_key(id))
             .collect();
-        // 1. Ocorrências de símbolo/conteúdo livre admitidas.
+        // 1. Include eligible symbol and free-content occurrences.
         let mut kept: BTreeSet<RepresentationId> = BTreeSet::new();
         let mut functions: BTreeSet<FunctionId> = BTreeSet::new();
         let mut devices: BTreeSet<DeviceId> = BTreeSet::new();
@@ -92,8 +92,8 @@ impl Project {
             }
             kept.insert(*id);
         }
-        // 2. Dispositivos levam todas as funções e pontos (as não representadas
-        //    na seleção ficam "não representadas" no destino).
+        // 2. Devices include every function and point; functions outside the selection remain
+        // unrepresented at the destination.
         for d in &devices {
             functions.extend(self.functions_for_device(*d).map(Function::id));
         }
@@ -103,7 +103,7 @@ impl Project {
             .filter(|p| functions.contains(&p.function_id()))
             .map(ConnectionPoint::id)
             .collect();
-        // 3. Marcadores só com o ponto dentro da seleção.
+        // 3. Include markers only when their points are selected.
         let mut markers = Vec::new();
         for id in marker_ids {
             let m = self.markers.get(&id).expect("marcador conferido");
@@ -114,7 +114,7 @@ impl Project {
                 report.dropped_markers += 1;
             }
         }
-        // 4. Fios internos: as duas pontas em ocorrências mantidas.
+        // 4. Include internal wires whose endpoints belong to retained occurrences.
         let mut routes = Vec::new();
         for r in self.connection_routes.values() {
             if r.page_id() != page {
@@ -146,7 +146,7 @@ impl Project {
         for j in &junctions {
             connection_ids.extend(j.connections().iter().copied());
         }
-        // 5. Cadastro.
+        // 5. Capture entity registration data.
         let mut point_entities = Vec::new();
         for id in &points {
             let mut p = self.connection_points[id].clone();
@@ -236,7 +236,7 @@ impl Project {
         if content.len() > MAX_MACRO_ITEMS {
             return Err(macro_error("seleção grande demais para uma macro"));
         }
-        // Propriedades personalizadas não podem apontar para fora da macro.
+        // Custom properties cannot refer outside the macro.
         let inside = |r: &EntityRef| match r {
             EntityRef::Device(id) => devices.contains(id),
             EntityRef::Function(id) => functions.contains(id),

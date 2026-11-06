@@ -4,7 +4,7 @@
 use super::*;
 
 impl Project {
-    /// Insere o conteúdo na página indicada (uma transação).
+    /// Insert content into the specified page in one transaction.
     pub fn insert_macro_content(
         &mut self,
         content: &MacroContent,
@@ -22,7 +22,7 @@ impl Project {
         ))
     }
 
-    /// Insere uma macro de janela.
+    /// Insert a window macro.
     pub fn insert_macro(
         &mut self,
         definition: &MacroDefinition,
@@ -39,8 +39,7 @@ impl Project {
         )
     }
 
-    /// Macro de página: cria a página no documento (no fim) e insere o
-    /// conteúdo nas mesmas coordenadas da página de origem.
+    /// Page macro: append a page to the document and insert content at its original coordinates.
     pub fn insert_page_macro(
         &mut self,
         definition: &MacroDefinition,
@@ -86,7 +85,7 @@ impl Project {
         }
     }
 
-    /// Validação completa do conteúdo: inserção num projeto de rascunho.
+    /// Validate full content by insertion into a scratch project.
     pub(crate) fn check_macro_content(content: &MacroContent) -> Result<()> {
         let mut scratch = Project::new("macro")?;
         let document = Document::new(scratch.id, "macro")?;
@@ -113,7 +112,7 @@ impl Project {
         Ok(())
     }
 
-    /// Gera IDs, designações e geometria, escreve tudo e confere o projeto.
+    /// Generate IDs, designations and geometry, write everything, then validate the project.
     fn prepare_batch(
         &mut self,
         content: &MacroContent,
@@ -126,7 +125,7 @@ impl Project {
             return Err(macro_error("macro sem conteúdo"));
         }
         let mut report = MacroReport::default();
-        // 1. Mapa de IDs: cada entidade de origem ganha um UUID v7 novo.
+        // 1. Assign a fresh UUID v7 to each source entity.
         let mut map: BTreeMap<String, String> = BTreeMap::new();
         let fresh = || uuid::Uuid::now_v7().to_string();
         let mut add = |old: String| {
@@ -157,7 +156,7 @@ impl Project {
             .for_each(|e| add(e.id().to_string()));
         map.insert(content.project.to_string(), self.id.to_string());
         map.insert(content.page.to_string(), placement.page.to_string());
-        // 2. Troca dos IDs no JSON e designações livres.
+        // 2. Remap JSON IDs and assign free designations.
         let mut value = serde_json::to_value(content).map_err(json_error)?;
         let definitions = value
             .get_mut("definitions")
@@ -176,7 +175,7 @@ impl Project {
             placement.transform.translation(),
         )?;
         let mut next: MacroContent = serde_json::from_value(value).map_err(json_error)?;
-        // 3. Geometria.
+        // 3. Transform geometry.
         let total = placement_from_base(placement.base, placement.transform)?;
         for r in &mut next.representations {
             r.transform = r.transform.then(total)?;
@@ -189,7 +188,7 @@ impl Project {
         for j in &mut next.junctions {
             j.position = total.apply(j.position)?;
         }
-        // 4. Símbolos e peças: acrescenta os ausentes; mantém os do projeto.
+        // 4. Add missing symbols and parts, retaining existing project versions.
         let mut batch = Batch::default();
         for d in next.definitions.drain(..) {
             match self.symbol_definition(d.id()) {
@@ -217,7 +216,7 @@ impl Project {
             .collect();
         batch.markers = next.markers;
         batch.connections = next.connections;
-        // 5. Escreve o cadastro; os fios dependem das portas já posicionadas.
+        // 5. Write registration data; wires require already positioned ports.
         self.preflight_batch(&batch, true)?;
         self.write_batch(&batch, true);
         let finished = (|| -> Result<Batch> {
@@ -262,8 +261,8 @@ impl Project {
         Ok((batch, report))
     }
 
-    /// Designação livre `{prefixo}{n}` por dispositivo, no mesmo caminho
-    /// `=`/`+`; funções e peças instaladas acompanham o dispositivo.
+    /// Free `{prefix}{n}` designation per device within its existing `=`/`+` path; functions and
+    /// installed parts follow the device.
     fn rename_devices(
         &self,
         value: &mut serde_json::Value,
@@ -286,7 +285,7 @@ impl Project {
         let devices = value["devices"]
             .as_array_mut()
             .ok_or(macro_error("conteúdo de macro inconsistente"))?;
-        // Ordem estável: pela designação de origem.
+        // Stable order by source designation.
         let mut order: Vec<usize> = (0..devices.len()).collect();
         order.sort_by_key(|&i| {
             devices[i]["designation"]["device"]
@@ -443,7 +442,7 @@ impl Project {
         }
     }
 
-    /// Escrita bruta (sem conferência); `forward = false` remove.
+    /// Unchecked write; `forward = false` removes the entities.
     fn write_batch(&mut self, b: &Batch, forward: bool) {
         fn put<K: Ord, V>(
             map: &mut BTreeMap<K, V>,
@@ -516,7 +515,7 @@ impl Project {
         );
     }
 
-    /// Reconstrói os índices derivados e valida o projeto inteiro.
+    /// Rebuild derived indexes and validate the complete project.
     fn commit_batch(&mut self) -> Result<()> {
         let document_index = self.build_document_index()?;
         let graph = self.build_graph()?;
@@ -538,7 +537,7 @@ impl Project {
         Ok(())
     }
 
-    /// Desfaz (`forward = false`) ou refaz a inserção.
+    /// Undo when `forward = false`, otherwise redo the insertion.
     pub fn restore_macro_insert(&mut self, d: &MacroInsertDelta, forward: bool) -> Result<()> {
         self.check_project(d.project)?;
         if forward {

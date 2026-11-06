@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (C) 2026 Vanderlei Braga e colaboradores do CAD-CRAFT
-//! Etapa 13: molduras, zonas, textos especiais e referências por zona.
+//! Frames, zones, special text fields and zone-based references.
+// Synthetic test fixtures intentionally fail fast when setup is invalid.
+#![allow(clippy::unwrap_used)]
+
 use cad_craft::{domain::*, persistence};
 
 fn p(x: f64, y: f64) -> Point2D {
@@ -38,7 +41,7 @@ fn project() -> (Project, DocumentId, PageId, PageId) {
     project.reorder_pages(doc, &pages).unwrap();
     (project, doc, pages[0], pages[1])
 }
-/// Moldura de teste: área útil 0..300 × 0..200, colunas 50/100/150, linhas 3×.
+/// Test frame: usable area 0..300 by 0..200, columns 50/100/150 and three rows.
 fn custom() -> FrameTemplate {
     FrameTemplate::new(
         "Teste",
@@ -107,10 +110,10 @@ fn zones_with_different_widths_and_edges_are_exact() {
     assert_eq!(col(60.0).as_deref(), Some("2")); // limite pertence à seguinte
     assert_eq!(col(159.9).as_deref(), Some("2"));
     assert_eq!(col(160.0).as_deref(), Some("3"));
-    assert_eq!(col(310.0).as_deref(), Some("3")); // borda direita incluída
+    assert_eq!(col(310.0).as_deref(), Some("3")); // The right boundary is included.
     assert_eq!(col(310.1), None);
     assert_eq!(col(9.9), None);
-    // Linhas de cima para baixo: topo da área útil em y = 210.
+    // Rows run top to bottom; the usable area ends at Y=210.
     let row = |y| f.zone_at(p(100.0, y)).and_then(|z| z.row);
     assert_eq!(row(210.0).as_deref(), Some("A"));
     assert_eq!(row(150.1).as_deref(), Some("A"));
@@ -160,10 +163,10 @@ fn reference_labels_follow_frame_zones_and_format() {
     project
         .edit_frame(FrameEdit::SetDefaultFrame(Some(a3_id)))
         .unwrap();
-    // Colunas de 41 mm a partir de x = 5: x = 70 → coluna 2.
+    // With 41 mm columns starting at X=5, X=70 is in column 2.
     assert_eq!(project.reference_label(a, point), "/1.2");
     assert_eq!(project.reference_label(a, p(414.0, 100.0)), "/1.10");
-    // Fora da área de zonas (carimbo) → coordenadas.
+    // The title block is outside the zone area, so use coordinate references.
     assert!(
         project
             .reference_label(a, p(70.0, 10.0))
@@ -185,7 +188,7 @@ fn reference_labels_follow_frame_zones_and_format() {
         ))
         .unwrap();
     assert_eq!(project.reference_label(b, p(200.0, 100.0)), "/2.3B");
-    // Trocar a moldura da página recalcula a referência.
+    // Changing the page frame recalculates the reference.
     project
         .edit_frame(FrameEdit::SetPageFrame {
             page: b,
@@ -276,7 +279,7 @@ fn special_texts_resolve_project_page_and_indexed_properties() {
     assert_eq!(r(b, SpecialField::PreviousPageNumber, None), "1");
     assert_eq!(r(a, SpecialField::PreviousPageNumber, None), "");
     assert_eq!(r(a, SpecialField::NextPageNumber, None), "2");
-    // Renomear o projeto e renumerar a página mudam os valores sem tocar a moldura.
+    // Renaming the project and page number updates field values without modifying the frame.
     project.identify_page(b, "20").unwrap();
     assert_eq!(
         project.resolve_special(b, &SpecialField::PageNumber, None),
@@ -339,7 +342,7 @@ fn frame_edits_undo_and_redo_exactly() {
     assert_eq!(project, end);
     assert!(project.restore_frame_edit(&deltas[0], true).is_err());
     assert_eq!(project, end);
-    // Metadado vazio remove a chave.
+    // Empty metadata removes the key.
     let removal = project
         .edit_frame(FrameEdit::SetProjectMetadata {
             key: key("Cliente"),

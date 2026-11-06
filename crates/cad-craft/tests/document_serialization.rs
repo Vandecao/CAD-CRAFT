@@ -1,5 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (C) 2026 Vanderlei Braga e colaboradores do CAD-CRAFT
+// Synthetic test fixtures intentionally fail fast when setup is invalid.
+#![allow(clippy::unwrap_used)]
+
 mod document_common;
 use cad_craft::domain::*;
 use document_common::*;
@@ -90,13 +93,13 @@ fn legacy_snapshots_do_not_invent_documentary_content() {
         page.as_object_mut().unwrap().remove("order");
         page.as_object_mut().unwrap().remove("structure");
     }
-    for stage in [3, 2, 1] {
-        if stage == 2 {
+    for schema_level in [3, 2, 1] {
+        if schema_level == 2 {
             for key in ["conductors", "cables", "cable_cores", "terminal_strips"] {
                 v.as_object_mut().unwrap().remove(key);
             }
         }
-        if stage == 1 {
+        if schema_level == 1 {
             v.as_object_mut().unwrap().remove("connections");
         }
         let restored: Project = serde_json::from_value(v.clone()).unwrap();

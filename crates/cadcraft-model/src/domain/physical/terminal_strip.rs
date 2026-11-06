@@ -4,7 +4,7 @@
 use super::*;
 use serde::{Deserialize, Serialize};
 
-/// Agrupamento físico ordenado, sem continuidade implícita nem mudança de proprietário.
+/// Ordered physical grouping with neither implicit continuity nor ownership changes.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct TerminalStrip {
@@ -16,6 +16,7 @@ pub struct TerminalStrip {
     pub(in crate::domain) properties: TechnicalProperties,
 }
 impl TerminalStrip {
+    /// Create an empty detached terminal strip with fresh identity.
     pub fn new(project_id: ProjectId, designation: DesignationPart) -> Self {
         Self {
             id: TerminalStripId::new(),
@@ -26,28 +27,36 @@ impl TerminalStrip {
             properties: TechnicalProperties::default(),
         }
     }
+    /// Return this entity or definition's stable identifier.
     pub fn id(&self) -> TerminalStripId {
         self.id
     }
+    /// Return the project identifier.
     pub fn project_id(&self) -> ProjectId {
         self.project_id
     }
+    /// Return the designation.
     pub fn designation(&self) -> &DesignationPart {
         &self.designation
     }
+    /// Return the optional location; absence represents an unset value or relation.
     pub fn location(&self) -> Option<&Text> {
         self.location.as_ref()
     }
+    /// Return the terminals in their stored order.
     pub fn terminals(&self) -> &[TerminalId] {
         &self.terminals
     }
+    /// Return the properties.
     pub fn properties(&self) -> &TechnicalProperties {
         &self.properties
     }
+    /// Return this value with location replaced.
     pub fn with_location(mut self, value: Text) -> Self {
         self.location = Some(value);
         self
     }
+    /// Return this value with properties replaced.
     pub fn with_properties(mut self, value: TechnicalProperties) -> Self {
         self.properties = value;
         self
@@ -58,6 +67,7 @@ impl TerminalStrip {
         self.terminals = terminals;
         self
     }
+    /// Return this value with designation replaced.
     pub fn with_designation(mut self, designation: DesignationPart) -> Self {
         self.designation = designation;
         self

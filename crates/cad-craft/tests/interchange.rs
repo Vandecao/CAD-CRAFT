@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (C) 2026 Vanderlei Braga e colaboradores do CAD-CRAFT
-//! Contratos de intercâmbio de molduras (EPLAN .fn1, QElectroTech .titleblock, DXF).
+//! Frame interchange contracts for EPLAN .fn1, QElectroTech .titleblock and DXF.
+// Synthetic test fixtures intentionally fail fast when setup is invalid.
+#![allow(clippy::unwrap_used)]
+
 use cad_craft::domain::{
     FrameElement, FrameTemplate, FrameTextStyle, LocalizedText, Point2D, Rect2D, Size2D,
     SpecialField, TextAlign, ZoneAxis, ZoneLayout,
@@ -19,8 +22,8 @@ fn synthetic_fn1(name: &str) -> cad_craft::interchange::ImportedFrame {
     fn1::import(&bytes, &mut |_| None).unwrap_or_else(|e| panic!("{}: {e}", path.display()))
 }
 
-/// Moldura sintética com o desenho em coordenadas internas deslocadas (como
-/// as molduras do EPLAN): a borda do tamanho da folha é levada à origem.
+/// A synthetic EPLAN-style frame uses displaced internal coordinates; its sheet-size border
+/// moves to the origin.
 #[test]
 fn synthetic_eplan_frame_with_offset_origin_imports() {
     let imported = synthetic_fn1("moldura_origem_deslocada.fn1");
@@ -40,7 +43,7 @@ fn synthetic_eplan_frame_with_offset_origin_imports() {
             "{kind}"
         );
     }
-    // Borda de (-29; 31) a (391; 328) → de (0; 0) a (420; 297).
+    // Border (-29,31)..(391,328) maps to (0,0)..(420,297).
     assert!(frame.elements().iter().any(|e| match e {
         FrameElement::Rectangle { rect, .. } => {
             let (o, m) = (rect.origin(), rect.max());
@@ -51,7 +54,7 @@ fn synthetic_eplan_frame_with_offset_origin_imports() {
         }
         _ => false,
     }));
-    // Linha (371; 35)–(391; 35) → (400; 4)–(420; 4).
+    // Line (371,35)..(391,35) maps to (400,4)..(420,4).
     assert!(frame.elements().iter().any(|e| match e {
         FrameElement::Line { start, end, .. } => {
             let xs = [start.x(), end.x()];
@@ -62,7 +65,7 @@ fn synthetic_eplan_frame_with_offset_origin_imports() {
         }
         _ => false,
     }));
-    // Número da página (propriedade 11000) e texto multilíngue (pt-BR padrão).
+    // Cover the page-number property 11000 and multilingual text with pt-BR as the default.
     assert!(frame.elements().iter().any(|e| matches!(
         e,
         FrameElement::Special {
@@ -80,8 +83,8 @@ fn synthetic_eplan_frame_with_offset_origin_imports() {
     assert!(lines.contains("rótulos de coluna/linha"), "{lines}");
 }
 
-/// Moldura sintética completa: grupos, polilinha com arco, texto girado,
-/// campos de projeto e de estrutura, imagem externa e objetos ignorados.
+/// Complete synthetic frame: groups, arc polyline, rotated text, project/structure fields,
+/// external image and ignored objects.
 #[test]
 fn synthetic_eplan_frame_covers_groups_polylines_fields_and_reports() {
     let imported = synthetic_fn1("moldura_completa.fn1");
@@ -124,8 +127,8 @@ fn synthetic_eplan_frame_covers_groups_polylines_fields_and_reports() {
     }
 }
 
-/// Molduras reais do usuário (EPLAN), fora do Git: `CADCRAFT_SAMPLES/eplan/fn1`.
-/// Sem a variável, o teste passa sem rodar.
+/// Optional real EPLAN frames stay outside Git under CADCRAFT_SAMPLES/eplan/fn1. Without the
+/// variable, skip sample reading.
 #[test]
 fn sample_eplan_frames_import_when_available() {
     let Some(root) = std::env::var_os("CADCRAFT_SAMPLES") else {
@@ -290,7 +293,7 @@ fn qet_titleblock_places_fields_at_bottom_right() {
 
 #[test]
 fn available_qet_reference_titleblocks_import_without_copying_sources() {
-    // Modelos de carimbo fora do Git: `CADCRAFT_SAMPLES/titleblock`.
+    // External title-block templates are under CADCRAFT_SAMPLES/titleblock.
     let Some(dir) =
         std::env::var_os("CADCRAFT_SAMPLES").map(|r| std::path::Path::new(&r).join("titleblock"))
     else {

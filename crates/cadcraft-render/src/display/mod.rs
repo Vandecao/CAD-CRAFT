@@ -10,35 +10,35 @@ use crate::font;
 use cadcraft_model::domain::*;
 use cadcraft_model::error::Result;
 
-/// Espessura (mm) do traço de símbolos sem espessura própria.
+/// Stroke width in mm for symbols without an explicit width.
 pub const SYMBOL_STROKE: f64 = 0.25;
-/// Espessura (mm) dos fios.
+/// Wire stroke width in mm.
 pub const ROUTE_STROKE: f64 = 0.35;
-/// Raio (mm) do ponto de junção.
+/// Junction dot radius in mm.
 pub const JUNCTION_RADIUS: f64 = 0.6;
-/// Altura (mm) dos rótulos de zona e de textos auxiliares da folha.
+/// Height in mm of zone labels and auxiliary sheet texts.
 pub const LABEL_HEIGHT: f64 = 2.5;
-/// Altura da linha de texto em relação ao corpo (caixa de alinhamento).
+/// Text line height relative to font size, used for the alignment box.
 pub const LINE_HEIGHT: f64 = 1.2;
-/// Linha de base acima do pé da caixa, em relação ao corpo.
+/// Baseline offset above the box bottom relative to font size.
 pub const BASELINE: f64 = 0.25;
-/// Erro máximo (mm) da tesselagem de curvas.
+/// Maximum curve tessellation error in mm.
 const CURVE_TOLERANCE: f64 = 0.01;
 
-/// Cor lógica; quem escreve escolhe o valor (colorido ou preto e branco).
+/// Logical color; the writer chooses its color or monochrome value.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum DisplayColor {
-    /// Desenho principal.
+    /// Main drawing content.
     Ink,
-    /// Referências cruzadas, espelho e interrupções.
+    /// Cross-references, contact mirrors and interruptions.
     Reference,
-    /// Marca d'água da moldura.
+    /// Frame watermark.
     Watermark,
-    /// Guias claras (margem sem moldura, caixa sem geometria, imagem ausente).
+    /// Light guides: unframed margin, geometry-free box or missing image.
     Guide,
 }
 
-/// Categoria do item (camada no DXF; o PDF a ignora).
+/// Item category: DXF layer, ignored by PDF.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum DisplayLayer {
     Frame,
@@ -60,7 +60,7 @@ impl DisplayLayer {
         Self::Junctions,
         Self::Guides,
     ];
-    /// Nome da camada (sem acentos, aceito por qualquer leitor DXF).
+    /// Layer name without accents, accepted by DXF readers.
     pub fn name(self) -> &'static str {
         match self {
             Self::Frame => "Moldura",
@@ -77,15 +77,15 @@ impl DisplayLayer {
 #[derive(Clone, Debug, PartialEq)]
 pub struct DisplayStroke {
     pub width: f64,
-    /// Traço/vão em mm; vazio = contínuo.
+    /// Dash/gap lengths in mm; empty means continuous.
     pub dash: Vec<f64>,
     pub color: DisplayColor,
 }
 
-/// Texto numa caixa local em mm. `matrix` leva a caixa para a página:
+/// Text in a local box in mm. `matrix` maps the box onto the page:
 /// `x' = a·x + c·y + e`, `y' = b·x + d·y + f` (`[a, b, c, d, e, f]`).
-/// O corpo da fonte é `size`; a linha de base fica em `y = baseline`.
-/// Com `width`, o texto é esticado/comprimido até essa largura.
+/// Font size is `size`; the baseline lies at `y = baseline`.
+/// When `width` is set, stretch or compress the text to that width.
 #[derive(Clone, Debug, PartialEq)]
 pub struct DisplayText {
     pub text: String,
@@ -98,11 +98,11 @@ pub struct DisplayText {
 }
 
 impl DisplayText {
-    /// Largura natural (Helvetica) na unidade da caixa.
+    /// Natural Helvetica width in the box's units.
     pub fn natural_width(&self) -> f64 {
         font::text_width(&self.text, self.size)
     }
-    /// Ponto da página correspondente ao ponto `(x, y)` da caixa.
+    /// Page point corresponding to local box point `(x, y)`.
     pub fn map(&self, x: f64, y: f64) -> (f64, f64) {
         let [a, b, c, d, e, f] = self.matrix;
         (a * x + c * y + e, b * x + d * y + f)
@@ -124,7 +124,7 @@ pub enum DisplayItem {
         rect: Rect2D,
         layer: DisplayLayer,
     },
-    /// Área clicável que leva à ocorrência `target`.
+    /// Clickable area navigating to the `target` occurrence.
     Link {
         rect: Rect2D,
         target: RepresentationId,
@@ -157,7 +157,7 @@ impl DisplayList {
 struct Builder<'a> {
     project: &'a Project,
     items: Vec<DisplayItem>,
-    /// Camada dos itens acrescentados a seguir.
+    /// Layer assigned to subsequent items.
     layer: DisplayLayer,
 }
 

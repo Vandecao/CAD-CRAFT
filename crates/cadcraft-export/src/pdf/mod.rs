@@ -12,37 +12,37 @@ use pdf_writer::{Content, Date, Filter, Finish, Name, Pdf, Rect, Ref, Str, TextS
 use std::collections::{BTreeMap, BTreeSet};
 use std::io::Write;
 
-/// Milímetros → pontos PDF.
+/// Millimetres to PDF points.
 const PT_PER_MM: f64 = 72.0 / 25.4;
 const FONT: Name<'static> = Name(b"F1");
 
-/// Páginas a exportar.
+/// Pages to export.
 #[derive(Clone, Debug, PartialEq, Eq, Default)]
 pub enum PdfScope {
     #[default]
     Project,
     Document(DocumentId),
-    /// Páginas escolhidas; saem na ordem do projeto.
+    /// Selected pages, emitted in project order.
     Pages(Vec<PageId>),
 }
 
-/// Escala no papel de impressão.
+/// Scale on printed paper.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Default)]
 pub enum PaperFit {
-    /// Reduz/amplia para caber no papel, centralizado.
+    /// Shrink or enlarge to fit the paper, centered.
     #[default]
     Fit,
-    /// 1:1, centralizado (o que exceder o papel é cortado).
+    /// Centered at 1:1; content outside the paper is clipped.
     Actual,
 }
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct PdfOptions {
     pub scope: PdfScope,
-    /// Preto e branco: o conteúdo vetorial sai só em preto e cinza.
+    /// Monochrome: render vector content in black and gray only.
     pub monochrome: bool,
     pub bookmarks: bool,
-    /// Papel de impressão (mm) e escala; `None` = tamanho real da folha.
+    /// Print paper size in mm and scale; `None` uses the actual sheet size.
     pub paper: Option<(Size2D, PaperFit)>,
 }
 
@@ -57,16 +57,16 @@ impl Default for PdfOptions {
     }
 }
 
-/// O que a exportação fez e o que precisou adaptar.
+/// Export summary and required adaptations.
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct PdfReport {
     pub pages: usize,
     pub links: usize,
-    /// Links cujo destino não está entre as páginas exportadas.
+    /// Links targeting pages outside the exported range.
     pub omitted_links: usize,
-    /// Caracteres fora da Helvetica WinAnsi, trocados por `?`.
+    /// Characters unavailable in Helvetica WinAnsi, replaced with `?`.
     pub replaced: BTreeSet<char>,
-    /// Imagens sem conteúdo ou ilegíveis (desenhadas como caixa).
+    /// Missing or unreadable images, rendered as boxes.
     pub missing_images: usize,
 }
 
@@ -106,7 +106,7 @@ pub struct PdfOutput {
 
 #[derive(Debug)]
 pub enum PdfError {
-    /// Nenhuma página no alcance.
+    /// No pages in the selected range.
     Empty,
     Cancelled,
     Domain(DomainError),
@@ -128,7 +128,7 @@ impl From<DomainError> for PdfError {
     }
 }
 
-/// Páginas do alcance, na ordem dos documentos e das páginas.
+/// Pages in the range, in document and page order.
 pub fn pages_in_scope(project: &Project, scope: &PdfScope) -> Result<Vec<PageId>, PdfError> {
     let mut out = vec![];
     for document in project.documents() {
@@ -154,17 +154,17 @@ pub fn pages_in_scope(project: &Project, scope: &PdfScope) -> Result<Vec<PageId>
     Ok(out)
 }
 
-/// Afim `[a, b, c, d, e, f]`: `x' = a·x + c·y + e`, `y' = b·x + d·y + f`.
+/// Affine `[a, b, c, d, e, f]`: `x' = a·x + c·y + e`, `y' = b·x + d·y + f`.
 type Affine = [f64; 6];
 
-/// Posição de uma folha no papel PDF (pt).
+/// Sheet placement on PDF paper in points.
 #[derive(Clone, Copy)]
 struct Placement {
     media: (f64, f64),
-    /// mm da folha → pt.
+    /// Sheet mm to PDF points.
     matrix: Affine,
 }
-/// Referências de objeto em sequência.
+/// Sequential object references.
 struct Refs(i32);
 impl Refs {
     fn next(&mut self) -> Ref {
@@ -173,7 +173,7 @@ impl Refs {
     }
 }
 
-/// Imagem já escrita no PDF (nome do recurso e referência).
+/// Image already embedded in the PDF: resource name and reference.
 type ImageEntry = Option<(String, Ref)>;
 
 struct Writer<'a> {

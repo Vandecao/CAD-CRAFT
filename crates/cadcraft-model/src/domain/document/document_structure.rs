@@ -4,8 +4,8 @@
 use super::{DesignationPart, PageId};
 use serde::{Deserialize, Serialize};
 
-/// Classificação documental, independente de FunctionId/DeviceId.
-/// Caminhos vazios indicam ausência de classificação.
+/// Document classification independent of FunctionId and DeviceId. Empty paths mean no
+/// classification.
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct DocumentStructure {
@@ -13,18 +13,22 @@ pub struct DocumentStructure {
     location_path: Vec<DesignationPart>,
 }
 impl DocumentStructure {
+    /// Create a document classification from functional and location paths.
     pub fn new(functional_path: Vec<DesignationPart>, location_path: Vec<DesignationPart>) -> Self {
         Self {
             functional_path,
             location_path,
         }
     }
+    /// Return the functional path in their stored order.
     pub fn functional_path(&self) -> &[DesignationPart] {
         &self.functional_path
     }
+    /// Return the location path in their stored order.
     pub fn location_path(&self) -> &[DesignationPart] {
         &self.location_path
     }
+    /// Return the classification path for the selected axis.
     pub fn path(&self, axis: StructureAxis) -> &[DesignationPart] {
         match axis {
             StructureAxis::Function => self.functional_path(),
@@ -33,16 +37,21 @@ impl DocumentStructure {
     }
 }
 
+/// Functional or location axis of a document classification path.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum StructureAxis {
+    /// Functional classification axis.
     Function,
+    /// Location classification axis.
     Location,
 }
 
-/// Nó de árvore em sequência pré-ordenada. O pai é o caminho sem a última parte.
-/// `pages` contém somente folhas diretamente classificadas nesse caminho.
+/// Tree node in preorder. Its parent is the path without the final segment. `pages` contains only
+/// sheets classified directly at this path.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct PageGroup {
+    /// Ordered classification path segments.
     pub path: Vec<DesignationPart>,
+    /// Pages belonging to this group or classification.
     pub pages: Vec<PageId>,
 }

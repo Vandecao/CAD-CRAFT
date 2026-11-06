@@ -4,7 +4,7 @@
 use crate::error::{DomainError, Result};
 use serde::{Deserialize, Serialize};
 
-/// Coordenada cartesiana em milímetros; origem inferior esquerda, X direita/Y cima.
+/// Cartesian millimetre coordinates; bottom-left origin, X right and Y up.
 #[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(try_from = "PointData")]
 pub struct Point2D {
@@ -24,21 +24,26 @@ impl TryFrom<PointData> for Point2D {
     }
 }
 impl Point2D {
+    /// Create a Cartesian point, rejecting nonfinite coordinates.
     pub fn new(x: f64, y: f64) -> Result<Self> {
         if !x.is_finite() || !y.is_finite() {
             return Err(DomainError::InvalidNumber("coordenada"));
         }
         Ok(Self { x, y })
     }
+    /// Return the X coordinate in millimetres.
     pub fn x(self) -> f64 {
         self.x
     }
+    /// Return the Y coordinate in millimetres.
     pub fn y(self) -> f64 {
         self.y
     }
+    /// Translate millimetre coordinates, rejecting nonfinite results.
     pub fn translated(self, dx: f64, dy: f64) -> Result<Self> {
         Self::new(self.x + dx, self.y + dy)
     }
+    /// Return Euclidean distance in millimetres, rejecting nonfinite results.
     pub fn distance_to(self, other: Self) -> Result<f64> {
         let distance = (self.x - other.x).hypot(self.y - other.y);
         if !distance.is_finite() {
@@ -48,6 +53,7 @@ impl Point2D {
     }
 }
 
+/// Finite, nonnegative width and height in millimetres.
 #[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(try_from = "SizeData")]
 pub struct Size2D {
@@ -67,21 +73,24 @@ impl TryFrom<SizeData> for Size2D {
     }
 }
 impl Size2D {
+    /// Create a millimetre size, rejecting negative or nonfinite dimensions.
     pub fn new(width: f64, height: f64) -> Result<Self> {
         if !width.is_finite() || !height.is_finite() || width < 0.0 || height < 0.0 {
             return Err(DomainError::InvalidNumber("dimensão"));
         }
         Ok(Self { width, height })
     }
+    /// Return the width in millimetres.
     pub fn width(self) -> f64 {
         self.width
     }
+    /// Return the height in millimetres.
     pub fn height(self) -> f64 {
         self.height
     }
 }
 
-/// Retângulo fechado; tamanhos zero são permitidos. Limites precisam ser finitos.
+/// Closed rectangle allowing zero size; bounds must be finite.
 #[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(try_from = "RectData")]
 pub struct Rect2D {
@@ -101,31 +110,38 @@ impl TryFrom<RectData> for Rect2D {
     }
 }
 impl Rect2D {
+    /// Create a closed rectangle, rejecting nonfinite maximum coordinates.
     pub fn new(origin: Point2D, size: Size2D) -> Result<Self> {
         origin.translated(size.width, size.height)?;
         Ok(Self { origin, size })
     }
+    /// Return the origin in millimetre coordinates.
     pub fn origin(self) -> Point2D {
         self.origin
     }
+    /// Return dimensions in millimetres.
     pub fn size(self) -> Size2D {
         self.size
     }
+    /// Return the rectangle corner with greatest X and Y.
     pub fn max(self) -> Point2D {
         Point2D {
             x: self.origin.x + self.size.width,
             y: self.origin.y + self.size.height,
         }
     }
+    /// Whether the supplied point or entity lies in this record.
     pub fn contains(self, point: Point2D) -> bool {
         point.x >= self.origin.x
             && point.y >= self.origin.y
             && point.x <= self.max().x
             && point.y <= self.max().y
     }
+    /// Whether two closed rectangles overlap, including boundary contact.
     pub fn intersects(self, other: Self) -> bool {
         self.intersection(other).is_some()
     }
+    /// Return the shared closed rectangle, or None when disjoint.
     pub fn intersection(self, other: Self) -> Option<Self> {
         let x = self.origin.x.max(other.origin.x);
         let y = self.origin.y.max(other.origin.y);
@@ -134,7 +150,7 @@ impl Rect2D {
         if max_x < x || max_y < y {
             return None;
         }
-        // A interseção está contida nos retângulos finitos já validados.
+        // The intersection lies within the already validated finite rectangles.
         Some(Self {
             origin: Point2D { x, y },
             size: Size2D {

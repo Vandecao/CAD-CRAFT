@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (C) 2026 Vanderlei Braga e colaboradores do CAD-CRAFT
-//! Etapa 24: painel Verificações com eventos egui reais: Verificar projeto,
-//! duplo clique navega, F8/Shift+F8, reavaliação após correção, Ignorar com
-//! justificativa (Desfazer) e exportação CSV.
+//! Validation panel with real egui events: project validation, double-click and F8 navigation, reevaluation after correction, justified exclusions with undo and CSV export.
+// Fixture helpers use validated synthetic inputs and fail immediately on setup errors.
+#![allow(clippy::unwrap_used)]
 use cad_craft::domain::*;
 use cad_gui::{app::CadApp, commands::CommandId, project_file::ScriptedPicker, state::Selection};
 use eframe::egui::{self, Context, Event, Key, Modifiers, PointerButton, Pos2, Rect, vec2};
@@ -37,8 +37,7 @@ fn nodes(out: &egui::FullOutput) -> Vec<(String, egui::accesskit::Role, Option<P
         })
         .collect()
 }
-/// Posição do controle com o rótulo (ignora títulos e textos; o mais baixo
-/// quando a faixa repete o nome do comando).
+/// Position of the labeled control, ignoring titles and text; choose the lowest when the ribbon repeats the command name.
 fn control(out: &egui::FullOutput, label: &str, starts: bool) -> Pos2 {
     use egui::accesskit::Role;
     nodes(out)
@@ -116,9 +115,7 @@ fn rules(app: &CadApp) -> Vec<&'static str> {
         .collect()
 }
 
-/// Duas páginas; na 2, uma bobina sem fios (VER-007 ×2) e dois fios lógicos,
-/// um numerado (VER-008 para o outro). Dispositivos sem peça (VER-018)
-/// desativados no esquema para a lista ficar curta.
+/// Two pages: page 2 contains an unwired coil (two VER-007 messages) and two logical wires, one numbered (VER-008 for the other). Disable missing-part checks (VER-018) to keep the list short.
 fn project() -> (Project, PageId, RepresentationId, ConnectionId) {
     let mut p = Project::new("Verificar").unwrap();
     let doc = p
@@ -206,8 +203,7 @@ fn app() -> (CadApp, Context, PageId, RepresentationId) {
     (app, ctx, page, rep)
 }
 
-/// Critério 6: Verificar projeto, contadores, duplo clique navega até a
-/// ocorrência, F8/Shift+F8.
+/// Project validation, counters, double-click navigation and F8/Shift+F8.
 #[test]
 fn check_project_lists_messages_and_double_click_navigates() {
     let (mut app, ctx, page, rep) = app();
@@ -243,7 +239,7 @@ fn check_project_lists_messages_and_double_click_navigates() {
     assert_eq!(app.checks.selected, Some(first));
 }
 
-/// Critério 6: corrigir o problema retira a mensagem sem verificar de novo.
+/// Fixing the issue removes its message without another validation run.
 #[test]
 fn fixing_the_problem_removes_the_message_automatically() {
     let (mut app, ctx, _, _) = app();
@@ -269,8 +265,7 @@ fn fixing_the_problem_removes_the_message_automatically() {
     assert_eq!(after.iter().filter(|r| **r == "VER-007").count(), 2);
 }
 
-/// Critério 5/6: Ignorar com justificativa pelo painel; Desfazer restaura;
-/// exportar CSV.
+/// Exclude with justification in the panel, restore by undo and export CSV.
 #[test]
 fn ignore_with_reason_is_undoable_and_list_exports_csv() {
     let dir = tempfile::tempdir().unwrap();
@@ -288,7 +283,7 @@ fn ignore_with_reason_is_undoable_and_list_exports_csv() {
     press(&mut app, &ctx, pos, 1);
     click(&mut app, &ctx, "Ignorar…");
     let out = frame(&mut app, &ctx, vec![]);
-    // Campo na mesma linha do rótulo "Justificativa", logo à direita dele.
+    // Field on the same row as the justification label, immediately to its right.
     let label = nodes(&out)
         .into_iter()
         .find(|(l, _, _)| l == "Justificativa")

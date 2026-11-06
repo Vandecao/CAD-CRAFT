@@ -3,137 +3,218 @@
 //! Derived physical engineering lists; start with the Project list queries.
 use super::*;
 
-/// Linha derivada de borne. Nunca é armazenada no projeto: é recalculada a
-/// partir das entidades físicas e lógicas existentes.
+/// Derived terminal row, recomputed from existing physical and logical entities rather than stored
+/// in Project.
 #[derive(Clone, Debug, PartialEq)]
 pub struct TerminalListRow {
+    /// Associated physical terminal or contact.
     pub terminal: TerminalId,
+    /// Documentary designation; does not imply electrical connectivity.
     pub designation: String,
+    /// Physical owner of the terminal.
     pub owner: String,
+    /// Device owning the terminal, directly or through its component.
     pub owner_device: Option<DeviceId>,
+    /// Terminal strip associated with the record.
     pub strip: Option<TerminalStripId>,
+    /// Display designation of the associated strip.
     pub strip_designation: Option<String>,
-    /// Posição 1-based na ordem explícita da régua; não é identidade.
+    /// One-based position in the strip's explicit order, independent of identity.
     pub order: Option<usize>,
+    /// Registered conductor landing positions.
     pub positions: Vec<String>,
+    /// Connection points or authored geometric vertices.
     pub points: Vec<ConnectionPointId>,
+    /// Explicit logical connections associated with this record.
     pub connections: Vec<ConnectionId>,
+    /// Owned terminal bridge connection identifiers.
     pub bridges: Vec<ConnectionId>,
+    /// Physical conductors associated with this record.
     pub conductors: Vec<ConductorId>,
-    /// Especialização declarada; não implica continuidade.
+    /// Declared specialization implying no continuity.
     pub kind: TerminalKind,
-    /// Níveis na ordem declarada, como `designação (posições)`.
+    /// Levels in declared order, formatted as designation followed by positions.
     pub levels: Vec<String>,
-    /// Conector ao qual o borne pertence como contato.
+    /// Connector containing the terminal as a contact.
     pub connector: Option<ConnectorId>,
+    /// Display designation of the containing connector.
     pub connector_designation: Option<String>,
 }
 
-/// Contato derivado de conector; `points`/`conductors` vazios ⇒ livre.
+/// Derived connector contact; empty `points` and `conductors` mean free.
 #[derive(Clone, Debug, PartialEq)]
 pub struct ConnectorContactRow {
+    /// Associated physical terminal or contact.
     pub terminal: TerminalId,
+    /// Documentary designation; does not imply electrical connectivity.
     pub designation: String,
+    /// Registered conductor landing positions.
     pub positions: Vec<String>,
+    /// Connection points or authored geometric vertices.
     pub points: Vec<ConnectionPointId>,
+    /// Physical conductors associated with this record.
     pub conductors: Vec<ConductorId>,
-    /// Contato da outra metade pelo mapa explícito; não indica continuidade.
+    /// Counterpart contact from the explicit map, without inferred continuity.
     pub mated_with: Option<TerminalId>,
+    /// Display label of the explicitly mapped mating counterpart.
     pub mated_label: Option<String>,
 }
 impl ConnectorContactRow {
+    /// Whether no explicit functional point or physical conductor occupies the contact.
     pub fn is_free(&self) -> bool {
         self.points.is_empty() && self.conductors.is_empty()
     }
 }
 
+/// Derived connector data and ordered contact status rows.
 #[derive(Clone, Debug, PartialEq)]
 pub struct ConnectorListRow {
+    /// Associated industrial connector.
     pub connector: ConnectorId,
+    /// Documentary designation; does not imply electrical connectivity.
     pub designation: String,
+    /// Declared mechanical connector gender.
     pub gender: ConnectorGender,
+    /// Associated logical device.
     pub device: Option<DeviceId>,
+    /// Display label of the associated device.
     pub device_label: Option<String>,
+    /// Explicit mating record, when present.
     pub mating: Option<ConnectorMatingId>,
+    /// Explicitly mapped mating counterpart, when present.
     pub mated_with: Option<String>,
+    /// Connector contact rows in declared order.
     pub contacts: Vec<ConnectorContactRow>,
 }
 
+/// Derived terminal-strip row with explicit terminal ordering.
 #[derive(Clone, Debug, PartialEq)]
 pub struct StripListRow {
+    /// Terminal strip associated with the record.
     pub strip: TerminalStripId,
+    /// Documentary designation; does not imply electrical connectivity.
     pub designation: String,
+    /// Terminal entries associated with this record.
     pub terminals: Vec<TerminalId>,
+    /// Owned terminal bridge connection identifiers.
     pub bridges: Vec<ConnectionId>,
 }
 
+/// Derived cable data, capacity and registered-core usage counts.
 #[derive(Clone, Debug, PartialEq)]
 pub struct CableListRow {
+    /// Associated physical cable.
     pub cable: CableId,
+    /// Documentary designation; does not imply electrical connectivity.
     pub designation: String,
+    /// Declared category of this record or operation.
     pub kind: CableKind,
+    /// Descriptive text.
     pub description: Option<String>,
+    /// Declared manufacturer.
     pub manufacturer: Option<String>,
+    /// Manufacturer catalog code.
     pub catalog_code: Option<String>,
+    /// Declared cable core capacity.
     pub nominal_cores: u32,
+    /// Number of registered cores.
     pub registered_cores: usize,
+    /// Number of cores assigned to conductors.
     pub used_cores: usize,
-    /// Terminais distintos alcançados pelas veias atribuídas (origem/destino conhecidos).
+    /// Distinct terminals reached by assigned cores with known endpoints.
     pub endpoints: Vec<String>,
 }
 
+/// Derived cable-core assignment and endpoint labels.
 #[derive(Clone, Debug, PartialEq)]
 pub struct CoreListRow {
+    /// Associated cable core.
     pub core: CableCoreId,
+    /// Associated physical cable.
     pub cable: CableId,
+    /// Display designation of the containing cable.
     pub cable_designation: String,
+    /// Validated documentary identification.
     pub identification: String,
+    /// Physical color or identification marking.
     pub marking: String,
-    /// Seção informada pelo usuário; None não é inferida.
+    /// User-supplied cross section; absence is never inferred.
     pub cross_section_mm2: Option<f64>,
+    /// Associated physical conductor.
     pub conductor: Option<ConductorId>,
+    /// Explicit source endpoint.
     pub source: Option<String>,
+    /// Explicit target of this record or operation.
     pub target: Option<String>,
 }
 
+/// Derived physical conductor data and cable/core associations.
 #[derive(Clone, Debug, PartialEq)]
 pub struct ConductorListRow {
+    /// Associated physical conductor.
     pub conductor: ConductorId,
+    /// Documentary designation; does not imply electrical connectivity.
     pub designation: String,
+    /// Explicit source endpoint.
     pub source: String,
+    /// Explicit target of this record or operation.
     pub target: String,
+    /// Physical terminal at the source endpoint.
     pub source_terminal: TerminalId,
+    /// Physical terminal at the target endpoint.
     pub target_terminal: TerminalId,
+    /// Conductor cross section in square millimetres.
     pub cross_section_mm2: f64,
+    /// Physical color or identification marking.
     pub marking: String,
+    /// Associated physical cable.
     pub cable: Option<CableId>,
+    /// Associated cable core.
     pub core: Option<CableCoreId>,
+    /// Display label of the associated cable.
     pub cable_label: Option<String>,
+    /// Explicit logical connection associated with this record.
     pub connection: Option<ConnectionId>,
 }
 
-/// Associação explícita conexão lógica → condutores físicos. Pontes aparecem
-/// marcadas e nunca recebem condutor.
+/// Explicit mapping from logical connections to physical conductors. Bridges are marked and never
+/// assigned a conductor.
 #[derive(Clone, Debug, PartialEq)]
 pub struct WiringAssignmentRow {
+    /// Explicit logical connection associated with this record.
     pub connection: ConnectionId,
+    /// Explicit source endpoint.
     pub source: String,
+    /// Explicit target of this record or operation.
     pub target: String,
+    /// Functional connection point at the source endpoint.
     pub source_point: ConnectionPointId,
+    /// Functional connection point at the target endpoint.
     pub target_point: ConnectionPointId,
+    /// Whether the logical connection is owned by a terminal bridge.
     pub bridge: bool,
+    /// Whether a graphical route represents this connection.
     pub drawn: bool,
+    /// Physical conductors associated with this record.
     pub conductors: Vec<ConductorId>,
 }
 
+/// Derived technical lists and explicit logical-to-physical assignments.
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct PhysicalLists {
+    /// Derived terminal-strip rows.
     pub strips: Vec<StripListRow>,
+    /// Terminal entries associated with this record.
     pub terminals: Vec<TerminalListRow>,
+    /// Derived cable rows.
     pub cables: Vec<CableListRow>,
+    /// Derived cable-core rows.
     pub cores: Vec<CoreListRow>,
+    /// Physical conductors associated with this record.
     pub conductors: Vec<ConductorListRow>,
+    /// Explicit logical-connection to physical-conductor assignment rows.
     pub assignments: Vec<WiringAssignmentRow>,
+    /// Derived industrial connector rows.
     pub connectors: Vec<ConnectorListRow>,
 }
 
@@ -156,7 +237,7 @@ impl Project {
             TerminalOwner::Component(id) => self.component(id).and_then(Component::device_id),
         }
     }
-    /// Rótulo documental do borne: `-X1:1` em régua, senão `K1:A1` pelo dono.
+    /// Documentary terminal label: `-X1:1` within a strip, otherwise `K1:A1` using the owner.
     pub fn terminal_label(&self, id: TerminalId) -> String {
         let Some(terminal) = self.terminal(id) else {
             return "?".into();
@@ -182,6 +263,7 @@ impl Project {
             .unwrap_or_default();
         format!("{owner}:{}", terminal.designation().as_str())
     }
+    /// Format a connection-point label from explicit terminal or function ownership.
     pub fn connection_point_label(&self, id: ConnectionPointId) -> String {
         let Some(point) = self.connection_point(id) else {
             return "?".into();
@@ -200,7 +282,7 @@ impl Project {
         )
     }
 
-    /// Listas técnicas derivadas em O(n log n) sobre as entidades atuais.
+    /// Technical lists derived in O(n log n) from current entities.
     pub fn physical_lists(&self) -> PhysicalLists {
         let mut points_by_terminal: BTreeMap<TerminalId, Vec<ConnectionPointId>> = BTreeMap::new();
         for point in self.connection_points.values() {
@@ -493,9 +575,8 @@ impl Project {
         }
     }
 
-    /// Primeira ocorrência gráfica explícita do objeto físico, por ordem de
-    /// relação documental: o próprio objeto, seus pontos/conexões e o dono.
-    /// Nunca procura por proximidade ou por texto.
+    /// First explicit physical-object occurrence by documentary relation: the object itself, its
+    /// points/connections, then its owner. Never searches by proximity or text.
     pub fn physical_occurrence(&self, target: RepresentationTarget) -> Option<RepresentationId> {
         let first = |t: RepresentationTarget| {
             self.document_index

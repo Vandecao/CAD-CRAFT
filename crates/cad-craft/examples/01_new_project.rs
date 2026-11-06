@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (C) 2026 Vanderlei Braga e colaboradores do CAD-CRAFT
 //! Create and save a document and page; start with main.
+// Examples present their results on standard output.
+#![allow(clippy::print_stdout)]
+
 use cad_craft::{domain::*, persistence};
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {

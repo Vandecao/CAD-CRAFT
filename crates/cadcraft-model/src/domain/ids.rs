@@ -8,12 +8,15 @@ use uuid::{Uuid, Variant};
 
 macro_rules! typed_ids {
     ($($name:ident),+ $(,)?) => {$ (
+        /// Strongly typed entity identifier backed by an RFC 4122 variant UUID v7.
         #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
         #[serde(try_from = "Uuid", into = "Uuid")]
         pub struct $name(Uuid);
 
         impl $name {
+            /// Generate a fresh RFC 4122 variant UUID v7 identifier.
             pub fn new() -> Self { Self(Uuid::now_v7()) }
+            /// Return the underlying UUID without changing identity.
             pub fn as_uuid(self) -> Uuid { self.0 }
         }
         impl Default for $name { fn default() -> Self { Self::new() } }
@@ -64,25 +67,39 @@ typed_ids!(
     ReportId
 );
 
-/// Referência estrutural tipada, resolvida no contexto de um projeto.
-/// IDs de entidades distintas não são implicitamente intercambiáveis.
+/// Typed structural reference resolved within a project. IDs of different entity kinds cannot be
+/// implicitly interchanged.
 /// ```compile_fail
+/// # use cadcraft_model as cad_craft;
 /// use cad_craft::domain::{DeviceId, FunctionId};
 /// let function: FunctionId = DeviceId::new();
 /// ```
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 pub enum EntityRef {
+    /// Explicit reference to a project.
     Project(ProjectId),
+    /// Explicit reference to a document.
     Document(DocumentId),
+    /// Explicit reference to a page.
     Page(PageId),
+    /// Explicit reference to a component.
     Component(ComponentId),
+    /// Explicit reference to a device.
     Device(DeviceId),
+    /// Explicit reference to a logical function.
     Function(FunctionId),
+    /// Explicit reference to a terminal.
     Terminal(TerminalId),
+    /// Explicit reference to a connection point.
     ConnectionPoint(ConnectionPointId),
+    /// Explicit reference to a conductor.
     Conductor(ConductorId),
+    /// Explicit reference to a cable.
     Cable(CableId),
+    /// Explicit reference to a cable core.
     CableCore(CableCoreId),
+    /// Explicit reference to a terminal strip.
     TerminalStrip(TerminalStripId),
+    /// Explicit reference to a connector.
     Connector(ConnectorId),
 }

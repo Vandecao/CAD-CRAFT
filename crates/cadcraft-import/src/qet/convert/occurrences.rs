@@ -12,8 +12,8 @@ pub(super) fn convert(
     } = state;
     let s = importer.s;
     let world = |page, x, y| super::world(pages, s, page, x, y);
-    // QET 0.7+ guarda o texto do rótulo na ocorrência. Sem designação na
-    // definição, ela ganha o texto dinâmico na posição da 1ª ocorrência.
+    // QET 0.7+ stores label text on the occurrence. Without a designation in
+    // the definition, add dynamic text at the first occurrence's position.
     for inst in instances {
         let Some(label) = &inst.label_text else {
             continue;
@@ -52,7 +52,7 @@ pub(super) fn convert(
         }
     }
 
-    // Ocorrências: mestres primeiro (decisão 3), depois escravos e simples.
+    // Place master occurrences first, followed by slaves and simple occurrences.
     let by_uuid: BTreeMap<String, usize> = instances
         .iter()
         .enumerate()
@@ -88,8 +88,8 @@ pub(super) fn convert(
             ));
             continue;
         };
-        // Símbolo sem terminais (desenho, plano de montagem): ocorrência sem
-        // dispositivo.
+        // Symbols without terminals (drawings or mounting plans) have occurrences
+        // without a device.
         if def.symbol.ports().is_empty() {
             let symbol = def.symbol.clone();
             let placed_graphic = Transform2D::new(
@@ -128,9 +128,9 @@ pub(super) fn convert(
         } else {
             None
         };
-        // Rótulo repetido fora de mestre/escravo (bornes, componente mostrado
-        // em várias folhas): mesma identidade no QElectroTech → mesmo
-        // dispositivo.
+        // Repeated labels outside master/slave relations (terminals or components
+        // on multiple sheets) share QElectroTech identity and therefore the same
+        // device.
         let repeated = if master.is_none() && link != "master" {
             device_part(&inst.label)
                 .and_then(|d| Designation::new(d).ok())

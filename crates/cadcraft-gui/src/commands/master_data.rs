@@ -95,7 +95,7 @@ pub(super) const FRAME_IMPORT_EXTERNAL: CommandSpec = (
 
 pub(super) const FRAME_EXPORT_DXF: CommandSpec = (
     C::FrameExportDxf,
-    "Exportar DXF",
+    crate::strings::EXPORT_DXF,
     "Exporta a moldura aberta no editor para DXF ASCII em milímetros",
     T::MasterData,
     "Molduras",
@@ -106,7 +106,7 @@ pub(super) const FRAME_EXPORT_DXF: CommandSpec = (
 
 pub(super) const SYMBOL_NEW: CommandSpec = (
     C::SymbolNew,
-    "Novo símbolo",
+    crate::strings::NEW_SYMBOL,
     "Abre o editor de símbolos com um símbolo em branco",
     T::MasterData,
     "Símbolos",
@@ -128,7 +128,7 @@ pub(super) const SYMBOL_EDITOR: CommandSpec = (
 
 pub(super) const SYMBOL_EXPORT: CommandSpec = (
     C::SymbolExport,
-    "Exportar símbolo",
+    crate::strings::EXPORT_SYMBOL,
     "Grava o símbolo aberto no editor ou selecionado como arquivo .cadsym",
     T::MasterData,
     "Símbolos",
@@ -139,7 +139,7 @@ pub(super) const SYMBOL_EXPORT: CommandSpec = (
 
 pub(super) const SYMBOL_IMPORT: CommandSpec = (
     C::SymbolImport,
-    "Importar símbolo",
+    crate::strings::IMPORT_SYMBOL,
     "Copia um arquivo .cadsym para a biblioteca de símbolos",
     T::MasterData,
     "Símbolos",
@@ -194,7 +194,7 @@ pub(super) const SYMBOL_UPDATE_PROJECT: CommandSpec = (
 
 pub(super) const PART_EDITOR: CommandSpec = (
     C::PartEditor,
-    "Peças e dispositivos",
+    crate::strings::PARTS_AND_DEVICES,
     "Abre a biblioteca de peças, atribuições, funções, pontos e lista de peças",
     T::MasterData,
     "Peças",

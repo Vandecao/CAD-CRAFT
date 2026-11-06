@@ -1,3 +1,20 @@
+# R6 concluído tecnicamente; pronto para revisão (2026-11-06)
+
+**Versionamento autorizado em 2026-11-06:** o autor deu OK expresso para commit + push de R6 nos dois repositórios. Este documento registra o estado anterior à publicação; os HEADs acima são os pais observados, não os commits futuros. Resultado e SHAs reais serão registrados em `.local/r6/PUBLICATION.md` nos dois checkouts e podem ser confirmados com Git. Etapa 28 continua fora da entrega.
+
+
+R6 autorizado pelo usuário e executado conforme docs/internal/spec/R6_LIMPEZA.md. Comentários e API em inglês, frases repetidas pt-BR centralizadas, lints reforçados, dois reexports internos sem uso removidos. Comportamento, formato 9, fixtures e baselines preservados; nenhuma dependência nova. Relatórios: ../reports/R6_LIMPEZA.md e ../reports/R6_ARQUIVOS.md. Plano R0–R6 concluído tecnicamente.
+
+Validação completa: scripts/validate.ps1 aprovado, 707 testes Rust + 6 exemplos + 16 PowerShell = 729, zero falhas/ignorados. Novo teste AccessKit de rótulos incluído. Após ajustes exclusivamente documentais, três doctests do modelo e rustdoc de todo o workspace com -D warnings passaram. Release compilado e executado (23.736.832 bytes). Revisão independente sem achados materiais. Amostras opcionais não repetidas no R6; equivalência R4 preservada.
+
+Teste rápido nativo por teclado/AccessKit: Novo projeto com Confirmar/Cancelar em pt-BR; cancelar retorna a Nenhum projeto aberto. Recuperação preexistente preservada. Capturas do helper limitadas; sem homologação visual geral. App deixado na tela inicial. GUI-L01 e limites anteriores permanecem; Etapa 28 não iniciada.
+
+Git consultado em 2026-11-06: privado C:/Dev/CAD-CRAFT, main, origin Vandecao/CAD-CRAFT1, HEAD 6b38bac26a9728917ba26572c7a1248a8c231b13; público C:/Dev/CAD-CRAFT-public, main, origin Vandecao/CAD-CRAFT, HEAD c92d81bbfb887e6f41c89186ee9a662cc8a93c6f. R4/R5 já publicados; entradas históricas abaixo com publicação pendente estão superadas. R6 está fora desses HEADs; índice sem staging. Nenhum commit, push, cópia pública ou alteração de refs no R6. Backup externo não criado/verificado.
+
+Próxima ação: revisão do autor e OK expresso para commit + push de R6 nos dois repositórios; a regra local exige autorização por etapa. Preservar o prompt não versionado da Etapa 28 fora da entrega. Não iniciar outra etapa automaticamente.
+
+---
+
 # R4/R5 concluídos; publicação autorizada (2026-11-06)
 
 R4: importadores/render/export organizados; protocolo DXF compartilhado conforme ADR-0031. R5: GUI por assunto, estado agrupado, GuiError e opener conforme ADR-0032. Formato 9, rótulos e baselines preservados. Relatórios: docs/internal/reports/R4_IMPORTADORES_EXPORTADORES.md e R5_GUI.md; inventário R4_R5_ARQUIVOS.md.

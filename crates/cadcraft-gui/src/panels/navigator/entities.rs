@@ -13,7 +13,7 @@ impl CadApp {
             return;
         }
         let Some(p) = self.session.project() else {
-            ui.weak("Nenhum projeto aberto.");
+            ui.weak(crate::strings::NO_OPEN_PROJECT_NOTICE);
             return;
         };
         let mut entries: Vec<(String, Option<RepresentationTarget>)> = vec![];

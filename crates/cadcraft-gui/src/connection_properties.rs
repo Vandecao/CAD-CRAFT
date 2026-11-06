@@ -275,7 +275,7 @@ impl CadApp {
             self.graphic_edit(GraphicEdit::Drawing(edit));
         }
         if let Some((connection, number, locked)) = number_edit {
-            // Vazio limpa o número; nomes nunca criam conectividade.
+            // Empty input clears the number; names never create connectivity.
             let result = if number.is_empty() {
                 Ok(None)
             } else {

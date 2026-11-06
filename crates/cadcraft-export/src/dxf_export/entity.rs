@@ -46,7 +46,7 @@ impl Writer {
         {
             let name = layer_name(layer, None);
             self.layers.insert((layer, None));
-            // Leque a partir do primeiro ponto (formas convexas da folha).
+            // Triangle fan from the first point for convex sheet shapes.
             for i in 1..points.len() - 1 {
                 let (a, b, c) = (points[0], points[i], points[i + 1]);
                 self.pair(0, "SOLID");
@@ -101,7 +101,7 @@ impl Writer {
             Some(w) if natural > 0.0 => w / natural,
             _ => 1.0,
         };
-        // Altura de maiúscula; fator de largura relativo à altura.
+        // Capital height and width factor relative to height.
         let height = text.size * font::CAP_HEIGHT * v_len;
         let factor = u_len * stretch / v_len;
         let mirrored = a * d - b * c < 0.0;

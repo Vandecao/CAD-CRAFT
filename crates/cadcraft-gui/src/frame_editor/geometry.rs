@@ -33,7 +33,7 @@ pub(in crate::frame_editor) fn dist_rect(p: Point2D, r: Rect2D, filled: bool) ->
         .filter_map(|i| Some(dist_segment(p, c[i]?, c[(i + 1) % 4]?)))
         .fold(f64::INFINITY, f64::min)
 }
-/// Caixa aproximada do texto (mesmo critério do desenho dos símbolos).
+/// Approximate text bounds, using the same rule as symbol drawing.
 pub(in crate::frame_editor) fn text_box(
     origin: Point2D,
     chars: usize,
@@ -47,7 +47,7 @@ pub(in crate::frame_editor) fn text_box(
     )
     .ok()
 }
-/// Distância (mm) do ponto ao elemento, para seleção.
+/// Point-to-element distance in millimetres for selection.
 pub fn element_distance(project: &Project, e: &FrameElement, p: Point2D) -> f64 {
     match e {
         FrameElement::Line { start, end, .. } => dist_segment(p, *start, *end),

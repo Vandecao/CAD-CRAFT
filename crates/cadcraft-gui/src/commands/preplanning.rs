@@ -7,7 +7,7 @@ pub(super) const GROUP_GERAL: PlannedGroupSpec = (
     T::Preplanning,
     "Geral",
     I::Panels,
-    &["Navegador", "Segmentos modelo", "Importar"],
+    &["Navegador", "Segmentos modelo", crate::strings::IMPORT],
 );
 
 pub(super) const GROUP_EDITAR: PlannedGroupSpec = (

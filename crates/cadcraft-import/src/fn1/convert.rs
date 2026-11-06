@@ -24,7 +24,7 @@ fn width(e: &Element) -> f64 {
         .unwrap_or(DEFAULT_WIDTH)
 }
 
-/// `idioma@texto;…` → texto padrão (pt-BR, neutro, en-US, primeiro) e traduções.
+/// `language@text;…` → default text (pt-BR, neutral, en-US, first) and translations.
 pub(crate) fn localized(raw: &str) -> LocalizedText {
     let mut entries: Vec<(String, String)> = Vec::new();
     for part in raw.split(';') {
@@ -53,8 +53,8 @@ pub(crate) fn localized(raw: &str) -> LocalizedText {
     text
 }
 
-/// Alinhamento EPLAN (grade 3 × 4): 1–3 topo, 4–6 meio, 7–9 linha de base,
-/// 10–12 base; em cada grupo esquerda, centro, direita.
+/// EPLAN alignment (3 × 4 grid): 1–3 top, 4–6 middle, 7–9 baseline,
+/// 10–12 bottom; each group runs left, center, right.
 fn align(code: Option<f64>) -> TextAlign {
     use TextAlign::*;
     match code.map(|c| c as i64) {
@@ -88,9 +88,9 @@ fn style(e: &Element) -> FrameTextStyle {
 fn key(k: &str) -> Text {
     Text::new(k).expect("chave fixa")
 }
-/// Número de propriedade EPLAN → campo especial do CAD-CRAFT. Nomes conferidos
-/// na documentação da API instalada com o EPLAN; propriedades sem equivalente
-/// direto viram metadados com chave legível ou `EPLAN.<número>`.
+/// Maps EPLAN property numbers to CAD-CRAFT special fields. Names were checked
+/// against EPLAN's installed API documentation; properties without a direct
+/// equivalent become metadata with a readable key or `EPLAN.<number>`.
 pub fn eplan_property(id: u32, structure: Option<&str>) -> (SpecialField, bool) {
     use SpecialField::*;
     let project = |k: &str| ProjectProperty(key(k));
@@ -167,7 +167,7 @@ pub(super) struct Labels {
 fn walk(e: &Element, b: &mut Builder, labels: &mut Labels, resolve: &mut ImageResolver<'_>) {
     for c in &e.children {
         let Some(k) = kind(c) else {
-            continue; // subobjetos de formato e propriedades
+            continue; // format and property subobjects
         };
         match k {
             26 => walk(c, b, labels, resolve),
@@ -295,10 +295,10 @@ pub(super) fn convert(
         (Some(w), Some(h)) if w > 0.0 && h > 0.0 => Some((w, h)),
         _ => None,
     };
-    // O PXF guarda desenho em coordenadas relativas ao centro/offset interno.
-    // A prévia SVG aplica uma matriz de translação para colocá-lo na folha.
-    // A borda externa (quando tem exatamente as dimensões da folha) fornece
-    // essa origem sem depender do nome variável dos objetos O<n>.
+    // PXF stores drawings relative to an internal center/offset.
+    // Its SVG preview translates them onto the sheet.
+    // The outer border, when it exactly matches the sheet dimensions, supplies
+    // this origin without relying on variable O<n> object names.
     if let Some((sw, sh)) = sheet {
         let border = b.elements.iter().find_map(|e| match e {
             FrameElement::Rectangle { rect, .. }
@@ -368,7 +368,7 @@ pub(super) fn convert(
         a
     };
     let zones = ZoneLayout {
-        // Colunas: início = acima (y alto); linhas: início = à esquerda.
+        // Columns start at the top (high Y); rows start on the left.
         columns: axis(
             columns,
             ZoneLabelStyle::Numbers { start: 1 },

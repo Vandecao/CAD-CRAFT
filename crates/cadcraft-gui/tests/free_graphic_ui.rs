@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (C) 2026 Vanderlei Braga e colaboradores do CAD-CRAFT
-//! Etapa 16: conteúdo livre com eventos egui reais (ferramentas, seleção,
-//! mover, editar texto, excluir, copiar/colar pelo teclado, salvar/reabrir).
+//! Free graphics driven by real egui events: tools, selection, movement, text editing, deletion, keyboard copy/paste and save/reopen.
+// Fixture helpers use validated synthetic inputs and fail immediately on setup errors.
+#![allow(clippy::unwrap_used)]
 use cad_craft::domain::*;
 use cad_gui::{app::CadApp, commands::CommandId, project_file::ScriptedPicker};
 use eframe::egui::{self, Context, Event, Key, Modifiers, PointerButton, Pos2, Rect, vec2};
@@ -167,13 +168,13 @@ fn rectangle_circle_arc_select_move_and_delete_with_real_events() {
             )
         })
         .unwrap();
-    // Selecionar pela borda (o centro vazio não seleciona).
+    // Select by the border; the empty center is not selectable.
     ui.select_tool();
     ui.click(36.0, 30.0);
     assert!(ui.app.session.graphics.selection.ids().is_empty());
     ui.click(20.0, 32.0);
     assert_eq!(ui.app.session.graphics.selection.primary(), Some(rect.id()));
-    // Mover arrastando a borda: 12 mm para a direita (grade de 4 mm).
+    // Move by dragging the border 12 mm right on the 4 mm grid.
     ui.drag((20.0, 32.0), (32.0, 32.0));
     let moved = ui
         .app
@@ -189,7 +190,7 @@ fn rectangle_circle_arc_select_move_and_delete_with_real_events() {
         ((moved.x() - start.x()) - 12.0).abs() < 1e-3 && (moved.y() - start.y()).abs() < 1e-3,
         "{start:?} → {moved:?}"
     );
-    // Excluir pelo teclado e desfazer.
+    // Delete through the keyboard and undo.
     let before_delete = ui.app.session.snapshot().unwrap();
     ui.key(Key::Delete, Modifiers::NONE);
     assert_eq!(ui.free().len(), 2);
@@ -219,7 +220,7 @@ fn double_click_edits_text_and_keyboard_copy_paste_and_duplicate() {
         edited.graphic().unwrap().primitive(),
         SymbolPrimitive::Text { text, .. } if text == "Nota de campo"
     ));
-    // Ctrl+C, Ctrl+V e clique no destino; Esc encerra a colagem.
+    // Ctrl+C, Ctrl+V and a destination click; Esc ends pasting.
     ui.app.session.select_graphics([text.id()]);
     ui.key(Key::C, Modifiers::CTRL);
     ui.key(Key::V, Modifiers::CTRL);
@@ -227,7 +228,7 @@ fn double_click_edits_text_and_keyboard_copy_paste_and_duplicate() {
     ui.click(240.0, 120.0);
     ui.key(Key::Escape, Modifiers::NONE);
     assert_eq!(ui.free().len(), 3, "duas colagens seguidas");
-    // Ctrl+D duplica a seleção.
+    // Ctrl+D duplicates the selection.
     ui.app.session.select_graphics([text.id()]);
     ui.key(Key::D, Modifiers::CTRL);
     assert_eq!(ui.free().len(), 4);
@@ -277,8 +278,7 @@ fn free_content_survives_save_and_reopen_through_the_interface() {
     }
 }
 
-/// No Windows, Ctrl+C/X/V chegam do winit como eventos Copy/Cut/Paste (sem
-/// evento de tecla): os atalhos precisam funcionar com esses eventos.
+/// On Windows, winit emits Copy/Cut/Paste for Ctrl+C/X/V without key events; shortcuts must handle these events.
 #[test]
 fn clipboard_events_from_the_os_drive_copy_cut_and_paste() {
     let mut ui = Ui::new();
@@ -306,7 +306,7 @@ fn clipboard_events_from_the_os_drive_copy_cut_and_paste() {
     assert!(ui.app.session.clipboard.as_ref().unwrap().is_cut());
 }
 
-/// Etapa 17: elipse livre por cliques reais; estilo preservado ao editar.
+/// Create a free ellipse through real clicks; editing preserves its style.
 #[test]
 fn ellipse_tool_and_style_survive_edits() {
     let mut ui = Ui::new();
@@ -329,7 +329,7 @@ fn ellipse_tool_and_style_survive_edits() {
         })
         .unwrap();
     ui.app.session.edit_free_graphic(e.id(), styled).unwrap();
-    // Texto editado por duplo clique mantém o próprio estilo.
+    // Text edited by double-click keeps its own style.
     ui.app.execute(CommandId::InsertFreeText, &ui.ctx.clone());
     ui.click(100.0, 100.0);
     let text = ui

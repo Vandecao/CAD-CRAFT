@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (C) 2026 Vanderlei Braga e colaboradores do CAD-CRAFT
-//! Etapa 25: Arquivo > Importar > Projeto QElectroTech (`.qet`).
-//! Análise em segundo plano, prévia (contagens e relatório) e criação de um
-//! projeto novo (decisão 5); opcionalmente abre as Verificações.
+//! QElectroTech .qet project import; start with background analysis, then preview counts and the report, create a new project and optionally open validation results.
 use crate::app::{CadApp, Level};
 use crate::dialogs::PendingAction;
 use crate::error::{GuiError, GuiResult};
@@ -11,12 +9,12 @@ use cad_craft::interchange::qet::{self, QetImport, QetOptions};
 use eframe::egui::{self, Context};
 use std::sync::mpsc;
 
-/// Limite do arquivo lido (o importador também confere).
+/// Read-size limit, also enforced by the importer.
 const MAX_QET_BYTES: u64 = 64 * 1024 * 1024;
 
 pub struct QetImportPanel {
     pub path: String,
-    /// Abrir o painel Verificações depois de criar o projeto.
+    /// Open the validation panel after creating the project.
     pub open_checks: bool,
     pub status: String,
     pub preview: Option<Box<QetImport>>,
@@ -56,7 +54,7 @@ fn read_and_import(path: &str, options: &QetOptions) -> GuiResult<QetImport> {
 }
 
 impl CadApp {
-    /// Lê e converte o arquivo em segundo plano; o resultado vira a prévia.
+    /// Read and convert the file in the background; use the result as the preview.
     pub(crate) fn start_qet_analysis(&mut self) {
         let path = self.qet.path.clone();
         let options = QetOptions {
@@ -102,7 +100,7 @@ impl CadApp {
         }
     }
 
-    /// Cria o projeto importado (com confirmação de alterações pendentes).
+    /// Create the imported project after confirming pending changes.
     pub(crate) fn confirm_qet_import(&mut self, ctx: &Context) {
         let Some(preview) = self.qet.preview.take() else {
             return;
@@ -117,7 +115,7 @@ impl CadApp {
     }
 
     pub(crate) fn qet_import_ui(&mut self, ui: &mut egui::Ui) {
-        ui.heading("Importar projeto QElectroTech");
+        ui.heading(crate::strings::IMPORT_QET_PROJECT);
         ui.weak(
             "Cria um projeto novo a partir de um .qet (XML): folhas, molduras, símbolos embutidos, \
              dispositivos (mestre e escravos juntos), fios com número travado, relatórios de folha \
@@ -187,8 +185,7 @@ impl CadApp {
 }
 
 impl CadApp {
-    /// Instala o projeto importado como sessão nova, ainda sem arquivo:
-    /// fica com alterações pendentes até o primeiro Salvar como.
+    /// Install the imported project as a new session without an associated file; it remains unsaved until the first Save As.
     pub(crate) fn install_imported(
         &mut self,
         project: cad_craft::domain::Project,

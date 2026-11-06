@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (C) 2026 Vanderlei Braga e colaboradores do CAD-CRAFT
-//! Etapa 26: pacote EDZ sintético e eventos egui reais.
+//! Synthetic EDZ package import with real egui events.
+// Fixture helpers use validated synthetic inputs and fail immediately on setup errors.
+#![allow(clippy::unwrap_used)]
 use cad_gui::{app::CadApp, commands::CommandId, project_file::ScriptedPicker};
 use eframe::egui::{self, Context, Event, Modifiers, PointerButton, Pos2, Rect, vec2};
 use std::{io::Write, path::Path};

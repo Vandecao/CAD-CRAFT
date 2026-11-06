@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (C) 2026 Vanderlei Braga e colaboradores do CAD-CRAFT
-//! Exportação tabular da Etapa 23. O mesmo `ReportTable` alimenta páginas e arquivos.
+//! Tabular export; start with `ReportTable`, which feeds both pages and files.
 use cadcraft_model::domain::{ReportTable, ReportValue};
 use rust_xlsxwriter::{Format, Workbook};
 
@@ -68,7 +68,7 @@ pub fn export_xlsx(tables: &[ReportTable]) -> Result<Vec<u8>, String> {
     workbook.save_to_buffer().map_err(|e| e.to_string())
 }
 
-/// Etapa 24: CSV genérico (cabeçalho + linhas), mesmo formato das listas.
+/// Generic CSV (header and rows) using the same format as report lists.
 pub fn export_rows_csv(headers: &[&str], rows: &[Vec<String>]) -> Result<Vec<u8>, String> {
     let mut writer = csv::WriterBuilder::new()
         .delimiter(b';')
@@ -80,7 +80,7 @@ pub fn export_rows_csv(headers: &[&str], rows: &[Vec<String>]) -> Result<Vec<u8>
     writer.into_inner().map_err(|e| e.to_string())
 }
 
-/// Etapa 24: XLSX genérico de uma aba, com cabeçalho em negrito e filtro.
+/// Generic single-sheet XLSX with bold headers and filtering.
 pub fn export_rows_xlsx(
     sheet_name: &str,
     headers: &[&str],

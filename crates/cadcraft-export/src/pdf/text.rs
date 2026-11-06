@@ -13,7 +13,7 @@ impl Writer<'_> {
             Some(w) if natural > 0.0 => w / natural,
             _ => 1.0,
         };
-        // Espaço do texto (corpo 1) → caixa → folha (mm) → papel (pt).
+        // Text space (font size 1) → box → sheet mm → paper points.
         let to_box = [text.size * stretch, 0.0, 0.0, text.size, 0.0, text.baseline];
         let matrix = compose(place.matrix, compose(text.matrix, to_box));
         set_fill(content, text.color, self.options.monochrome);

@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (C) 2026 Vanderlei Braga e colaboradores do CAD-CRAFT
-//! Etapa 20: diálogo único de numeração (dispositivos, conexões, páginas).
-//! Regra e filtro → prévia antes/depois → Aplicar em uma transação.
+//! Device, connection and page numbering dialog; start with the preview workflow. Choose rules and filters, inspect before/after values and apply in one transaction.
 use crate::{
     commands::CommandId,
     state::{Selection, Session},
@@ -10,7 +9,7 @@ use cad_craft::domain::*;
 use eframe::egui::{self, Context};
 use std::collections::BTreeSet;
 
-/// Alcance escolhido no diálogo de dispositivos.
+/// Scope chosen in the device dialog.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 enum Filter {
     #[default]
@@ -45,7 +44,7 @@ impl Preview {
     }
 }
 
-/// Dispositivos da seleção gráfica ou do item elétrico selecionado.
+/// Devices from the graphical selection or selected electrical entity.
 fn selected_devices(session: &Session, project: &Project) -> Vec<DeviceId> {
     let mut out = BTreeSet::new();
     for id in session.graphics.selection.ids() {
@@ -101,9 +100,9 @@ impl NumberingWindow {
         };
         let mut open = true;
         let title = match mode {
-            CommandId::NumberDevices => "Numerar dispositivos",
-            CommandId::NumberConnections => "Numerar conexões",
-            _ => "Numerar páginas",
+            CommandId::NumberDevices => crate::strings::NUMBER_DEVICES,
+            CommandId::NumberConnections => crate::strings::NUMBER_CONNECTIONS,
+            _ => crate::strings::NUMBER_PAGES,
         };
         let mut scheme_change = None;
         let mut apply = None;
@@ -113,7 +112,7 @@ impl NumberingWindow {
             .default_width(560.0)
             .show(ctx, |ui| {
                 let Some(project) = session.project() else {
-                    ui.weak("Nenhum projeto aberto.");
+                    ui.weak(crate::strings::NO_OPEN_PROJECT_NOTICE);
                     return;
                 };
                 let page = session.active.filter(|id| project.page(*id).is_some());
@@ -253,7 +252,7 @@ impl NumberingWindow {
                             if p.rows.is_empty() {
                                 ui.weak("Nenhuma conexão no projeto.");
                             }
-                            // Linhas da mesma rede são consecutivas: uma por rede.
+                            // Rows of the same network are consecutive; keep one per network.
                             for group in p.rows.chunk_by(|a, b| a.after == b.after) {
                                 let before: BTreeSet<_> = group
                                     .iter()

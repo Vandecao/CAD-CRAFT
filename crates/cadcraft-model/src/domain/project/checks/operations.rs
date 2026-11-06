@@ -1,12 +1,11 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (C) 2026 Vanderlei Braga e colaboradores do CAD-CRAFT
-//! Etapa 24: regras de verificação (funções puras do cadastro, em ordem
-//! determinística), localização dos alvos para navegação e esquema do
-//! projeto com delta reversível.
+//! Pure registry checks in deterministic order; start with Project::check. Includes navigation
+//! targets and reversible project check-scheme edits.
 use super::*;
 use std::collections::{BTreeMap, BTreeSet};
 
-/// Troca do esquema de verificação (Desfazer/Refazer exatos).
+/// Check scheme replacement with exact undo and redo.
 #[derive(Clone, Debug, PartialEq)]
 pub struct CheckSchemeDelta {
     project: ProjectId,
@@ -14,16 +13,19 @@ pub struct CheckSchemeDelta {
     after: CheckScheme,
 }
 impl CheckSchemeDelta {
+    /// Whether this collection or recorded edit contains no effective entries or changes.
     pub fn is_empty(&self) -> bool {
         self.before == self.after
     }
 }
 
 impl Project {
+    /// Return the check scheme.
     pub fn check_scheme(&self) -> &CheckScheme {
         &self.check_scheme
     }
 
+    /// Validate and replace the check configuration, returning the reversible change.
     pub fn set_check_scheme(&mut self, scheme: CheckScheme) -> Result<CheckSchemeDelta> {
         scheme.validate()?;
         let delta = CheckSchemeDelta {
@@ -35,6 +37,8 @@ impl Project {
         Ok(delta)
     }
 
+    /// Replay the recorded check scheme change; forward reapplies it and false restores the prior
+    /// state. Reject a mismatched expected state.
     pub fn restore_check_scheme(&mut self, delta: &CheckSchemeDelta, forward: bool) -> Result<()> {
         self.check_project(delta.project)?;
         let (expected, next) = if forward {
@@ -52,7 +56,7 @@ impl Project {
         Ok(())
     }
 
-    /// Verifica o projeto (ou a página) com o esquema do projeto.
+    /// Check the project or a page using the project's scheme.
     pub fn check(&self, scope: CheckScope) -> CheckReport {
         let scheme = &self.check_scheme;
         let mut report = CheckReport::default();
@@ -81,7 +85,7 @@ impl Project {
         report
     }
 
-    /// Página e ocorrência onde o alvo aparece (a primeira, em ordem estável).
+    /// First page and occurrence displaying the target, in stable order.
     pub fn check_target_location(
         &self,
         target: CheckTarget,
@@ -147,7 +151,7 @@ impl Project {
                 ids.into_iter().map(CheckTarget::Device).collect(),
             ));
         }
-        // CON-001: nomes iguais nunca unem redes; aqui só se avisa.
+        // CON-001: equal names never merge networks; report a warning only.
         let mut connectors: BTreeMap<String, Vec<ConnectorId>> = BTreeMap::new();
         for c in self.connectors() {
             connectors
@@ -187,7 +191,7 @@ impl Project {
     }
 
     fn check_functions(&self, out: &mut Vec<CheckMessage>) {
-        // Índices montados uma vez (evita varrer funções e peças por dispositivo).
+        // Build indexes once to avoid scanning functions and parts per device.
         let mut by_device: BTreeMap<DeviceId, Vec<&Function>> = BTreeMap::new();
         for f in self.functions() {
             by_device.entry(f.device_id()).or_default().push(f);
@@ -244,7 +248,7 @@ impl Project {
     }
 
     fn check_connections(&self, out: &mut Vec<CheckMessage>) {
-        // Portas de símbolos cujo ponto não tem nenhuma conexão.
+        // Symbol ports whose points have no connections.
         let mut seen = BTreeSet::new();
         let mut bindings: Vec<_> = self.port_bindings.iter().collect();
         bindings.sort_by_key(|(port, _)| (port.representation_id(), *port));
@@ -348,7 +352,7 @@ impl Project {
     }
 
     fn check_physical(&self, out: &mut Vec<CheckMessage>) {
-        // VER-013 (veias além da capacidade) é garantida pelo índice físico.
+        // VER-013, core count exceeding cable capacity, is enforced by the physical index.
         let lists = self.physical_lists();
         for row in &lists.terminals {
             if row.strip.is_some()
@@ -363,7 +367,7 @@ impl Project {
                 ));
             }
         }
-        // DEC-11-02: o estado é documental; aqui só se informa.
+        // The state is documentary; report it without changing connectivity.
         for terminal in self.terminals() {
             if terminal.disconnect_state() == Some(DisconnectState::Open) {
                 out.push(CheckMessage::new(
@@ -419,11 +423,11 @@ impl Project {
     }
 }
 
-/// Colunas da exportação de mensagens de verificação.
+/// Columns used when exporting check messages.
 pub const CHECK_EXPORT_HEADERS: [&str; 5] = ["Código", "Gravidade", "Regra", "Mensagem", "Local"];
 
 impl Project {
-    /// Linhas exportáveis (CSV/XLSX) das mensagens, com o local na folha.
+    /// Exportable CSV/XLSX message rows, including sheet locations.
     pub fn check_export_rows(&self, report: &CheckReport) -> Vec<Vec<String>> {
         report
             .messages

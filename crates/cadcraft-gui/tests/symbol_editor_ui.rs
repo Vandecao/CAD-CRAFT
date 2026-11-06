@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (C) 2026 Vanderlei Braga e colaboradores do CAD-CRAFT
-//! Etapa 17 — editor de símbolos, biblioteca externa e atualização do
-//! projeto, com eventos egui reais onde o critério pede.
+//! Symbol editor, external library and project updates, using real egui events for GUI interactions.
+// Fixture helpers use validated synthetic inputs and fail immediately on setup errors.
+#![allow(clippy::unwrap_used)]
 use cad_craft::domain::*;
 use cad_gui::{
     app::CadApp, camera::Camera, commands::CommandId, editing::GraphicEdit,
@@ -204,8 +205,7 @@ fn place(ui: &mut Ui, page: PageId, id: &SymbolDefinitionId, at: (f64, f64)) -> 
     ui.app.session.graphics.selection.primary().unwrap()
 }
 
-/// Critério 1: símbolo criado do zero pela interface, salvo na biblioteca,
-/// inserido com "Novo dispositivo" e mostrando -K1 no texto dinâmico.
+/// Create a symbol in the GUI, save to the library, insert as a new device and display -K1 through dynamic text.
 #[test]
 fn symbol_created_from_scratch_is_saved_inserted_and_shows_designation() {
     let (project, page) = base_project();
@@ -217,7 +217,7 @@ fn symbol_created_from_scratch_is_saved_inserted_and_shows_designation() {
     ui.click_world(p(-4.0, -6.0));
     ui.click_world(p(4.0, 6.0));
     assert_eq!(ui.app.symbol_editor.primitives().len(), 1);
-    // Desfazer/Refazer do editor.
+    // Editor undo/redo.
     ui.key(Key::Z, Modifiers::COMMAND);
     assert!(ui.app.symbol_editor.primitives().is_empty());
     ui.key(Key::Y, Modifiers::COMMAND);
@@ -238,7 +238,7 @@ fn symbol_created_from_scratch_is_saved_inserted_and_shows_designation() {
             ..
         })
     ));
-    // Selecionar e mover o retângulo pela borda (grade de 1 mm).
+    // Select and drag the rectangle's border on the 1 mm grid.
     ui.tool(SymbolTool::Select);
     ui.drag_world(p(-4.0, 0.0), p(-3.0, 0.0));
     let SymbolPrimitive::Rectangle { rect } = &ui.app.symbol_editor.primitives()[0] else {
@@ -259,7 +259,7 @@ fn symbol_created_from_scratch_is_saved_inserted_and_shows_designation() {
     assert_eq!(def.ports().len(), 2);
     ui.press("Fechar editor");
     assert!(!ui.app.symbol_editor.is_open());
-    // Aparece no catálogo do Centro de inserção.
+    // It appears in the insertion-centre catalog.
     assert!(
         ui.app
             .session
@@ -282,7 +282,7 @@ fn symbol_created_from_scratch_is_saved_inserted_and_shows_designation() {
     );
 }
 
-/// Critério 3: editar símbolo em uso → nova versão; porta removida recusa.
+/// Editing an in-use symbol creates a new version; removing a port is rejected.
 #[test]
 fn editing_a_used_symbol_updates_project_or_refuses_missing_ports() {
     let (project, page) = base_project();
@@ -306,7 +306,7 @@ fn editing_a_used_symbol_updates_project_or_refuses_missing_ports() {
         ui.project().representation(rid).unwrap().local_bounds(),
         Some(now.bounds())
     );
-    // Porta removida: recusa sem alterar.
+    // A removed port is rejected without changes.
     let used = ui.project().clone();
     ui.tool(SymbolTool::Select);
     let port = ui.app.symbol_editor.ports()[0].position();
@@ -316,15 +316,14 @@ fn editing_a_used_symbol_updates_project_or_refuses_missing_ports() {
     ui.press("Atualizar no projeto");
     assert_eq!(ui.project(), &used);
     ui.press("Fechar editor");
-    // Um passo de Desfazer volta à versão original.
+    // One undo restores the original version.
     ui.key(Key::Z, Modifiers::CTRL);
     assert_eq!(ui.app.session.snapshot().unwrap(), before);
     ui.key(Key::Y, Modifiers::CTRL);
     assert_eq!(ui.project().symbol_definition(coil.id()), Some(&now));
 }
 
-/// Critérios 4 e 5 na interface: pasta da biblioteca, `.cadsym`, `.elmt` e
-/// "Atualizar símbolos do projeto".
+/// Library directory, .cadsym and .elmt files, and project-symbol updates through the GUI.
 #[test]
 fn library_folder_imports_exports_and_updates_project_symbols() {
     let dir = tempfile::tempdir().unwrap();
@@ -333,7 +332,7 @@ fn library_folder_imports_exports_and_updates_project_symbols() {
     let mut ui = Ui::new(project);
     ui.app.preferences.symbol_library = lib.display().to_string();
     ui.settle(2);
-    // Novo símbolo salvo na pasta.
+    // Save a new symbol in the directory.
     ui.app.open_symbol_editor_new();
     ui.settle(2);
     ui.tool(SymbolTool::Circle);
@@ -354,7 +353,7 @@ fn library_folder_imports_exports_and_updates_project_symbols() {
         .unwrap()
         .clone();
     ui.press("Fechar editor");
-    // Usa no projeto, depois a biblioteca recebe v2 compatível.
+    // Use it in the project, then install compatible v2 in the library.
     place(&mut ui, page, lamp.id(), (50.0, 50.0));
     let v2 = lamp
         .edited(
@@ -384,7 +383,7 @@ fn library_folder_imports_exports_and_updates_project_symbols() {
         ui.project().symbol_definition(lamp.id()).unwrap().version(),
         2
     );
-    // Importar .elmt (arquivo sintético) para a pasta.
+    // Import a synthetic .elmt file into the directory.
     let elmt = dir.path().join("sinaleiro.elmt");
     std::fs::write(
         &elmt,
@@ -427,7 +426,7 @@ fn library_folder_imports_exports_and_updates_project_symbols() {
             .iter()
             .any(|d| d.name() == "Cópia")
     );
-    // Exportar o símbolo selecionado na página.
+    // Export the symbol selected on the page.
     ui.app.execute(CommandId::SymbolExport, &ui.ctx.clone());
     let exported =
         cad_craft::persistence::read_symbol_package(&std::fs::read(&export).unwrap()).unwrap();

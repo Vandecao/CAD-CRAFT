@@ -158,14 +158,14 @@ impl PartEditor {
                 ok("CSV exportado.")
             }
             Action::ExportBom => {
-                let project = session.project().ok_or("nenhum projeto aberto")?;
+                let project = session.project().ok_or(crate::strings::NO_OPEN_PROJECT)?;
                 let data = cad_craft::interchange::export_bom_csv(&project.bom_rows())?;
                 crate::project_file::write_atomic(Path::new(&self.bom_path), &mut data.as_slice())
                     .map_err(GuiError::from)?;
                 ok("Lista de peças exportada.")
             }
             Action::Assign => {
-                let device = self.selected_device.ok_or("escolha o dispositivo")?;
+                let device = self.selected_device.ok_or(crate::strings::SELECT_DEVICE)?;
                 let part = self
                     .selected_part
                     .as_ref()
@@ -178,7 +178,7 @@ impl PartEditor {
                 ok("Peça atribuída ao dispositivo.")
             }
             Action::UpdateDevice => {
-                let device = self.selected_device.ok_or("escolha o dispositivo")?;
+                let device = self.selected_device.ok_or(crate::strings::SELECT_DEVICE)?;
                 let original = session
                     .project()
                     .and_then(|project| project.device(device))
@@ -210,7 +210,7 @@ impl PartEditor {
             Action::UpdateProject => {
                 let ids: Vec<_> = session
                     .project()
-                    .ok_or("nenhum projeto aberto")?
+                    .ok_or(crate::strings::NO_OPEN_PROJECT)?
                     .parts()
                     .map(|p| p.id().clone())
                     .collect();
@@ -243,14 +243,16 @@ impl PartEditor {
                 }
                 let edit = if matches!(action, Action::CreateFunction) {
                     FunctionPointEdit::CreateFunction {
-                        device: self.selected_device.ok_or("escolha o dispositivo")?,
+                        device: self.selected_device.ok_or(crate::strings::SELECT_DEVICE)?,
                         designation,
                         kind: kind(self.function_kind),
                         role: self.function_role,
                     }
                 } else {
                     FunctionPointEdit::UpdateFunction {
-                        function: self.selected_function.ok_or("escolha a função")?,
+                        function: self
+                            .selected_function
+                            .ok_or(crate::strings::SELECT_FUNCTION)?,
                         designation,
                         kind: kind(self.function_kind),
                         role: self.function_role,
@@ -262,7 +264,9 @@ impl PartEditor {
             Action::RemoveFunction => {
                 session
                     .edit_function_point(FunctionPointEdit::RemoveFunction {
-                        function: self.selected_function.ok_or("escolha a função")?,
+                        function: self
+                            .selected_function
+                            .ok_or(crate::strings::SELECT_FUNCTION)?,
                     })
                     .map_err(GuiError::from)?;
                 self.selected_function = None;
@@ -272,12 +276,14 @@ impl PartEditor {
                 let designation = DesignationPart::new(&self.point_name).map_err(GuiError::from)?;
                 let edit = if matches!(action, Action::CreatePoint) {
                     FunctionPointEdit::CreatePoint {
-                        function: self.selected_function.ok_or("escolha a função")?,
+                        function: self
+                            .selected_function
+                            .ok_or(crate::strings::SELECT_FUNCTION)?,
                         designation,
                     }
                 } else {
                     FunctionPointEdit::RenamePoint {
-                        point: self.selected_point.ok_or("escolha o ponto")?,
+                        point: self.selected_point.ok_or(crate::strings::SELECT_POINT)?,
                         designation,
                     }
                 };
@@ -287,7 +293,7 @@ impl PartEditor {
             Action::RemovePoint => {
                 session
                     .edit_function_point(FunctionPointEdit::RemovePoint {
-                        point: self.selected_point.ok_or("escolha o ponto")?,
+                        point: self.selected_point.ok_or(crate::strings::SELECT_POINT)?,
                     })
                     .map_err(GuiError::from)?;
                 self.selected_point = None;
@@ -304,7 +310,7 @@ impl PartEditor {
                     });
                 session
                     .dispatch_physical(PhysicalEdit::SetPointTerminal {
-                        point: self.selected_point.ok_or("escolha o ponto")?,
+                        point: self.selected_point.ok_or(crate::strings::SELECT_POINT)?,
                         terminal: self.selected_terminal,
                         level,
                     })

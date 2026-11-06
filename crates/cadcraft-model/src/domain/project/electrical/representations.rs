@@ -5,28 +5,34 @@ use super::*;
 use crate::document_index::DocumentIndex;
 use std::collections::BTreeSet;
 
+/// State of a single graphical occurrence before and after an edit.
 #[derive(Clone, Debug, PartialEq)]
 pub struct RepresentationChange {
+    /// Recorded state before the operation.
     pub before: Option<Representation>,
+    /// Recorded state after the operation.
     pub after: Option<Representation>,
 }
 
+/// Touched graphical occurrences recorded for transactional replay.
 #[derive(Clone, Debug, PartialEq)]
 pub struct RepresentationDelta {
     project: ProjectId,
     changes: Vec<RepresentationChange>,
 }
 impl RepresentationDelta {
+    /// Return the number of contained entries or entity changes recorded by this value.
     pub fn len(&self) -> usize {
         self.changes.len()
     }
+    /// Whether this collection or recorded edit contains no effective entries or changes.
     pub fn is_empty(&self) -> bool {
         self.changes.is_empty()
     }
 }
 
 impl Project {
-    /// Valida o lote completo antes de alterar o documento ou seu índice.
+    /// Validate the complete batch before changing the document or its index.
     pub fn edit_representations(
         &mut self,
         changes: Vec<RepresentationChange>,
@@ -85,6 +91,8 @@ impl Project {
             changes,
         })
     }
+    /// Replay the recorded representations change; forward reapplies it and false restores the prior
+    /// state. Reject a mismatched expected state.
     pub fn restore_representations(
         &mut self,
         delta: &RepresentationDelta,
@@ -118,12 +126,16 @@ impl Project {
         self.transform_representations_with_drawing(transforms)?;
         Ok(())
     }
+    /// Find the representation by its stable identifier; return None when absent.
     pub fn representation(&self, id: RepresentationId) -> Option<&Representation> {
         self.representations.get(&id)
     }
+    /// Iterate representations without exposing mutable access.
     pub fn representations(&self) -> impl Iterator<Item = &Representation> {
         self.representations.values()
     }
+    /// Validate and register representation, rejecting duplicate IDs, foreign ownership or invalid
+    /// relations.
     pub fn insert_representation(
         &mut self,
         representation: Representation,
@@ -137,6 +149,7 @@ impl Project {
         self.representations.insert(id, representation);
         Ok(id)
     }
+    /// Remove representation after validating that no forbidden references remain.
     pub fn remove_representation(&mut self, id: RepresentationId) -> Result<Representation> {
         if self.drawing_references_representation(id) || self.marker(id).is_some() {
             return Err(drawing_error());
@@ -148,7 +161,7 @@ impl Project {
         self.document_index.remove(&removed);
         Ok(removed)
     }
-    /// Movimento entre páginas do mesmo projeto, validado antes de alterar índices.
+    /// Move between pages of one project, validating before changing indexes.
     pub fn move_representation(
         &mut self,
         id: RepresentationId,
@@ -166,6 +179,7 @@ impl Project {
         updated.transform = transform;
         self.replace_representation(updated)
     }
+    /// Replace an occurrence local bounding rectangle after validation.
     pub fn set_representation_bounds(
         &mut self,
         id: RepresentationId,
@@ -181,6 +195,7 @@ impl Project {
         updated.local_bounds = bounds;
         self.replace_representation(updated)
     }
+    /// Replace an occurrence documentary visual properties.
     pub fn set_representation_visual(
         &mut self,
         id: RepresentationId,

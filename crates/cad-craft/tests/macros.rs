@@ -1,7 +1,10 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (C) 2026 Vanderlei Braga e colaboradores do CAD-CRAFT
-//! Etapa 19: macros — captura, inserção com IDs e designações novos, fios,
-//! junções, Undo/Redo exato, outro projeto, macro de página e `.cadmacro`.
+//! Capture and insert macros with fresh identifiers/designations, wires, junctions and exact
+//! undo/redo across projects and native packages.
+// Synthetic test fixtures intentionally fail fast when setup is invalid.
+#![allow(clippy::unwrap_used)]
+
 use cad_craft::domain::*;
 use cad_craft::persistence;
 
@@ -131,8 +134,8 @@ struct Circuit {
     r1: RepresentationId,
 }
 
-/// Partida direta: -Q1 → -F1 → bobina -K1, contato auxiliar de -K1 ligado
-/// por um fio em T com junção; -K1 com peça atribuída.
+/// Direct-on-line starter: -Q1 to -F1 to coil -K1; an auxiliary contact joins through a T wire
+/// and junction. -K1 has an assigned part.
 fn circuit(project: &mut Project, page: PageId) -> Circuit {
     let device = new_device(project, "Q");
     let q1 = place(
@@ -287,8 +290,8 @@ fn inserting_twice_creates_next_designations_and_equivalent_network() {
     assert_eq!(first.route_ids().len(), 3);
     assert_eq!(second.device_ids().len(), 3);
     assert_eq!(project.connection_junctions().count(), 3);
-    // Mesma rede: o ponto 1 de cada -Q liga ao ponto 2 de cada -F, e -F.1,
-    // -K.2 e o contato auxiliar ficam no mesmo potencial pela junção.
+    // Each -Q point 1 connects to -F point 2; -F.1, -K.2 and the auxiliary contact share the
+    // junction potential.
     for delta in [&first, &second] {
         let reps: Vec<&Representation> = delta
             .representation_ids()
@@ -321,7 +324,7 @@ fn inserting_twice_creates_next_designations_and_equivalent_network() {
                 .unwrap()
         );
     }
-    // Nada da macro aponta para a página ou os dispositivos de origem.
+    // Nothing in the macro references the original page or devices.
     let k = project
         .devices()
         .find(|d| d.designation().to_string() == "-K2")
@@ -355,7 +358,7 @@ fn undo_removes_whole_insertion_and_redo_restores_identical_state() {
     assert_eq!(snapshot(&project), before);
     project.restore_macro_insert(&delta, true).unwrap();
     assert_eq!(snapshot(&project), after);
-    // Repetir o refazer é recusado sem alterar nada.
+    // Repeated redo is refused without changes.
     assert!(project.restore_macro_insert(&delta, true).is_err());
     assert_eq!(snapshot(&project), after);
 }
@@ -500,14 +503,14 @@ fn cadmacro_round_trips_and_rejects_invalid_files() {
     let bytes = persistence::write_macro_package(&definition).unwrap();
     let read = persistence::read_macro_package(&bytes).unwrap();
     assert_eq!(read, definition);
-    // Não é ZIP / truncado.
+    // Reject non-ZIP and truncated input.
     assert!(persistence::read_macro_package(b"not a zip").is_err());
     assert!(persistence::read_macro_package(&bytes[..bytes.len() / 2]).is_err());
-    // Outro tipo de pacote.
+    // Reject a different package type.
     let part = Part::new("X.Y", "X", "Y", "Peça", "Classe").unwrap();
     let part_bytes = persistence::write_part_package(&part).unwrap();
     assert!(persistence::read_macro_package(&part_bytes).is_err());
-    // Referência quebrada: um vínculo aponta para ponto inexistente.
+    // Reject a link to a missing connection point.
     let mut value = serde_json::to_value(&definition).unwrap();
     let bindings = value["content"]["bindings"].as_array_mut().unwrap();
     bindings[0]["point"] = serde_json::Value::String(ConnectionPointId::new().to_string());
@@ -517,7 +520,7 @@ fn cadmacro_round_trips_and_rejects_invalid_files() {
             .validate()
             .is_err()
     );
-    // Versão zero.
+    // Reject version zero.
     let mut zero = serde_json::to_value(&definition).unwrap();
     zero["version"] = 0.into();
     assert!(serde_json::from_value::<MacroDefinition>(zero).is_err());

@@ -225,7 +225,7 @@ pub fn refresh(tokens: &Tokens) -> Result<Tokens, String> {
     let refresh = tokens
         .refresh_token
         .as_deref()
-        .ok_or("sessão expirada: entre de novo")?;
+        .ok_or(crate::strings::SESSION_EXPIRED)?;
     let mut next = token_request(
         &[
             ("grant_type", "refresh_token"),

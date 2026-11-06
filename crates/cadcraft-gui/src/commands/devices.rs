@@ -40,7 +40,7 @@ pub(super) const LOCATE_AUXILIARY_FUNCTIONS: CommandSpec = (
 
 pub(super) const NUMBER_DEVICES: CommandSpec = (
     C::NumberDevices,
-    "Numerar dispositivos",
+    crate::strings::NUMBER_DEVICES,
     "Prévia e aplicação da regra de numeração de dispositivos",
     T::Devices,
     "Dispositivos",
@@ -108,7 +108,11 @@ pub(super) const GROUP_DISPOSITIVOS: PlannedGroupSpec = (
     T::Devices,
     "Dispositivos",
     I::Device,
-    &["Lista de materiais", "Numerar dispositivos", "Extras"],
+    &[
+        "Lista de materiais",
+        crate::strings::NUMBER_DEVICES,
+        "Extras",
+    ],
 );
 
 pub(super) const GROUP_CLP: PlannedGroupSpec = (

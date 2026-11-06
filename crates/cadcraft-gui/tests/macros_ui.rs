@@ -1,9 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (C) 2026 Vanderlei Braga e colaboradores do CAD-CRAFT
-//! Etapa 19 — macros com eventos egui reais: criar da seleção, salvar na
-//! biblioteca, inserir duas vezes por clique na folha, Desfazer/Refazer,
-//! girar na inserção, macro de página, colar/duplicar com fios e arquivo
-//! inválido recusado.
+//! Macros with real egui events: capture a selection, save to the library, insert twice with sheet clicks, undo/redo, rotate during placement, page macros, paste/duplicate with wires and reject invalid input.
+// Fixture helpers use validated synthetic inputs and fail immediately on setup errors.
+#![allow(clippy::unwrap_used)]
 use cad_craft::{domain::*, persistence};
 use cad_gui::{
     app::CadApp,
@@ -72,8 +71,7 @@ fn route(project: &mut Project, a: PortRef, b: PortRef, points: Vec<Point2D>) ->
         .id()
 }
 
-/// Partida direta (-Q1, -F1, bobina e contato de -K1, fios e junção) na
-/// página 1; página 2 vazia.
+/// Direct starter (-Q1, -F1, -K1 coil and contact, wires and a junction) on page 1; page 2 is empty.
 fn project() -> (Project, PageId, PageId, Vec<RepresentationId>) {
     let mut project = Project::new("Macros").unwrap();
     let doc = project
@@ -298,7 +296,7 @@ impl Ui {
         self.frame(vec![Event::Text(text.into())]);
         self.settle(2);
     }
-    /// Clique primário na folha, deslocado do centro do editor.
+    /// Primary sheet click offset from the editor center.
     fn sheet_click(&mut self, dx: f32, dy: f32) {
         self.settle(2);
         let at = self.app.last_viewport.unwrap().center() + vec2(dx, dy);
@@ -350,7 +348,7 @@ fn macro_is_created_saved_and_inserted_twice_by_real_events() {
     let saved = persistence::read_macro_package(&std::fs::read(&file).unwrap()).unwrap();
     assert_eq!(saved.content().routes().len(), 3);
     assert_eq!(saved.content().junctions().len(), 1);
-    // Inserir duas vezes na outra página por cliques reais.
+    // Insert twice on the other page using real clicks.
     ui.app.session.open_page(target).unwrap();
     ui.click("Partida direta · PARTIDA.DIRETA · v1");
     ui.click("Inserir na página");
@@ -378,7 +376,7 @@ fn macro_is_created_saved_and_inserted_twice_by_real_events() {
         2
     );
     ui.project().validate().unwrap();
-    // Ctrl+Z desfaz a segunda inserção inteira; Refazer a devolve.
+    // Ctrl+Z undoes the entire second insertion; redo restores it.
     let after = ui.app.session.snapshot().unwrap();
     ui.key(Key::Escape, Modifiers::NONE);
     ui.key(Key::Z, Modifiers::CTRL);
@@ -402,7 +400,7 @@ fn rotating_during_insertion_keeps_wires_on_ports() {
         .macro_from_selection("M", "M", "", "", 4.0)
         .unwrap();
     assert!(report.is_clean());
-    // Ponto base ajustado à grade de 4 mm.
+    // Base point snapped to the 4 mm grid.
     assert_eq!(definition.base().x() % 4.0, 0.0);
     ui.app.session.open_page(target).unwrap();
     ui.app.start_macro_insertion(definition);
@@ -433,7 +431,7 @@ fn copy_paste_and_duplicate_carry_internal_wires() {
     let (project, source, target, ids) = project();
     let mut ui = Ui::new(project);
     ui.app.session.open_page(source).unwrap();
-    // -F1, bobina, contato auxiliar e os dois fios entre eles (com junção).
+    // -F1, coil, auxiliary contact and the two wires between them, including a junction.
     ui.app
         .session
         .select_graphics([ids[1], ids[2], ids[3], ids[4], ids[5]]);
@@ -458,14 +456,14 @@ fn copy_paste_and_duplicate_carry_internal_wires() {
     );
     assert!(p2.connections().count() > connections);
     assert!(designations(p2).contains(&"-K2".to_owned()));
-    // Um Desfazer remove a colagem inteira.
+    // One undo removes the entire paste.
     ui.app.session.dispatch_graphic(GraphicEdit::Undo).unwrap();
     assert_eq!(ui.app.session.snapshot().unwrap(), before);
-    // Colar no mesmo dispositivo com fios é recusado sem alterar nada.
+    // Pasting with wires into the same device is rejected without changes.
     ui.app.session.clipboard.as_mut().unwrap().keep_device = true;
     assert!(ui.app.session.confirm_paste(p(200.0, 100.0)).is_err());
     assert_eq!(ui.app.session.snapshot().unwrap(), before);
-    // Ctrl+D com fios duplica fios e junção na mesma página.
+    // Ctrl+D with wires duplicates wires and the junction on the same page.
     ui.app.session.open_page(source).unwrap();
     ui.app
         .session

@@ -1,9 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (C) 2026 Vanderlei Braga e colaboradores do CAD-CRAFT
-//! Etapa 24: painel Verificações. Verificar projeto/página em segundo plano,
-//! filtros, contadores, duplo clique e F8/Shift+F8 navegam até a ocorrência,
-//! Ignorar com justificativa e exportação CSV/XLSX. Depois de cada edição, as
-//! mensagens já listadas são reavaliadas e somem quando corrigidas.
+//! Project and page validation in the background. Start with the panel renderer: filters, counters, double-click and F8 navigation, justified exclusions and CSV/XLSX export. Listed messages are reevaluated after edits and disappear when fixed.
 use crate::app::{CadApp, Level};
 use cad_craft::domain::*;
 use cad_craft::report_export::{export_rows_csv, export_rows_xlsx};
@@ -13,7 +10,7 @@ use std::sync::mpsc;
 
 struct CheckJob {
     receiver: mpsc::Receiver<CheckReport>,
-    /// Reavaliação: só as mensagens já listadas permanecem.
+    /// Reevaluation retains only messages already listed.
     keep: Option<BTreeSet<String>>,
     revision: u64,
 }
@@ -22,15 +19,15 @@ struct CheckJob {
 pub struct CheckPanel {
     open: bool,
     pub scope: Option<CheckScope>,
-    /// Mensagens listadas (já com o esquema aplicado).
+    /// Listed messages after applying the validation scheme.
     pub report: Option<CheckReport>,
     pub severity: Option<CheckSeverity>,
     pub rule: Option<&'static str>,
     pub selected: Option<usize>,
     job: Option<CheckJob>,
-    /// Revisão da sessão em que a lista foi calculada.
+    /// Session revision at which the list was calculated.
     revision: u64,
-    /// Mensagem em edição para Ignorar (chave, justificativa).
+    /// Message being excluded: key and justification.
     ignoring: Option<(String, String)>,
     pub status: String,
 }
@@ -42,7 +39,7 @@ impl CheckPanel {
     pub fn is_running(&self) -> bool {
         self.job.is_some()
     }
-    /// Mensagens visíveis pelos filtros, com o índice na lista completa.
+    /// Messages visible through the filters, with their index in the complete list.
     pub fn visible(&self) -> Vec<(usize, &CheckMessage)> {
         let Some(report) = &self.report else {
             return vec![];
@@ -75,7 +72,7 @@ fn spawn(
 }
 
 impl CadApp {
-    /// Verificar projeto (ou a página ativa).
+    /// Validate the project or active page.
     pub(crate) fn start_check(&mut self, page_only: bool) {
         let Some(project) = self.session.project() else {
             return;
@@ -95,7 +92,7 @@ impl CadApp {
         self.checks.job = Some(spawn(project.clone(), scope, None, self.session.revision));
     }
 
-    /// F8 / Shift+F8: próxima/anterior mensagem visível, com navegação.
+    /// F8 / Shift+F8: navigate to the next or previous visible message.
     pub(crate) fn step_check(&mut self, step: isize) {
         let visible: Vec<usize> = self.checks.visible().iter().map(|(i, _)| *i).collect();
         if visible.is_empty() {
@@ -178,7 +175,7 @@ impl CadApp {
             }
             return;
         }
-        // Reavaliação automática depois de edições (decisão 5).
+        // Automatically reevaluate listed messages after edits.
         if let (Some(report), Some(scope), Some(project)) = (
             &self.checks.report,
             self.checks.scope,
@@ -362,7 +359,7 @@ impl CadApp {
         match self.session.set_check_scheme(scheme) {
             Ok(_) => {
                 self.log(Level::Info, "Mensagem ignorada (Ctrl+Z desfaz).");
-                // A reavaliação automática retira a mensagem da lista.
+                // Automatic reevaluation removes the message from the list.
             }
             Err(e) => self.log(Level::Error, e.to_string()),
         }
@@ -391,7 +388,7 @@ impl CadApp {
         }
     }
 
-    /// Configurações > Verificações: ativação e gravidade por regra.
+    /// Validation settings: enable rules and set their severity.
     pub(crate) fn check_settings_ui(&mut self, ui: &mut egui::Ui) {
         let Some(project) = self.session.project() else {
             return;

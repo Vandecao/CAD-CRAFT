@@ -2,10 +2,10 @@
 // Copyright (C) 2026 Vanderlei Braga e colaboradores do CAD-CRAFT
 //! QElectroTech titleblock import; start at `import`, then read, convert and report.
 //!
-//! O carimbo é uma grade (`cols`: `Npx` fixas, `tN%` do total, `rN%` do
-//! restante; `rows` em px) com células de campo (rótulo, valor com variáveis
-//! `%var`/`%{var}`) e de logotipo. Ele é colocado na base de uma folha
-//! escolhida pelo usuário, dentro de uma borda com margem.
+//! A titleblock is a grid (`cols`: fixed `Npx`, `tN%` of total, `rN%` of
+//! remaining width; `rows` in pixels) with field cells (label and value using
+//! `%var`/`%{var}` variables) and logo cells. It sits at the bottom of a
+//! user-selected sheet inside a border with a margin.
 use crate::build::{Builder, round3};
 use crate::xml::{self, Element};
 use crate::{ImportResult, ImportedFrame, base64_decode, check_size, fail, qet_variable};
@@ -17,9 +17,9 @@ use std::collections::{BTreeMap, BTreeSet};
 #[derive(Debug, Clone, Copy)]
 pub struct TitleblockOptions {
     pub sheet: Size2D,
-    /// Margem da borda (mm).
+    /// Border margin in mm.
     pub margin: f64,
-    /// Escala das medidas em px do QElectroTech (mm por px).
+    /// QElectroTech pixel scale in mm per pixel.
     pub mm_per_px: f64,
 }
 impl TitleblockOptions {

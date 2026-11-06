@@ -25,7 +25,7 @@ impl Placement {
                 matrix: [PT_PER_MM, 0.0, 0.0, PT_PER_MM, 0.0, 0.0],
             };
         };
-        // Papel na mesma orientação da folha.
+        // Orient the paper to match the sheet.
         let (mut pw, mut ph) = (paper.width(), paper.height());
         if (width > height) != (pw > ph) {
             std::mem::swap(&mut pw, &mut ph);
@@ -55,7 +55,7 @@ impl Placement {
     }
 }
 
-/// Valores de cor (cinza ou RGB) da cor lógica.
+/// Grayscale or RGB values for a logical color.
 enum Paint {
     Gray(f32),
     Rgb(f32, f32, f32),

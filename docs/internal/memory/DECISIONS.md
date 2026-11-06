@@ -1,5 +1,7 @@
 # Decisões arquiteturais
 
+R6 (2026-11-06): decisões de manutenção executadas conforme prompt aprovado: comentários de código em inglês, constantes privadas apenas para frases repetidas pt-BR, lints de workspace e missing_docs restrito a model/format. Exceções de testes/exemplos justificadas individualmente no relatório ../reports/R6_LIMPEZA.md. Sem mudança arquitetural ou novo ADR; ADR-0031/0032 permanecem. Versionamento R6 aguarda OK por etapa.
+
 | ADR | Estado | Assunto |
 |---|---|---|
 | [0001](../../adr/0001-bootstrap-e-contratos.md) | Aceito pelo Prompt 0 | Core/GUI, contratos e bootstrap mínimo |

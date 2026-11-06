@@ -20,12 +20,12 @@ pub use parts_csv::{
     CsvPartReport, CsvRejectedRow, export_bom_csv, export_parts_csv, import_parts_csv,
 };
 pub mod fn1;
-/// Etapa 25: projetos do QElectroTech (`.qet`).
+/// QElectroTech project files (`.qet`).
 pub mod qet;
 pub mod titleblock;
 mod xml;
 
-/// Limite de tamanho dos arquivos de moldura importados.
+/// Maximum imported frame file size.
 pub const MAX_IMPORT_BYTES: usize = 64 * 1024 * 1024;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -41,14 +41,14 @@ pub(crate) fn fail(message: impl Into<String>) -> ImportError {
 }
 pub type ImportResult<T> = std::result::Result<T, ImportError>;
 
-/// O que aconteceu com itens que não viraram elementos equivalentes.
+/// How source items without exact equivalents were handled.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum NoteKind {
-    /// Não convertido (o motivo está na mensagem).
+    /// Not converted; the message explains why.
     Ignored,
-    /// Convertido de forma aproximada.
+    /// Converted approximately.
     Approximated,
-    /// Informação sobre a conversão.
+    /// Conversion information.
     Info,
 }
 
@@ -58,7 +58,7 @@ pub struct ImportNote {
     pub message: String,
 }
 
-/// Resumo da conversão; notas iguais são agrupadas com contagem.
+/// Conversion summary; identical notes are grouped with a count.
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct ImportReport {
     pub notes: Vec<(ImportNote, usize)>,
@@ -91,7 +91,7 @@ impl ImportReport {
             .map(|(_, c)| c)
             .sum()
     }
-    /// Linhas legíveis ("Ignorado (3×): …").
+    /// Human-readable lines, such as "Ignorado (3×): …".
     pub fn lines(&self) -> Vec<String> {
         self.notes
             .iter()
@@ -111,14 +111,14 @@ impl ImportReport {
     }
 }
 
-/// Moldura convertida, pronta para `Project::frame_import_edits`.
+/// Converted frame, ready for `Project::frame_import_edits`.
 #[derive(Debug, Clone)]
 pub struct ImportedFrame {
     pub package: FramePackage,
     pub report: ImportReport,
 }
 
-/// Formatos de origem reconhecidos pela extensão.
+/// Source formats recognized by extension.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum SourceFormat {
     EplanFn1,
@@ -153,8 +153,8 @@ pub(crate) fn check_size(bytes: &[u8]) -> ImportResult<()> {
     Ok(())
 }
 
-/// Código textual estável de um campo especial, usado nos marcadores
-/// `<<código>>` do DXF (`<<pagina:Revisão#2>>` = chave com índice 2).
+/// Stable textual code for a special field, used in DXF
+/// `<<code>>` markers (`<<pagina:Revisão#2>>` means a key with index 2).
 pub fn special_code(field: &SpecialField, index: Option<u32>) -> String {
     let base = match field {
         SpecialField::ProjectName => "projeto.nome".to_owned(),
@@ -180,7 +180,7 @@ pub fn special_code(field: &SpecialField, index: Option<u32>) -> String {
     }
 }
 
-/// Inverso de [`special_code`]; `None` para código desconhecido.
+/// Inverse of [`special_code`]; returns `None` for unknown codes.
 pub fn parse_special_code(code: &str) -> Option<(SpecialField, Option<u32>)> {
     let code = code.trim();
     let (base, index) = match code.rsplit_once('#') {
@@ -214,7 +214,7 @@ pub fn parse_special_code(code: &str) -> Option<(SpecialField, Option<u32>)> {
     Some((field, index))
 }
 
-/// Variável do QElectroTech (`%{nome}`) → campo especial.
+/// QElectroTech variable (`%{name}`) → special field.
 pub(crate) fn qet_variable(name: &str) -> SpecialField {
     let page = |k: &str| SpecialField::PageProperty(Text::new(k).expect("chave fixa"));
     let project = |k: &str| SpecialField::ProjectProperty(Text::new(k).expect("chave fixa"));
@@ -267,7 +267,7 @@ mod tests {
     }
 }
 
-/// Base64 padrão (ignora espaços e quebras de linha); `None` se inválido.
+/// Standard Base64, ignoring whitespace and newlines; `None` if invalid.
 pub(crate) fn base64_decode(text: &str) -> Option<Vec<u8>> {
     let value = |c: u8| -> Option<u32> {
         Some(match c {

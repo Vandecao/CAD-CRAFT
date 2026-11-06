@@ -1,5 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (C) 2026 Vanderlei Braga e colaboradores do CAD-CRAFT
+// Synthetic test fixtures intentionally fail fast when setup is invalid.
+#![allow(clippy::unwrap_used)]
+
 use cad_craft::interchange::edz::{self, EdzContainer, EdzLimits};
 use std::io::{Cursor, Write};
 
@@ -132,11 +135,11 @@ fn rejects_invalid_container_paths_limits_truncation_and_missing_items() {
     );
 }
 
-/// Amostras locais opcionais: só contagens/códigos no relatório, nunca dados de peça.
+/// Optional local samples report counts and diagnostic codes, never part data.
 #[test]
 fn reference_edz_samples_generate_coverage_when_available() {
     use cad_craft::interchange::NoteKind;
-    // Amostras reais fora do Git: `CADCRAFT_SAMPLES/eplan/edz`.
+    // Real samples remain outside Git under CADCRAFT_SAMPLES/eplan/edz.
     let Some(dir) = std::env::var_os("CADCRAFT_SAMPLES")
         .map(|root| std::path::Path::new(&root).join("eplan").join("edz"))
         .filter(|d| d.is_dir())
@@ -166,8 +169,7 @@ fn reference_edz_samples_generate_coverage_when_available() {
         let bytes = std::fs::read(&path).unwrap();
         match edz::import(&bytes) {
             Ok(i) => {
-                // Teste no app (2026-11-05): o que vai para a biblioteca precisa ser
-                // relido (peças e macros).
+                // Everything written to the part and macro libraries must be readable again.
                 for m in &i.macros {
                     let bytes = cad_craft::persistence::write_macro_package(m).unwrap();
                     if let Err(e) = cad_craft::persistence::read_macro_package(&bytes) {
@@ -194,13 +196,13 @@ fn reference_edz_samples_generate_coverage_when_available() {
                     i.report.count(NoteKind::Approximated),
                     i.unknown_codes.into_iter().collect::<Vec<_>>().join(", ")
                 );
-                println!("{row}");
+                eprintln!("{row}");
                 table.push_str(&row);
                 count += 1;
             }
             Err(e) => {
-                // Amostra real comprovadamente incompleta: preservar a recusa, nunca
-                // converter parcialmente nem enfraquecer os testes sintéticos de manifesto.
+                // A known incomplete sample must remain refused; never partially convert it or weaken synthetic
+                // manifest checks.
                 let known_missing = name == "RIT.2383210.edz"
                     && e.0.starts_with("manifesto aponta item inexistente:");
                 if known_missing {

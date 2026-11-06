@@ -42,6 +42,7 @@ pub(crate) mod reports_ui;
 mod ribbon;
 mod snapshots;
 pub mod state;
+mod strings;
 pub mod symbol_editor;
 pub(crate) mod symbol_files;
 pub mod symbol_view;

@@ -1,5 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (C) 2026 Vanderlei Braga e colaboradores do CAD-CRAFT
+// Synthetic test fixtures intentionally fail fast when setup is invalid.
+#![allow(clippy::unwrap_used)]
+
 mod physical_common;
 use cad_craft::domain::*;
 use physical_common::*;
@@ -28,11 +31,11 @@ fn full_round_trip_preserves_ids_associations_unused_cores_and_rebuilds_indexes(
 }
 
 #[test]
-fn earlier_stage_snapshots_without_physical_fields_remain_readable() {
+fn earlier_snapshots_without_physical_fields_remain_readable() {
     let (p, _, _, points) = fixture(2);
-    let mut stage2 = p.clone();
-    connection(&mut stage2, points[0], points[1]);
-    for project in [p, stage2] {
+    let mut connected = p.clone();
+    connection(&mut connected, points[0], points[1]);
+    for project in [p, connected] {
         let mut data = json!(project);
         for key in ["conductors", "cables", "cable_cores", "terminal_strips"] {
             data.as_object_mut().unwrap().remove(key);

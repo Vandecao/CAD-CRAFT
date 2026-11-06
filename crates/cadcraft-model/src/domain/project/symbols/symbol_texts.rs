@@ -1,10 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (C) 2026 Vanderlei Braga e colaboradores do CAD-CRAFT
-//! Etapa 17: valores dos textos dinâmicos de símbolo numa ocorrência.
-//!
-//! Os valores são derivados do agregado a cada desenho (nada é gravado na
-//! ocorrência): designação e propriedades do dispositivo, tipo da função,
-//! rótulo do ponto ligado à porta e referência `/página.coluna`.
+//! Dynamic symbol occurrence text; start with Project::symbol_text. Values are derived on
+//! every drawing and never stored in the occurrence: device designation/properties, function kind,
+//! bound port label and `/page.column` reference.
 use super::*;
 
 fn property_text(value: &PropertyValue) -> String {
@@ -39,8 +37,7 @@ impl Project {
         }
     }
 
-    /// Texto do campo na ocorrência `id`; `None` quando não há valor (o
-    /// desenho mostra o marcador do campo).
+    /// Field text for occurrence `id`, or `None` when absent so rendering shows the field placeholder.
     pub fn symbol_text(&self, id: RepresentationId, field: &SymbolTextField) -> Option<String> {
         let r = self.representation(id)?;
         match field {

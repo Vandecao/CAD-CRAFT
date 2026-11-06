@@ -4,7 +4,7 @@
 
 use super::*;
 
-/// Pontos de um arco (graus, anti-horário) com erro máximo de tesselagem.
+/// Arc points (degrees, counterclockwise) bounded by the tessellation error.
 pub(super) fn arc_points(center: Point2D, radius: f64, start: f64, sweep: f64) -> Vec<Point2D> {
     let step = if radius > CURVE_TOLERANCE {
         (2.0 * (1.0 - CURVE_TOLERANCE / radius).acos()).to_degrees()
@@ -52,7 +52,7 @@ pub(super) fn rect_corners(r: Rect2D) -> Vec<Point2D> {
     .collect()
 }
 
-/// Círculo/arco da primitiva levado ao mundo (espelhos invertem o sentido).
+/// Maps a primitive circle/arc to world coordinates; mirroring reverses the sweep.
 pub(super) fn world_curve(
     primitive: &SymbolPrimitive,
     t: Transform2D,

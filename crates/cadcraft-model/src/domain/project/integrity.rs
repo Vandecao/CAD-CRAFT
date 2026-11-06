@@ -4,6 +4,7 @@
 use super::*;
 
 impl Project {
+    /// Whether the supplied point or entity lies in this record.
     pub fn contains(&self, reference: EntityRef) -> bool {
         match reference {
             EntityRef::Project(id) => self.id == id,
@@ -170,7 +171,7 @@ impl Project {
         }
         Ok(())
     }
-    /// Integridade estrutural e do índice de conectividade, sem cálculos elétricos/ERC.
+    /// Structural and connectivity-index integrity, without electrical/ERC calculations.
     pub fn validate(&self) -> Result<()> {
         if self.numbering_scheme.start == 0 || self.numbering_scheme.step == 0 {
             return Err(DomainError::InvalidRelation("regra de numeração inválida"));

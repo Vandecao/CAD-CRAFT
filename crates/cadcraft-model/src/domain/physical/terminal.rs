@@ -21,10 +21,12 @@ fn unique_positions(values: Vec<DesignationPart>) -> Result<BTreeSet<Designation
     }
     Ok(positions)
 }
-/// Proprietário físico; não é uma representação gráfica.
+/// Physical owner, independent of graphical representation.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub enum TerminalOwner {
+    /// Explicit reference to a device.
     Device(DeviceId),
+    /// Explicit reference to a component.
     Component(ComponentId),
 }
 impl From<TerminalOwner> for EntityRef {
@@ -36,27 +38,29 @@ impl From<TerminalOwner> for EntityRef {
     }
 }
 
-/// Especialização física declarada do borne. A classificação nunca cria
-/// conexões, redes, terra ou continuidade: a continuidade elétrica continua
-/// derivada apenas de conexões lógicas explícitas (inclusive pontes).
+/// Declared physical terminal specialization. Classification creates no connections, networks,
+/// grounding or continuity; electrical continuity derives only from explicit logical connections,
+/// including bridges.
 #[derive(
     Clone, Copy, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize,
 )]
 pub enum TerminalKind {
+    /// Unclassified general-purpose cable.
     #[default]
     Generic,
-    /// Passagem: dois lados declarados, todas as posições com lado.
+    /// Feed-through with two declared sides and a side for every position.
     FeedThrough,
-    /// Proteção (PE): classificação tipada, sem ligação automática ao terra.
+    /// Protective earth classification without automatic grounding.
     ProtectiveEarth,
-    /// Multinível: dois ou mais níveis identificáveis e isolados.
+    /// Multilevel terminal with at least two identifiable isolated levels.
     MultiLevel,
-    /// Distribuição: duas ou mais posições de conexão.
+    /// Distribution terminal with at least two connection positions.
     Distribution,
-    /// Seccionável: lados declarados e estado estático documental.
+    /// Disconnect terminal with declared sides and static documentary state.
     Disconnect,
 }
 impl TerminalKind {
+    /// All supported variants in display order.
     pub const ALL: [Self; 6] = [
         Self::Generic,
         Self::FeedThrough,
@@ -65,6 +69,7 @@ impl TerminalKind {
         Self::Distribution,
         Self::Disconnect,
     ];
+    /// Return the pt-BR display label.
     pub fn label(self) -> &'static str {
         match self {
             Self::Generic => "genérico",
@@ -80,13 +85,16 @@ impl TerminalKind {
     }
 }
 
-/// Lado físico de uma posição (ex.: entrada de campo × lado interno).
+/// Physical side of a position, such as field input versus internal side.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 pub enum TerminalSide {
+    /// First declared terminal side.
     A,
+    /// Second declared terminal side.
     B,
 }
 impl TerminalSide {
+    /// Return the pt-BR display label.
     pub fn label(self) -> &'static str {
         match self {
             Self::A => "lado A",
@@ -95,16 +103,18 @@ impl TerminalSide {
     }
 }
 
-/// Estado estático de projeto de um borne seccionável. É informação
-/// documental: não altera o grafo nem as redes, e não há simulação.
+/// Static design state of a disconnect terminal. Documentary only: changes neither graph nor
+/// networks and performs no simulation.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub enum DisconnectState {
+    /// Documented closed disconnect state.
     Closed,
+    /// Documented open disconnect state.
     Open,
 }
 
-/// Nível de um borne multinível. A identidade (`TerminalLevelId`) é estável;
-/// a designação é documental. As posições de níveis distintos são disjuntas.
+/// Level of a multilevel terminal. TerminalLevelId is stable, while designation is documentary.
+/// Positions of distinct levels are disjoint.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct TerminalLevel {
@@ -114,6 +124,7 @@ pub struct TerminalLevel {
     positions: BTreeSet<DesignationPart>,
 }
 impl TerminalLevel {
+    /// Create an identifiable terminal level with validated, unique landing positions.
     pub fn new(designation: DesignationPart, positions: Vec<DesignationPart>) -> Result<Self> {
         Ok(Self {
             id: TerminalLevelId::new(),
@@ -121,31 +132,37 @@ impl TerminalLevel {
             positions: unique_positions(positions)?,
         })
     }
+    /// Return this entity or definition's stable identifier.
     pub fn id(&self) -> TerminalLevelId {
         self.id
     }
+    /// Return the designation.
     pub fn designation(&self) -> &DesignationPart {
         &self.designation
     }
+    /// Iterate registered conductor landing positions in designation order.
     pub fn positions(&self) -> impl Iterator<Item = &DesignationPart> {
         self.positions.iter()
     }
+    /// Whether the terminal or level contains this landing position.
     pub fn has_position(&self, position: &DesignationPart) -> bool {
         self.positions.contains(position)
     }
+    /// Return this value with designation replaced.
     pub fn with_designation(mut self, designation: DesignationPart) -> Self {
         self.designation = designation;
         self
     }
+    /// Return this value with positions replaced, rejecting invalid input.
     pub fn with_positions(mut self, positions: Vec<DesignationPart>) -> Result<Self> {
         self.positions = unique_positions(positions)?;
         Ok(self)
     }
 }
 
-/// Entidade destacada; relações são validadas por Project na inserção/importação.
-/// Campos de especialização (Etapa 11) têm default e são omitidos quando não
-/// usados, mantendo snapshots anteriores válidos e reserializáveis sem mudança.
+/// Detached entity; Project validates relations on insertion or import. Specialization fields
+/// default and are omitted when unused, preserving earlier snapshots and their exact
+/// reserialization.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Terminal {
@@ -166,6 +183,7 @@ pub struct Terminal {
     disconnect_state: Option<DisconnectState>,
 }
 impl Terminal {
+    /// Create a detached terminal with fresh identity, explicit owner and designation.
     pub fn new(project_id: ProjectId, owner: TerminalOwner, designation: DesignationPart) -> Self {
         Self {
             id: TerminalId::new(),
@@ -180,67 +198,85 @@ impl Terminal {
             disconnect_state: None,
         }
     }
+    /// Return this entity or definition's stable identifier.
     pub fn id(&self) -> TerminalId {
         self.id
     }
+    /// Return the project identifier.
     pub fn project_id(&self) -> ProjectId {
         self.project_id
     }
+    /// Return the properties.
     pub fn properties(&self) -> &TechnicalProperties {
         &self.properties
     }
+    /// Return this value with properties replaced.
     pub fn with_properties(mut self, properties: TechnicalProperties) -> Self {
         self.properties = properties;
         self
     }
+    /// Return this value with designation replaced.
     pub fn with_designation(mut self, designation: DesignationPart) -> Self {
         self.designation = designation;
         self
     }
+    /// Return the owner.
     pub fn owner(&self) -> TerminalOwner {
         self.owner
     }
+    /// Return the designation.
     pub fn designation(&self) -> &DesignationPart {
         &self.designation
     }
+    /// Iterate registered conductor landing positions in designation order.
     pub fn positions(&self) -> impl Iterator<Item = &DesignationPart> {
         self.positions.iter()
     }
+    /// Whether the terminal or level contains this landing position.
     pub fn has_position(&self, position: &DesignationPart) -> bool {
         self.positions.contains(position)
     }
+    /// Return this value with positions replaced, rejecting invalid input.
     pub fn with_positions(mut self, positions: Vec<DesignationPart>) -> Result<Self> {
         self.positions = unique_positions(positions)?;
         Ok(self)
     }
+    /// Return the kind.
     pub fn kind(&self) -> TerminalKind {
         self.kind
     }
+    /// Return this value with kind replaced.
     pub fn with_kind(mut self, kind: TerminalKind) -> Self {
         self.kind = kind;
         self
     }
+    /// Return the sides.
     pub fn sides(&self) -> &BTreeMap<DesignationPart, TerminalSide> {
         &self.sides
     }
+    /// Return the explicitly declared side of a terminal position.
     pub fn side_of(&self, position: &DesignationPart) -> Option<TerminalSide> {
         self.sides.get(position).copied()
     }
+    /// Return this value with sides replaced.
     pub fn with_sides(mut self, sides: BTreeMap<DesignationPart, TerminalSide>) -> Self {
         self.sides = sides;
         self
     }
+    /// Return the levels in their stored order.
     pub fn levels(&self) -> &[TerminalLevel] {
         &self.levels
     }
+    /// Find a terminal level by its stable ID.
     pub fn level(&self, id: TerminalLevelId) -> Option<&TerminalLevel> {
         self.levels.iter().find(|l| l.id() == id)
     }
+    /// Find the level that owns this terminal position.
     pub fn level_of_position(&self, position: &DesignationPart) -> Option<&TerminalLevel> {
         self.levels.iter().find(|l| l.has_position(position))
     }
-    /// Substitui os níveis. As posições do borne passam a ser a união das
-    /// posições dos níveis, para que condutores terminem sempre num nível.
+    /// Replace levels. Terminal positions become the union of level positions so conductor endpoints
+    /// always refer to a level.
     pub fn with_levels(mut self, levels: Vec<TerminalLevel>) -> Self {
         if !levels.is_empty() {
             self.positions = levels
@@ -251,15 +287,17 @@ impl Terminal {
         self.levels = levels;
         self
     }
+    /// Return the optional disconnect state; absence represents an unset value or relation.
     pub fn disconnect_state(&self) -> Option<DisconnectState> {
         self.disconnect_state
     }
+    /// Return this value with disconnect state replaced.
     pub fn with_disconnect_state(mut self, state: Option<DisconnectState>) -> Self {
         self.disconnect_state = state;
         self
     }
-    /// Regras puras e verificáveis da especialização declarada. Relações com
-    /// pontos, pontes, condutores e conectores são verificadas pelo Project.
+    /// Pure, verifiable specialization rules. Project checks relations to points, bridges, conductors
+    /// and connectors.
     pub fn check_specialization(&self) -> Result<()> {
         let invalid = |reason| Err(DomainError::InvalidRelation(reason));
         if self.sides.keys().any(|p| !self.positions.contains(p)) {

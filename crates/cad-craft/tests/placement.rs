@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (C) 2026 Vanderlei Braga e colaboradores do CAD-CRAFT
-//! Etapa 12: inserção de símbolo com cadastro elétrico e Undo documental.
+//! Symbol placement registers electrical data and supports exact documentary undo.
+// Synthetic test fixtures intentionally fail fast when setup is invalid.
+#![allow(clippy::unwrap_used)]
+
 use cad_craft::domain::*;
 
 fn p(x: f64, y: f64) -> Point2D {

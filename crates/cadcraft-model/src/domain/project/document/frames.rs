@@ -1,8 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (C) 2026 Vanderlei Braga e colaboradores do CAD-CRAFT
-//! Etapa 13: molduras do projeto, atribuição por página, textos especiais e
-//! referências por zona. Edições produzem deltas reversíveis que conferem o
-//! estado esperado antes de escrever.
+//! Project frames, page assignments, special texts and zone references; start with FrameEdit. Edits
+//! create reversible deltas that check expected state before writing.
 use super::*;
 
 pub(in crate::domain::project) fn is_default_format(format: &ReferenceFormat) -> bool {
@@ -12,75 +11,117 @@ fn frame_error(reason: &'static str) -> DomainError {
     DomainError::InvalidRelation(reason)
 }
 
+/// Frame, image, metadata or frame-assignment editing operation.
 #[derive(Clone, Debug, PartialEq)]
 pub enum FrameEdit {
-    /// Insere ou substitui (mesmo ID) uma moldura.
+    /// Insert a frame or replace one with the same ID.
     UpsertFrame(FrameTemplate),
-    /// Recusado enquanto o projeto ou alguma página usar a moldura.
+    /// Reject while the project or any page uses the frame.
     RemoveFrame(FrameTemplateId),
+    /// Set default frame.
     SetDefaultFrame(Option<FrameTemplateId>),
+    /// Set page frame.
     SetPageFrame {
+        /// Page identifier used by this operation or filter.
         page: PageId,
+        /// Frame template used by this sheet or operation.
         frame: Option<FrameTemplateId>,
     },
+    /// Set reference format.
     SetReferenceFormat(ReferenceFormat),
-    /// `None` remove a chave.
+    /// `None` removes the key.
     SetProjectMetadata {
+        /// Stable lookup key.
         key: Text,
+        /// Typed content assigned by this record.
         value: Option<String>,
     },
+    /// Set page metadata.
     SetPageMetadata {
+        /// Page identifier used by this operation or filter.
         page: PageId,
+        /// Stable lookup key.
         key: Text,
+        /// Typed content assigned by this record.
         value: Option<String>,
     },
-    /// Etapa 14: imagem do projeto (logotipo).
+    /// Project image, such as a logo.
     AddAsset(ImageAsset),
-    /// Recusado enquanto alguma moldura usar a imagem.
+    /// Reject while any frame uses the image.
     RemoveAsset(AssetId),
-    /// Várias edições numa transação; falha desfaz as já aplicadas.
+    /// Multiple edits in one transaction; failure rolls back already applied edits.
     Batch(Vec<FrameEdit>),
 }
 
+/// Recorded frame-related state before and after an edit.
 #[derive(Clone, Debug, PartialEq)]
 pub enum FrameDelta {
+    /// Recorded frame state before and after the operation.
     Frame {
+        /// Stable identifier of the affected object.
         id: FrameTemplateId,
+        /// Recorded state before the operation.
         before: Option<Box<FrameTemplate>>,
+        /// Recorded state after the operation.
         after: Option<Box<FrameTemplate>>,
     },
+    /// Recorded default frame state before and after the operation.
     DefaultFrame {
+        /// Recorded state before the operation.
         before: Option<FrameTemplateId>,
+        /// Recorded state after the operation.
         after: Option<FrameTemplateId>,
     },
+    /// Recorded page frame state before and after the operation.
     PageFrame {
+        /// Page identifier used by this operation or filter.
         page: PageId,
+        /// Recorded state before the operation.
         before: Option<FrameTemplateId>,
+        /// Recorded state after the operation.
         after: Option<FrameTemplateId>,
     },
+    /// Recorded reference format state before and after the operation.
     ReferenceFormat {
+        /// Recorded state before the operation.
         before: ReferenceFormat,
+        /// Recorded state after the operation.
         after: ReferenceFormat,
     },
+    /// Recorded project metadata state before and after the operation.
     ProjectMetadata {
+        /// Stable lookup key.
         key: Text,
+        /// Recorded state before the operation.
         before: Option<String>,
+        /// Recorded state after the operation.
         after: Option<String>,
     },
+    /// Recorded page metadata state before and after the operation.
     PageMetadata {
+        /// Page identifier used by this operation or filter.
         page: PageId,
+        /// Stable lookup key.
         key: Text,
+        /// Recorded state before the operation.
         before: Option<String>,
+        /// Recorded state after the operation.
         after: Option<String>,
     },
+    /// Recorded asset state before and after the operation.
     Asset {
+        /// Stable identifier of the affected object.
         id: AssetId,
+        /// Recorded state before the operation.
         before: Option<Box<ImageAsset>>,
+        /// Recorded state after the operation.
         after: Option<Box<ImageAsset>>,
     },
+    /// Ordered group of reversible frame changes.
     Batch(Vec<FrameDelta>),
 }
 impl FrameDelta {
+    /// Whether this collection or recorded edit contains no effective entries or changes.
     pub fn is_empty(&self) -> bool {
         match self {
             Self::Frame { before, after, .. } => before == after,
@@ -97,30 +138,35 @@ impl FrameDelta {
 }
 
 impl Project {
+    /// Find the frame by its stable identifier; return None when absent.
     pub fn frame(&self, id: FrameTemplateId) -> Option<&FrameTemplate> {
         self.frames.get(&id)
     }
+    /// Iterate frames without exposing mutable access.
     pub fn frames(&self) -> impl Iterator<Item = &FrameTemplate> {
         self.frames.values()
     }
+    /// Return the optional default frame; absence represents an unset value or relation.
     pub fn default_frame(&self) -> Option<FrameTemplateId> {
         self.default_frame
     }
+    /// Return the reference format.
     pub fn reference_format(&self) -> ReferenceFormat {
         self.reference_format
     }
-    /// Moldura efetiva: a da página ou, sem ela, a padrão do projeto.
+    /// Effective frame: the page override, otherwise the project default.
     pub fn page_frame(&self, page: PageId) -> Option<&FrameTemplate> {
         let page = self.page(page)?;
         page.frame()
             .or(self.default_frame)
             .and_then(|id| self.frame(id))
     }
+    /// Return the effective frame zone containing a point, or None when unavailable.
     pub fn zone_at(&self, page: PageId, point: Point2D) -> Option<Zone> {
         self.page_frame(page)?.zone_at(point)
     }
-    /// Referência cruzada legível. Com moldura e zona: `/página.coluna`
-    /// (ou `/página.colunaLinha`); caso contrário, página e coordenadas.
+    /// Readable cross-reference: `/page.column` or `/page.columnRow` with frame zones; otherwise page
+    /// and coordinates.
     pub fn reference_label(&self, page: PageId, point: Point2D) -> String {
         let number = self
             .page(page)
@@ -144,7 +190,7 @@ impl Project {
             point.y()
         )
     }
-    /// Valor de um texto especial para a página (texto vazio quando ausente).
+    /// Special text value for a page, empty when absent.
     pub fn resolve_special(
         &self,
         page: PageId,
@@ -234,13 +280,15 @@ impl Project {
     fn asset_in_use(&self, id: AssetId) -> bool {
         self.frames.values().any(|f| f.assets().any(|a| a == id))
     }
+    /// Return the referenced image asset, if any.
     pub fn asset(&self, id: AssetId) -> Option<&ImageAsset> {
         self.assets.get(&id)
     }
+    /// Iterate image assets referenced by this template or registered in this project.
     pub fn assets(&self) -> impl Iterator<Item = &ImageAsset> {
         self.assets.values()
     }
-    /// Liga o conteúdo lido do `.cadcraft` aos metadados da imagem.
+    /// Attach content read from `.cadcraft` to image metadata.
     pub fn attach_asset_bytes(&mut self, id: AssetId, bytes: Vec<u8>) -> Result<()> {
         self.assets
             .get_mut(&id)
@@ -248,6 +296,7 @@ impl Project {
             .attach(bytes)
     }
 
+    /// Validate and apply the frame operation, returning the recorded reversible change.
     pub fn edit_frame(&mut self, edit: FrameEdit) -> Result<FrameDelta> {
         let delta = match edit {
             FrameEdit::Batch(edits) => {
@@ -358,6 +407,8 @@ impl Project {
         Ok(delta)
     }
 
+    /// Replay the recorded frame edit change; forward reapplies it and false restores the prior state.
+    /// Reject a mismatched expected state.
     pub fn restore_frame_edit(&mut self, delta: &FrameDelta, forward: bool) -> Result<()> {
         let mismatch = || frame_error("histórico de moldura não corresponde ao documento atual");
         match delta {
@@ -499,15 +550,17 @@ fn pick<'a, T>(forward: bool, before: &'a T, after: &'a T) -> (&'a T, &'a T) {
     }
 }
 
-/// Etapa 14: moldura exportável com as imagens que usa (`.cadframe`).
+/// Exportable frame with its referenced images, used by `.cadframe`.
 #[derive(Clone, Debug, PartialEq)]
 pub struct FramePackage {
+    /// Frame template used by this sheet or operation.
     pub frame: FrameTemplate,
+    /// Image assets referenced by the frame package.
     pub assets: Vec<ImageAsset>,
 }
 
 impl Project {
-    /// Pacote da moldura com suas imagens (as que tiverem conteúdo).
+    /// Frame package including images whose content is available.
     pub fn frame_package(&self, id: FrameTemplateId) -> Result<FramePackage> {
         let frame = self
             .frame(id)
@@ -530,8 +583,8 @@ impl Project {
         }
         Ok(FramePackage { frame, assets })
     }
-    /// Edições que importam o pacote: imagens iguais são reaproveitadas,
-    /// IDs já usados são trocados. Retorna também o ID da moldura importada.
+    /// Edits importing a frame package: reuse identical images and remap colliding IDs. Also return the
+    /// imported frame ID.
     pub fn frame_import_edits(
         &self,
         package: &FramePackage,

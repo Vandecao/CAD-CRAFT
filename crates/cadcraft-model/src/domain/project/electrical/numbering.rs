@@ -3,20 +3,25 @@
 //! Numbering previews and reversible application; start with preview_device_numbering.
 use super::*;
 use std::collections::{BTreeMap, BTreeSet};
-
+/// Proposed designation change for one device, including any conflict.
 #[derive(Clone, Debug, PartialEq)]
 pub struct DeviceNumberRow {
+    /// Associated logical device.
     pub device: DeviceId,
+    /// Recorded state before the operation.
     pub before: Designation,
+    /// Recorded state after the operation.
     pub after: Designation,
+    /// Reason this numbering proposal cannot be applied, when present.
     pub conflict: Option<String>,
 }
-
+/// Proposed device designation changes calculated without mutating the project.
 #[derive(Clone, Debug, PartialEq)]
 pub struct DeviceNumberPreview {
+    /// Proposed numbering changes in the configured ordering.
     pub rows: Vec<DeviceNumberRow>,
 }
-
+/// Prior and resulting device designations retained for reversible numbering.
 #[derive(Clone, Debug, PartialEq)]
 pub struct DeviceNumberDelta {
     project: ProjectId,
@@ -24,14 +29,16 @@ pub struct DeviceNumberDelta {
     functions: Vec<IdentificationChange<Function>>,
 }
 impl DeviceNumberDelta {
+    /// Return the number of contained entries or entity changes recorded by this value.
     pub fn len(&self) -> usize {
         self.devices.len() + self.functions.len()
     }
+    /// Whether this collection or recorded edit contains no effective entries or changes.
     pub fn is_empty(&self) -> bool {
         self.len() == 0
     }
 }
-
+/// Prior and resulting number and lock state of one logical connection.
 #[derive(Clone, Debug, PartialEq)]
 pub struct ConnectionNumberDelta {
     project: ProjectId,
@@ -39,67 +46,79 @@ pub struct ConnectionNumberDelta {
     after: Connection,
 }
 impl ConnectionNumberDelta {
-    /// Sem mudança quando número e trava já eram os pedidos.
+    /// No change when the requested number and lock already match.
     pub fn is_empty(&self) -> bool {
         self.before == self.after
     }
 }
-
+/// Proposed wire-number change for one logical connection.
 #[derive(Clone, Debug, PartialEq)]
 pub struct ConnectionNumberRow {
+    /// Explicit logical connection associated with this record.
     pub connection: ConnectionId,
+    /// Recorded state before the operation.
     pub before: Option<Text>,
+    /// Recorded state after the operation.
     pub after: Option<Text>,
+    /// Reason this numbering proposal cannot be applied, when present.
     pub conflict: Option<String>,
 }
-
+/// Proposed wire numbers and conflicts calculated without mutation.
 #[derive(Clone, Debug, PartialEq)]
 pub struct ConnectionNumberPreview {
+    /// Proposed numbering changes in the configured ordering.
     pub rows: Vec<ConnectionNumberRow>,
 }
-
+/// Wire-number and lock changes retained for exact undo and redo.
 #[derive(Clone, Debug, PartialEq)]
 pub struct ConnectionNumberingDelta {
     project: ProjectId,
     changes: Vec<IdentificationChange<Connection>>,
 }
 impl ConnectionNumberingDelta {
+    /// Return the number of contained entries or entity changes recorded by this value.
     pub fn len(&self) -> usize {
         self.changes.len()
     }
+    /// Whether this collection or recorded edit contains no effective entries or changes.
     pub fn is_empty(&self) -> bool {
         self.changes.is_empty()
     }
 }
-
+/// Proposed documentary number change for one page.
 #[derive(Clone, Debug, PartialEq)]
 pub struct PageNumberRow {
+    /// Page identifier used by this operation or filter.
     pub page: PageId,
+    /// Recorded state before the operation.
     pub before: Text,
+    /// Recorded state after the operation.
     pub after: Text,
 }
-
+/// Proposed page numbers calculated without mutation.
 #[derive(Clone, Debug, PartialEq)]
 pub struct PageNumberPreview {
+    /// Proposed numbering changes in the configured ordering.
     pub rows: Vec<PageNumberRow>,
 }
-
+/// Prior and resulting page numbers retained for reversible numbering.
 #[derive(Clone, Debug, PartialEq)]
 pub struct PageNumberDelta {
     project: ProjectId,
     changes: Vec<IdentificationChange<Page>>,
 }
 impl PageNumberDelta {
+    /// Return the number of contained entries or entity changes recorded by this value.
     pub fn len(&self) -> usize {
         self.changes.len()
     }
+    /// Whether this collection or recorded edit contains no effective entries or changes.
     pub fn is_empty(&self) -> bool {
         self.changes.is_empty()
     }
 }
-
 impl Project {
-    /// Posição de cada página na ordem dos documentos e das páginas.
+    /// Position of each page in document and page order.
     fn page_ranks(&self) -> Result<BTreeMap<PageId, usize>> {
         let mut page_rank = BTreeMap::new();
         for document in self.documents() {
@@ -110,6 +129,7 @@ impl Project {
         }
         Ok(page_rank)
     }
+    /// Find a free device designation using the numbering scheme and placement position.
     pub fn next_device_designation_at(
         &self,
         prefix: &str,
@@ -149,6 +169,7 @@ impl Project {
                 .ok_or(DomainError::InvalidRelation("numeração excedeu o limite"))?;
         }
     }
+    /// Calculate proposed page numbers without changing the project.
     pub fn preview_page_numbering(
         &self,
         document: DocumentId,
@@ -178,7 +199,7 @@ impl Project {
         }
         Ok(PageNumberPreview { rows })
     }
-
+    /// Validate and apply a page-number preview, retaining prior values for replay.
     pub fn apply_page_numbering(&mut self, preview: &PageNumberPreview) -> Result<PageNumberDelta> {
         let mut changes = Vec::new();
         let mut seen = BTreeSet::new();
@@ -208,7 +229,8 @@ impl Project {
         self.restore_page_numbering(&delta, true)?;
         Ok(delta)
     }
-
+    /// Replay the recorded page numbering change; forward reapplies it and false restores the prior
+    /// state. Reject a mismatched expected state.
     pub fn restore_page_numbering(&mut self, delta: &PageNumberDelta, forward: bool) -> Result<()> {
         self.check_project(delta.project)?;
         let mut candidate = self.clone();
@@ -230,10 +252,11 @@ impl Project {
         *self = candidate;
         Ok(())
     }
+    /// Return the numbering scheme.
     pub fn numbering_scheme(&self) -> &NumberingScheme {
         &self.numbering_scheme
     }
-
+    /// Validate and replace the project numbering configuration.
     pub fn set_numbering_scheme(&mut self, scheme: NumberingScheme) -> Result<()> {
         if scheme.start == 0 || scheme.step == 0 {
             return Err(DomainError::InvalidRelation(
@@ -243,7 +266,7 @@ impl Project {
         self.numbering_scheme = scheme;
         Ok(())
     }
-
+    /// Replace the wire number and numbering lock through a reversible change.
     pub fn set_connection_number(
         &mut self,
         id: ConnectionId,
@@ -265,7 +288,8 @@ impl Project {
         self.restore_connection_number(&delta, true)?;
         Ok(delta)
     }
-
+    /// Replay the recorded connection number change; forward reapplies it and false restores the prior
+    /// state. Reject a mismatched expected state.
     pub fn restore_connection_number(
         &mut self,
         delta: &ConnectionNumberDelta,
@@ -288,12 +312,12 @@ impl Project {
         *self = candidate;
         Ok(())
     }
-
+    /// Calculate proposed wire numbers without changing the project.
     pub fn preview_connection_numbering(&self) -> Result<ConnectionNumberPreview> {
         let scheme = &self.numbering_scheme;
         let order = scheme.order;
         let page_rank = self.page_ranks()?;
-        // Primeiro trecho desenhado de cada conexão, pela ordem da regra.
+        // First drawn segment of each connection in rule order.
         let mut first_route: BTreeMap<ConnectionId, (usize, Point2D, PageId)> = BTreeMap::new();
         for route in self.connection_routes.values() {
             let Some(point) = route.points().first().copied() else {
@@ -350,7 +374,7 @@ impl Project {
                 || locked.len() > 1
                 || (!named.is_empty() && !locked.is_empty() && named != locked))
                 .then(|| "potenciais ou números travados conflitantes".to_owned());
-            // O nome do potencial vence; depois o número travado.
+            // Potential names take precedence, followed by locked numbers.
             let fixed = named
                 .iter()
                 .next()
@@ -376,7 +400,7 @@ impl Project {
             (None, Some(_)) => std::cmp::Ordering::Greater,
             (None, None) => a.connections.cmp(&b.connections),
         });
-        // Números de potenciais e travados ficam reservados.
+        // Reserve potential names and locked numbers.
         let mut used: BTreeSet<String> = nets.iter().filter_map(|n| n.fixed.clone()).collect();
         let step = |n: u32| {
             n.checked_add(scheme.step)
@@ -435,7 +459,7 @@ impl Project {
         }
         Ok(ConnectionNumberPreview { rows })
     }
-
+    /// Validate and apply a wire-number preview, retaining prior values for replay.
     pub fn apply_connection_numbering(
         &mut self,
         preview: &ConnectionNumberPreview,
@@ -473,7 +497,8 @@ impl Project {
         self.restore_connection_numbering(&delta, true)?;
         Ok(delta)
     }
-
+    /// Replay the recorded connection numbering change; forward reapplies it and false restores the
+    /// prior state. Reject a mismatched expected state.
     pub fn restore_connection_numbering(
         &mut self,
         delta: &ConnectionNumberingDelta,
@@ -498,7 +523,7 @@ impl Project {
         *self = candidate;
         Ok(())
     }
-
+    /// Set the device automatic-numbering lock through a reversible change.
     pub fn set_designation_locked(
         &mut self,
         id: DeviceId,
@@ -518,7 +543,7 @@ impl Project {
         self.restore_device_numbering(&delta, true)?;
         Ok(delta)
     }
-
+    /// Calculate proposed device designations for the requested filter without mutation.
     pub fn preview_device_numbering(&self, filter: NumberingFilter) -> Result<DeviceNumberPreview> {
         let page_rank = self.page_ranks()?;
         let selected: BTreeSet<_> = match filter {
@@ -550,8 +575,8 @@ impl Project {
                 ids.into_iter().collect()
             }
         };
-        // Primeira ocorrência de cada dispositivo pela ordem da regra,
-        // calculada uma vez (evita varrer as representações a cada comparação).
+        // First occurrence of each device in rule order, computed once to avoid repeated representation
+        // scans during comparison.
         let order = self.numbering_scheme.order;
         let before_in_order = |a, b| position_order(order, a, b);
         let mut location: BTreeMap<DeviceId, (usize, Point2D, PageId)> = BTreeMap::new();
@@ -588,7 +613,7 @@ impl Project {
             let raw = before.device().as_str();
             let prefix: String = raw.chars().take_while(|c| c.is_alphabetic()).collect();
             let fixed = device.designation_locked() && scheme.keep_locked;
-            // Sem prefixo alfabético não há regra aplicável: mantém o nome.
+            // No alphabetic prefix means no applicable rule; retain the designation.
             let name = if fixed || prefix.is_empty() {
                 raw.to_owned()
             } else {
@@ -604,7 +629,7 @@ impl Project {
                         Some(format!("{prefix}{number}.{column}"))
                     });
                 match page_column {
-                    // Mesmo critério da inserção: -K2.4, depois -K2.4.2…
+                    // Use the same collision policy as insertion: -K2.4, then -K2.4.2 and so on.
                     Some(base) => {
                         let next = counters.entry(base.clone()).or_insert(scheme.start);
                         let name = if *next == scheme.start {
@@ -653,7 +678,7 @@ impl Project {
         }
         Ok(DeviceNumberPreview { rows })
     }
-
+    /// Validate and apply a device-numbering preview, retaining prior values for replay.
     pub fn apply_device_numbering(
         &mut self,
         preview: &DeviceNumberPreview,
@@ -718,7 +743,8 @@ impl Project {
         self.restore_device_numbering(&delta, true)?;
         Ok(delta)
     }
-
+    /// Replay the recorded device numbering change; forward reapplies it and false restores the prior
+    /// state. Reject a mismatched expected state.
     pub fn restore_device_numbering(
         &mut self,
         delta: &DeviceNumberDelta,
@@ -757,21 +783,20 @@ impl Project {
         Ok(())
     }
 }
-
-/// Ordem de numeração dentro do projeto: página e depois posição na folha.
+/// Project numbering order: page, then sheet position.
 fn position_order(
     order: NumberingOrder,
     a: (usize, Point2D),
     b: (usize, Point2D),
 ) -> std::cmp::Ordering {
     a.0.cmp(&b.0).then_with(|| match order {
-        // Coluna a coluna (X crescente), de cima para baixo.
+        // Column by column, increasing X, from top to bottom.
         NumberingOrder::PageColumnRow => {
             a.1.x()
                 .total_cmp(&b.1.x())
                 .then_with(|| b.1.y().total_cmp(&a.1.y()))
         }
-        // Linha a linha (Y decrescente), da esquerda para a direita.
+        // Row by row, decreasing Y, from left to right.
         NumberingOrder::PositionXY => {
             b.1.y()
                 .total_cmp(&a.1.y())

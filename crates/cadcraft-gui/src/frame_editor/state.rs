@@ -39,7 +39,7 @@ impl FrameTool {
             Self::Image => "Imagem",
         }
     }
-    /// Cliques necessários para criar o elemento.
+    /// Number of clicks required to create the element.
     pub(in crate::frame_editor) fn clicks(self) -> usize {
         match self {
             Self::Select => 0,
@@ -137,7 +137,7 @@ pub(in crate::frame_editor) const ALIGNS: [(TextAlign, &str); 9] = [
     (TextAlign::TopRight, "Superior direito"),
 ];
 
-/// Formulário do elemento selecionado (valores em mm e graus).
+/// Selected-element form with values in millimetres and degrees.
 #[derive(Clone, Debug, Default)]
 pub(in crate::frame_editor) struct ElementForm {
     pub(in crate::frame_editor) nums: [f64; 6],
@@ -149,7 +149,7 @@ pub(in crate::frame_editor) struct ElementForm {
     pub(in crate::frame_editor) style: Option<FrameTextStyle>,
     pub(in crate::frame_editor) keep_aspect: bool,
 }
-/// Formulário da moldura.
+/// Frame form.
 #[derive(Clone, Debug, Default)]
 pub(in crate::frame_editor) struct FrameForm {
     pub(in crate::frame_editor) name: String,
@@ -218,13 +218,13 @@ impl AxisForm {
 
 #[derive(Default)]
 pub struct FrameEditor {
-    /// Moldura aberta; `None` = editor fechado.
+    /// Open frame; None means the editor is closed.
     pub frame: Option<FrameTemplateId>,
     pub camera: Camera,
     pub needs_fit: bool,
     pub tool: FrameTool,
     pub selection: BTreeSet<usize>,
-    /// Área de desenho do último quadro (testes e automação).
+    /// Drawing area of the latest frame, for tests and automation.
     pub viewport: Option<Rect>,
     pub(in crate::frame_editor) pending: Vec<Point2D>,
     pub(in crate::frame_editor) drag: Option<(Point2D, Point2D)>,
@@ -237,7 +237,7 @@ impl FrameEditor {
     pub fn is_open(&self) -> bool {
         self.frame.is_some()
     }
-    /// Cancela ferramenta e pontos pendentes; `true` se havia algo a cancelar.
+    /// Cancel the tool and pending points; return true if anything was canceled.
     pub fn cancel(&mut self) -> bool {
         let busy =
             !self.pending.is_empty() || self.drag.is_some() || self.tool != FrameTool::Select;

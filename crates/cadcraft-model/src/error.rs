@@ -7,40 +7,70 @@ use crate::domain::{
 };
 use std::fmt;
 
-/// Erros esperados de entrada e integridade, sem panics.
+/// Expected input and integrity errors, reported without panics.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum DomainError {
+    /// Identifier is not an RFC 4122 variant UUID v7.
     InvalidId,
+    /// Required text is empty or contains control characters.
     InvalidText,
+    /// Designation contains a forbidden segment.
     InvalidDesignation,
+    /// The named numeric field violates its value constraints.
     InvalidNumber(&'static str),
+    /// Enumeration is empty, duplicated or selects an absent choice.
     InvalidEnumeration,
+    /// An entity with the same typed ID is already registered.
     DuplicateEntity(EntityRef),
+    /// The referenced entity is not registered.
     MissingEntity(EntityRef),
+    /// External references prevent removal of the entity.
     EntityInUse(EntityRef),
+    /// A graphical occurrence with the same ID already exists.
     DuplicateRepresentation(RepresentationId),
+    /// The graphical occurrence does not exist.
     MissingRepresentation(RepresentationId),
+    /// The entity belongs to another project.
     ForeignProject {
+        /// Project identifier required by the operation.
         expected: ProjectId,
+        /// Project identifier supplied by the entity.
         found: ProjectId,
     },
+    /// A relation violates a domain invariant.
     InvalidRelation(&'static str),
+    /// A relation contains the same entity reference more than once.
     DuplicateReference(EntityRef),
+    /// A logical connection with the same ID already exists.
     DuplicateConnectionId(ConnectionId),
+    /// The logical connection does not exist.
     MissingConnection(ConnectionId),
+    /// A connection cannot link a point to itself.
     SelfConnection(ConnectionPointId),
+    /// A connection already links the supplied endpoints.
     DuplicateConnection {
+        /// Explicit source endpoint.
         source: ConnectionPointId,
+        /// Explicit target of this record or operation.
         target: ConnectionPointId,
     },
+    /// The physical terminal position does not exist.
     MissingTermination(PhysicalTermination),
+    /// Conductor designation is already used within this endpoint pair.
     DuplicateConductorDesignation(ConductorId),
+    /// Registered cores exceed the declared cable capacity.
     CableCapacityExceeded(CableId),
+    /// Core identification is already used within this cable.
     DuplicateCoreIdentification(CableId),
+    /// The cable core already has a conductor.
     CoreAlreadyAssigned(CableCoreId),
+    /// The conductor already has a cable core.
     ConductorAlreadyAssigned(ConductorId),
+    /// Conductor properties are incompatible with the cable core.
     IncompatibleCore(CableCoreId),
+    /// The terminal already belongs to a strip.
     TerminalAlreadyAssigned(TerminalId),
+    /// A conductor or occurrence still references this connection.
     ConnectionInUse(ConnectionId),
 }
 
@@ -93,4 +123,5 @@ impl fmt::Display for DomainError {
 }
 
 impl std::error::Error for DomainError {}
+/// Result of a model operation, reporting a DomainError on invalid input or relations.
 pub type Result<T> = std::result::Result<T, DomainError>;

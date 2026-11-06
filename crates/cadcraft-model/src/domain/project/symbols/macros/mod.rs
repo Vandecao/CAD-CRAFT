@@ -1,41 +1,39 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (C) 2026 Vanderlei Braga e colaboradores do CAD-CRAFT
-//! Etapa 19: capturar e inserir macros como transação única e reversível.
-//!
-//! - Capturar: a seleção (símbolos, conteúdo livre, marcadores) leva junto os
-//!   dispositivos com todas as funções e pontos, peças atribuídas, definições
-//!   de símbolo, vínculos porta→ponto, fios internos (as duas pontas na
-//!   seleção) e junções cujas rotas entram todas. O resto é relatado.
-//! - Inserir: troca todos os IDs por novos (UUID v7), dá a próxima designação
-//!   livre por prefixo a cada dispositivo, aplica a transformação, acrescenta
-//!   símbolos e peças ausentes (versão diferente: mantém a do projeto e avisa)
-//!   e confere o projeto inteiro antes de aceitar.
+//! Macro capture and insertion as single reversible transactions; start with
+//! Project::capture_macro. Capture includes selected symbols, free content and markers, devices
+//! with all functions and points, assigned parts, symbol definitions, port bindings, internal wires
+//! and junctions whose routes are all included. Exclusions are reported. Insertion assigns fresh
+//! UUID v7 IDs and free designations, transforms geometry and adds missing symbols and parts.
+//! Conflicting project versions are retained and reported. Validate the whole project before
+//! accepting.
 use super::*;
 use std::collections::{BTreeMap, BTreeSet};
 
-/// O que ficou de fora ou foi adaptado ao capturar ou inserir.
+/// Content excluded or adapted during capture or insertion.
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct MacroReport {
-    /// Fios com uma ponta fora da seleção.
+    /// Wires with one endpoint outside the selection.
     pub dropped_routes: usize,
-    /// Junções com alguma rota fora da seleção.
+    /// Junctions with any route outside the selection.
     pub dropped_junctions: usize,
-    /// Marcadores ligados a ponto fora da seleção.
+    /// Markers bound to points outside the selection.
     pub dropped_markers: usize,
-    /// Representações de engenharia física (bornes, cabos, condutores...).
+    /// Physical engineering occurrences, including terminals, cables and conductors.
     pub dropped_physical: usize,
-    /// Vínculos de ponto com borne descartados.
+    /// Discarded point-to-terminal bindings.
     pub cleared_terminals: usize,
-    /// Símbolos do projeto mantidos com versão diferente da macro.
+    /// Project symbols retained despite differing from the macro version.
     pub kept_symbols: Vec<SymbolDefinitionId>,
-    /// Peças do projeto mantidas com dados diferentes da macro.
+    /// Project parts retained despite differing from macro data.
     pub kept_parts: Vec<PartId>,
 }
 impl MacroReport {
+    /// Whether the capture or insertion report contains no exclusions or adaptations.
     pub fn is_clean(&self) -> bool {
         *self == Self::default()
     }
-    /// Texto curto em pt-BR para a interface.
+    /// Short pt-BR text for the user interface.
     pub fn summary(&self) -> String {
         let mut parts = Vec::new();
         let mut count = |n: usize, what: &str| {
@@ -79,16 +77,19 @@ impl MacroReport {
     }
 }
 
-/// Onde e como inserir: `placement` é aplicado ao conteúdo depois de levar o
-/// ponto base à origem (a translação de `placement` é o ponto de inserção).
+/// Insertion location and transform. Apply `placement` after moving the base point to the origin;
+/// its translation is the insertion point.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct MacroPlacement {
+    /// Page identifier used by this operation or filter.
     pub page: PageId,
+    /// Source-coordinate base point placed at the insertion point.
     pub base: Point2D,
+    /// Validated placement transform in page coordinates.
     pub transform: Transform2D,
 }
 
-/// Entidades escritas por uma inserção (forma final, com IDs novos).
+/// Entities written by insertion in their final form with new IDs.
 #[derive(Clone, Debug, Default, PartialEq)]
 struct Batch {
     definitions: Vec<SymbolDefinition>,
@@ -121,7 +122,7 @@ impl Batch {
     }
 }
 
-/// Resultado reversível de inserir uma macro (ou colar com fios).
+/// Reversible macro insertion or paste-with-wires result.
 #[derive(Clone, Debug, PartialEq)]
 pub struct MacroInsertDelta {
     project: ProjectId,
@@ -129,21 +130,23 @@ pub struct MacroInsertDelta {
     batch: Batch,
 }
 impl MacroInsertDelta {
+    /// Return the number of contained entries or entity changes recorded by this value.
     pub fn len(&self) -> usize {
         self.batch.len() + usize::from(self.page.is_some())
     }
+    /// Whether this collection or recorded edit contains no effective entries or changes.
     pub fn is_empty(&self) -> bool {
         self.len() == 0
     }
-    /// Página criada por uma macro de página.
+    /// Page created by a page macro.
     pub fn created_page(&self) -> Option<PageId> {
         match &self.page {
             Some(DocumentDelta::PageInserted(page)) => Some(page.id()),
             _ => None,
         }
     }
-    /// Ocorrências visíveis inseridas (símbolos, conteúdo livre, marcadores e
-    /// fios), para selecionar após a inserção.
+    /// Inserted visible occurrences, including symbols, free content, markers and wires, for selection
+    /// after insertion.
     pub fn representation_ids(&self) -> Vec<RepresentationId> {
         self.batch
             .representations
@@ -151,9 +154,11 @@ impl MacroInsertDelta {
             .map(Representation::id)
             .collect()
     }
+    /// Return the inserted device IDs.
     pub fn device_ids(&self) -> Vec<DeviceId> {
         self.batch.devices.iter().map(Device::id).collect()
     }
+    /// Return the inserted route occurrence IDs.
     pub fn route_ids(&self) -> Vec<RepresentationId> {
         self.batch.routes.iter().map(ConnectionRoute::id).collect()
     }
@@ -167,7 +172,7 @@ fn json_error(error: serde_json::Error) -> DomainError {
     DomainError::InvalidRelation("conteúdo de macro inconsistente")
 }
 
-/// Prefixo da designação (ex.: "K" de "K12").
+/// Designation prefix, such as K from K12.
 fn prefix_of(device: &str) -> String {
     let prefix = device.trim_end_matches(|c: char| c.is_ascii_digit());
     if prefix.is_empty() {
@@ -177,7 +182,7 @@ fn prefix_of(device: &str) -> String {
     }
 }
 
-/// Troca recursiva de textos (IDs) segundo o mapa.
+/// Recursively replace textual IDs according to the map.
 fn remap(value: &mut serde_json::Value, map: &BTreeMap<String, String>) {
     match value {
         serde_json::Value::String(s) => {

@@ -43,6 +43,7 @@ fn circle_point(center: Point2D, radius: f64, degrees: f64) -> Result<Point2D> {
     center.translated(c * radius, s * radius)
 }
 impl SymbolPrimitive {
+    /// Return axis-aligned geometry bounds in millimetres.
     pub fn bounds(&self) -> Result<Rect2D> {
         match self {
             Self::Line { start, end } => {
@@ -164,7 +165,7 @@ impl SymbolPrimitive {
             }
         }
     }
-    /// Forma fechada (aceita preenchimento).
+    /// Closed shape accepting fill.
     pub fn is_closed(&self) -> bool {
         matches!(
             self,
@@ -174,7 +175,7 @@ impl SymbolPrimitive {
                 | Self::Polyline { closed: true, .. }
         )
     }
-    /// Nome curto do tipo (editor e relatórios).
+    /// Short kind name for editors and reports.
     pub fn kind_label(&self) -> &'static str {
         match self {
             Self::Line { .. } => "Linha",
@@ -189,7 +190,7 @@ impl SymbolPrimitive {
             Self::DynamicText { .. } => "Texto dinâmico",
         }
     }
-    /// Mesma primitiva deslocada (mm).
+    /// The same primitive translated in millimetres.
     pub fn translated(&self, dx: f64, dy: f64) -> Result<Self> {
         let m = |p: &Point2D| p.translated(dx, dy);
         Ok(match self.clone() {

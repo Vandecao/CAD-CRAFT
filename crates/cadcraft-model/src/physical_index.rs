@@ -9,7 +9,7 @@ use std::collections::{BTreeMap, BTreeSet};
 
 type WireKey = (PhysicalTermination, PhysicalTermination, DesignationPart);
 
-/// Apenas índices derivados; nenhuma fonte persistente de relações.
+/// Derived indexes only; relations remain stored in the entities.
 #[derive(Clone, Debug, Default, PartialEq)]
 pub(crate) struct PhysicalIndex {
     names: BTreeMap<WireKey, ConductorId>,

@@ -117,7 +117,7 @@ pub(super) const TOGGLE_JUNCTION_STYLE: CommandSpec = (
 
 pub(super) const NUMBER_CONNECTIONS: CommandSpec = (
     C::NumberConnections,
-    "Numerar conexões",
+    crate::strings::NUMBER_CONNECTIONS,
     "Prévia e aplicação da numeração de fios por rede",
     T::Connections,
     "Conexões",

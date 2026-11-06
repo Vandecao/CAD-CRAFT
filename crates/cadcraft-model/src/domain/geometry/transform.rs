@@ -5,15 +5,15 @@ use super::{Point2D, Rect2D, Size2D};
 use crate::error::{DomainError, Result};
 use serde::{Deserialize, Serialize};
 
-/// `rem_euclid` pode arredondar negativos próximos de zero para o divisor.
-/// Toda orientação documental deve compartilhar a mesma forma canônica.
+/// `rem_euclid` can round negative values near zero up to the divisor. All document orientations
+/// must share this canonical form.
 pub(in crate::domain) fn canonical_degrees(degrees: f64) -> f64 {
     let angle = degrees.rem_euclid(360.0);
     if angle == 360.0 { 0.0 } else { angle }
 }
 
-/// Coordenadas locais em mm: espelhar componentes X/Y, girar anti-horário,
-/// transladar. Sem escala, pixels, inversão de Y ou restrição à folha.
+/// Local millimetre transform: mirror X/Y, rotate counterclockwise, then translate. No scaling,
+/// pixels, Y inversion or sheet restriction.
 #[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(try_from = "TransformData")]
 pub struct Transform2D {
@@ -40,6 +40,7 @@ impl TryFrom<TransformData> for Transform2D {
 }
 
 impl Transform2D {
+    /// Create a rigid placement transform, rejecting nonfinite rotation.
     pub fn new(
         translation: Point2D,
         rotation_degrees: f64,
@@ -56,21 +57,25 @@ impl Transform2D {
             mirror_y,
         })
     }
+    /// Return the translation in millimetre coordinates.
     pub fn translation(self) -> Point2D {
         self.translation
     }
+    /// Return the rotation degrees.
     pub fn rotation_degrees(self) -> f64 {
         self.rotation_degrees
     }
+    /// Whether local X coordinates are mirrored before rotation.
     pub fn mirror_x(self) -> bool {
         self.mirror_x
     }
+    /// Whether local Y coordinates are mirrored before rotation.
     pub fn mirror_y(self) -> bool {
         self.mirror_y
     }
 
     fn sin_cos(self) -> (f64, f64) {
-        // Ângulos ortogonais exatos evitam resíduos nos limites e no hit testing.
+        // Exact orthogonal angles avoid residuals in bounds and hit testing.
         match self.rotation_degrees {
             0.0 => (0.0, 1.0),
             90.0 => (1.0, 0.0),
@@ -79,6 +84,7 @@ impl Transform2D {
             _ => self.rotation_degrees.to_radians().sin_cos(),
         }
     }
+    /// Transform a local point into page coordinates, rejecting nonfinite results.
     pub fn apply(self, point: Point2D) -> Result<Point2D> {
         let x = if self.mirror_x { -point.x() } else { point.x() };
         let y = if self.mirror_y { -point.y() } else { point.y() };
@@ -86,6 +92,7 @@ impl Transform2D {
         Point2D::new(x * cos - y * sin, x * sin + y * cos)?
             .translated(self.translation.x(), self.translation.y())
     }
+    /// Transform a page point back into local coordinates, rejecting nonfinite results.
     pub fn inverse_apply(self, point: Point2D) -> Result<Point2D> {
         let p = point.translated(-self.translation.x(), -self.translation.y())?;
         let (sin, cos) = self.sin_cos();
@@ -96,8 +103,8 @@ impl Transform2D {
             if self.mirror_y { -y } else { y },
         )
     }
-    /// Etapa 19: composição `outer ∘ self` (aplica `self` e depois `outer`).
-    /// Um espelho em um só eixo inverte o sentido da rotação interna.
+    /// Compose `outer ∘ self`, applying `self` before `outer`. A single-axis mirror reverses the inner
+    /// rotation's direction.
     pub fn then(self, outer: Transform2D) -> Result<Self> {
         let reflects = outer.mirror_x != outer.mirror_y;
         let inner = if reflects {
@@ -109,7 +116,7 @@ impl Transform2D {
             self.mirror_x != outer.mirror_x,
             self.mirror_y != outer.mirror_y,
         );
-        // Espelhar os dois eixos equivale a girar 180°: forma canônica sem espelho.
+        // Mirroring both axes equals a 180° rotation; canonicalize without mirrors.
         let (rotation, mirror_x, mirror_y) = if mirror_x && mirror_y {
             (outer.rotation_degrees + inner + 180.0, false, false)
         } else {
@@ -117,10 +124,11 @@ impl Transform2D {
         };
         Self::new(outer.apply(self.translation)?, rotation, mirror_x, mirror_y)
     }
-    /// Gira 90° ou 270° (troca os eixos horizontal e vertical).
+    /// Whether rotation is 90° or 270°, swapping the horizontal and vertical axes.
     pub fn swaps_axes(self) -> bool {
         self.rotation_degrees == 90.0 || self.rotation_degrees == 270.0
     }
+    /// Return the axis-aligned bounds enclosing a transformed rectangle.
     pub fn transform_bounds(self, bounds: Rect2D) -> Result<Rect2D> {
         let a = bounds.origin();
         let b = bounds.max();

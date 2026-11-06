@@ -199,7 +199,9 @@ impl CadApp {
         let flag = cancel.clone();
         std::thread::spawn(move || {
             let result = oauth::sign_in(&host, &flag).and_then(|t| {
-                *tokens.lock().map_err(|_| "sessão indisponível")? = Some(t);
+                *tokens
+                    .lock()
+                    .map_err(|_| crate::strings::SESSION_UNAVAILABLE)? = Some(t);
                 chatgpt::list_models(&tokens)
             });
             let _ = sender.send(Message::SignedIn(result));
@@ -455,7 +457,7 @@ impl CadApp {
                 {
                     self.assistant_sign_in();
                 }
-                if busy && ui.button("Cancelar").clicked() {
+                if busy && ui.button(crate::strings::CANCEL).clicked() {
                     self.assistant.stop();
                 }
             });
@@ -669,7 +671,7 @@ fn show_entry(
                                 {
                                     actions.push((i, PanelAction::Apply(k)));
                                 }
-                                if ui.button("Descartar").clicked() {
+                                if ui.button(crate::strings::DISCARD).clicked() {
                                     actions.push((i, PanelAction::Discard(k)));
                                 }
                             });

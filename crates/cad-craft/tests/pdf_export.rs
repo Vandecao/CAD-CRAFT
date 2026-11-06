@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (C) 2026 Vanderlei Braga e colaboradores do CAD-CRAFT
-//! Etapa 21: lista de exibição e PDF multipágina com links e marcadores.
+//! Page display lists and multipage PDF with links and bookmarks.
+// Synthetic test fixtures intentionally fail fast when setup is invalid.
+#![allow(clippy::unwrap_used)]
+
 use cad_craft::display::{DisplayColor, DisplayItem};
 use cad_craft::domain::*;
 use cad_craft::pdf::{self, PaperFit, PdfOptions, PdfScope};
@@ -28,7 +31,7 @@ fn page_contents(doc: &lopdf::Document) -> Vec<Vec<u8>> {
         .map(|id| doc.get_page_content(*id))
         .collect()
 }
-/// Textos (bytes WinAnsi) dos operadores Tj de um conteúdo.
+/// Read WinAnsi text bytes from PDF Tj operators.
 fn shown(content: &[u8]) -> Vec<Vec<u8>> {
     lopdf::content::Content::decode(content)
         .unwrap()
@@ -45,8 +48,8 @@ fn contains(haystack: &[u8], needle: &[u8]) -> bool {
     haystack.windows(needle.len()).any(|w| w == needle)
 }
 
-/// Critério 1: a lista de exibição tem moldura, textos especiais, designação,
-/// número do fio, referência e imagem; a referência do contato leva à bobina.
+/// Display lists contain frames, special text, designations, wire numbers, references and
+/// images; a contact reference leads to its coil.
 #[test]
 fn display_list_reproduces_the_sheet() {
     let f = fixture("Painel CCM");
@@ -61,7 +64,7 @@ fn display_list_reproduces_the_sheet() {
             .iter()
             .any(|i| matches!(i, DisplayItem::Image { .. }))
     );
-    // Bobina principal: espelho com os pontos do contato e a referência da página 2.
+    // The principal coil shows contact points and the page-2 reference in its mirror.
     let contact_ref = f.project.short_reference(f.pages[1], p(60.0, 160.0));
     assert!(
         first
@@ -80,7 +83,7 @@ fn display_list_reproduces_the_sheet() {
         .map(|(_, target)| target)
         .collect();
     assert!(links.contains(&f.coil), "{links:?}");
-    // Referências em cor própria; a tela usa os mesmos textos.
+    // References use their own color; the screen uses the same text.
     assert!(list.texts().any(|t| t.color == DisplayColor::Reference));
     let references: Vec<_> = f
         .project
@@ -91,8 +94,8 @@ fn display_list_reproduces_the_sheet() {
     assert!(references.contains(&coil_ref));
 }
 
-/// Critérios 1, 2 e 4: três páginas A3, leitura independente, fonte e
-/// imagem declaradas, marcadores documento → páginas.
+/// Verify three A3 pages independently, including fonts, images and document/page bookmark
+/// hierarchy.
 #[test]
 fn pdf_has_three_real_size_pages_fonts_images_and_bookmarks() {
     let f = fixture("Painel CCM");
@@ -125,7 +128,7 @@ fn pdf_has_three_real_size_pages_fonts_images_and_bookmarks() {
         })
     });
     assert!(helvetica);
-    // Marcadores: raiz → documento → 3 páginas, com os títulos certos.
+    // Bookmarks form root, document and three correctly titled pages.
     let catalog = doc.catalog().unwrap();
     let outlines = catalog.get(b"Outlines").unwrap().as_reference().unwrap();
     let root = doc.get_dictionary(outlines).unwrap();
@@ -151,8 +154,8 @@ fn pdf_has_three_real_size_pages_fonts_images_and_bookmarks() {
     assert!(info.get(b"CreationDate").is_ok());
 }
 
-/// Critério 3: links do contato para a bobina e da bobina (espelho) para o
-/// contato; interrupções entre si; destino fora do alcance não vira link.
+/// Link contacts and coils in both directions and pair interruptions; omit out-of-scope
+/// destinations.
 #[test]
 fn links_follow_cross_references_and_are_omitted_outside_scope() {
     let f = fixture("Links");
@@ -179,14 +182,14 @@ fn links_follow_cross_references_and_are_omitted_outside_scope() {
             })
             .collect()
     };
-    // Página 1 (bobina) → página 2 (contato); página 2 → páginas 1 e 3.
+    // The page-1 coil links to the page-2 contact, which links to pages 1 and 3.
     assert!(destinations(pages[0]).contains(&pages[1]));
     let from_second = destinations(pages[1]);
     assert!(from_second.contains(&pages[0]) && from_second.contains(&pages[2]));
     assert!(destinations(pages[2]).contains(&pages[1]));
     assert!(out.report.links >= 4);
     assert_eq!(out.report.omitted_links, 0);
-    // Só a página 2: os destinos 1 e 3 ficam fora e são relatados.
+    // When exporting only page 2, destinations on pages 1 and 3 are omitted and reported.
     let partial = all(
         PdfOptions {
             scope: PdfScope::Pages(vec![f.pages[1]]),
@@ -201,8 +204,7 @@ fn links_follow_cross_references_and_are_omitted_outside_scope() {
     let _ = f.contact;
 }
 
-/// Critérios 5 e 6: acentos em WinAnsi; caractere fora da fonte relatado;
-/// preto e branco sem cor RGB no conteúdo.
+/// Keep WinAnsi accents, report unsupported glyphs and omit RGB colors in monochrome output.
 #[test]
 fn accents_are_kept_unsupported_characters_reported_and_monochrome_has_no_rgb() {
     let f = fixture("Ação elétrica Ω");
@@ -211,7 +213,7 @@ fn accents_are_kept_unsupported_characters_reported_and_monochrome_has_no_rgb() 
     assert!(color.report.summary().contains('Ω'));
     let doc = lopdf::Document::load_mem(&color.bytes).unwrap();
     let contents = page_contents(&doc);
-    // "Ação elétrica ?" em WinAnsi: ç = E7, ã = E3, é = E9.
+    // In the WinAnsi sample, cedilla is E7, nasal a is E3 and acute e is E9.
     let expected: Vec<u8> = [b"A".as_slice(), &[0xE7, 0xE3], b"o el", &[0xE9], b"trica ?"].concat();
     assert!(
         shown(&contents[0]).contains(&expected),
@@ -236,7 +238,7 @@ fn accents_are_kept_unsupported_characters_reported_and_monochrome_has_no_rgb() 
     }
 }
 
-/// Impressão: papel A4 com "ajustar" — página A4 deitada, conteúdo reduzido.
+/// Fit-to-paper printing uses landscape A4 and scales the content down.
 #[test]
 fn paper_fit_places_the_sheet_on_the_chosen_paper() {
     let f = fixture("Papel");
@@ -278,8 +280,8 @@ fn paper_fit_places_the_sheet_on_the_chosen_paper() {
     ));
 }
 
-/// Critério 8: 200 páginas com moldura, 30 símbolos e 30 fios por página.
-/// Meta: < 10 s no Release; aqui o limite é folgado (Debug).
+/// Export 200 framed pages with 30 symbols and wires each; Release target is ten seconds, with a
+/// generous Debug bound.
 #[test]
 fn two_hundred_pages_export_within_the_time_limit() {
     let project = scale_project(200);
@@ -288,7 +290,7 @@ fn two_hundred_pages_export_within_the_time_limit() {
     let out = all(PdfOptions::default(), &project);
     let elapsed = start.elapsed();
     assert_eq!(out.report.pages, 200);
-    println!(
+    eprintln!(
         "PDF: 200 páginas, {:.1} MiB, {:?}",
         out.bytes.len() as f64 / 1_048_576.0,
         elapsed

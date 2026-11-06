@@ -7,7 +7,7 @@ use super::*;
 pub(super) struct Entity {
     pub(super) kind: String,
     pub(super) groups: Vec<(i32, String)>,
-    /// Vértices de `POLYLINE` e atributos de `INSERT`.
+    /// `POLYLINE` vertices and `INSERT` attributes.
     pub(super) children: Vec<Entity>,
 }
 impl Entity {
@@ -118,8 +118,8 @@ pub(super) fn parse(bytes: &[u8]) -> ImportResult<Parsed> {
     Ok(parsed)
 }
 
-/// Agrupa pares em entidades; `POLYLINE`/`INSERT` recebem os filhos até
-/// `SEQEND`, `BLOCK` recebe as entidades até `ENDBLK`.
+/// Groups pairs into entities; `POLYLINE`/`INSERT` collect children through
+/// `SEQEND`, and `BLOCK` collects entities through `ENDBLK`.
 fn entities(body: &[(i32, String)]) -> ImportResult<Vec<Entity>> {
     let mut flat: Vec<Entity> = Vec::new();
     for (c, v) in body {

@@ -16,7 +16,7 @@ pub(super) fn convert(
         return Err(fail("projeto sem folhas"));
     }
 
-    // Folhas e molduras.
+    // Sheets and frames.
     let mut pages = vec![];
     let mut frames: Vec<(Sheet, Option<String>, FrameTemplateId)> = vec![];
     let mut instances: Vec<Instance> = vec![];
@@ -113,7 +113,7 @@ pub(super) fn convert(
                 .flat_map(|l| l.children_named("link_uuid"))
                 .filter_map(|l| l.attr("uuid").map(trim_uuid))
                 .collect();
-            // Textos dinâmicos da ocorrência (soltos ou em grupos).
+            // Occurrence dynamic texts, either standalone or grouped.
             let dynamic: Vec<&Element> = e
                 .child("dynamic_texts")
                 .into_iter()

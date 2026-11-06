@@ -86,9 +86,9 @@ impl CadApp {
         self.log(Level::Info, "Sessão atualizada.");
     }
 
-    // ------------------------------------------------ Etapa 12: arquivos
+    // Project files.
 
-    /// `Ok(false)`: aguardando a decisão sobre a trava; a sessão não mudou.
+    /// Ok(false) means a lock decision is pending; the session has not changed.
     pub(crate) fn open_project_file(
         &mut self,
         path: &std::path::Path,
@@ -161,7 +161,7 @@ impl CadApp {
             self.request(PendingAction::Open(path), ctx);
         }
     }
-    /// Salva no arquivo associado; sem arquivo gravável, comporta-se como "Salvar como".
+    /// Save the associated file; use Save As if no writable file is attached.
     pub fn save_project(&mut self) -> bool {
         match &self.session.file {
             Some(file) if !file.read_only => {
@@ -222,15 +222,14 @@ impl CadApp {
         self.log(Level::Info, format!("Projeto salvo em {}.", path.display()));
         true
     }
-    /// Cópia de recuperação periódica enquanto houver alterações não salvas.
+    /// Periodically save a recovery copy while unsaved changes exist.
     pub fn autosave(&mut self) {
         let interval = self.files.autosave_interval;
         let due = self
             .files
             .last_autosave
             .is_none_or(|t| t.elapsed() >= interval);
-        // Sair confirmado já descartou a cópia: os quadros finais antes do
-        // fechamento não podem gravá-la de novo.
+        // Confirmed exit already discarded the recovery copy; final frames must not recreate it.
         if !self.session.dirty || !due || self.chrome.exit_confirmed {
             return;
         }

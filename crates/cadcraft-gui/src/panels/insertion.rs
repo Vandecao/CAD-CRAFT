@@ -21,7 +21,7 @@ pub(crate) struct InsertionState {
     recent: Vec<RepresentationTarget>,
     symbols: SymbolBrowserState,
 }
-/// Etapa 12: o que a inserção cria ou associa.
+/// What insertion creates or associates.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 enum Association {
     #[default]
@@ -35,7 +35,7 @@ struct SymbolBrowserState {
     category: Option<String>,
     selected: Option<SymbolDefinitionId>,
     association: Association,
-    /// Vazio usa o prefixo sugerido pelo símbolo.
+    /// Empty input uses the symbol's suggested prefix.
     prefix: String,
     device: Option<DeviceId>,
     function: Option<FunctionId>,
@@ -45,7 +45,7 @@ struct SymbolBrowserState {
     mirror_y: bool,
     cached_filter: Option<(String, Option<String>)>,
     rows: Vec<std::sync::Arc<SymbolDefinition>>,
-    /// Etapa 17: projeto + biblioteca externa + embutidos.
+    /// Project, external library and built-in symbols.
     catalog: Vec<std::sync::Arc<SymbolDefinition>>,
     catalog_revision: Option<(u64, u64)>,
 }
@@ -96,13 +96,12 @@ impl InsertionState {
     }
 }
 impl CadApp {
-    /// Etapa 17: símbolo escolhido no Centro de inserção.
+    /// Symbol chosen in the insertion centre.
     pub(crate) fn selected_library_symbol(&self) -> Option<SymbolDefinitionId> {
         self.panels_state.insertion.symbols.selected.clone()
     }
     pub(crate) fn show_insertion(&mut self, ui: &mut Ui) {
-        // Etapa 27: the "Assistente" tab shares the panel with the insertion
-        // centre; both tabs sit in the header row, taking no extra height.
+        // The assistant tab shares the panel with the insertion centre; both tabs occupy the header row without extra height.
         let open = &mut self.assistant.open;
         if !super::header_with(ui, &mut self.preferences, PanelId::Insertion, |ui| {
             ui.spacing_mut().item_spacing.x = 2.0;
@@ -387,7 +386,7 @@ impl CadApp {
                     .device
                     .and_then(|id| self.session.project()?.device(id))
                     .map_or_else(
-                        || "escolha o dispositivo".to_owned(),
+                        || crate::strings::SELECT_DEVICE.to_owned(),
                         |dev| format!("função em {}", dev.designation()),
                     ),
                 Association::ExistingFunction => browser
@@ -658,7 +657,7 @@ mod tests {
     use super::*;
     #[test]
     fn symbol_search_combines_name_and_category_and_caches_unchanged_filter() {
-        // Etapa 17: o catálogo vem da sessão (projeto + biblioteca + embutidos).
+        // The session supplies the catalog: project, library and built-in symbols.
         let mut b = SymbolBrowserState {
             catalog: SymbolLibrary::builtin()
                 .definitions()

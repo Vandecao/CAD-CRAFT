@@ -84,7 +84,7 @@ pub(super) const VALIDATE: CommandSpec = (
 
 pub(super) const SETTINGS: CommandSpec = (
     C::Settings,
-    "Configurações",
+    crate::strings::SETTINGS,
     "Preferências visuais locais independentes do projeto",
     T::Tools,
     "Aplicativo",

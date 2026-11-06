@@ -1,5 +1,7 @@
 # Plano — publicação em código aberto e reorganização (R0 a R6)
 
+**Conclusão técnica em 2026-11-06:** R0–R6 executados. R6 validado com 707 testes Rust, 6 exemplos e 16 PowerShell; rustdoc sem avisos, Release e teste rápido no app aprovados. Relatório: [R6_LIMPEZA.md](../reports/R6_LIMPEZA.md). R4/R5 publicados; R6 aguarda revisão e OK de versionamento nos dois repositórios. Etapa 28 não iniciada. O planejamento original e suas decisões estão preservados abaixo.
+
 **Estado: APROVADO pelo usuário em 2026-11-05 ("Aprovo o plano"), com as decisões 1 a 4 recomendadas:**
 - ordem R0 → publicação → R1 → Etapa 27 → R2…R6;
 - licença `GPL-3.0-or-later`;

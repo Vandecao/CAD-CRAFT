@@ -1,11 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (C) 2026 Vanderlei Braga e colaboradores do CAD-CRAFT
-//! Etapas 21–22: diálogo Exportar PDF / Imprimir / Exportar DXF / Exportar
-//! DWG. A geração roda numa thread separada (progresso e cancelamento);
-//! imprimir gera um PDF temporário e o entrega ao sistema; DWG passa pelo
-//! conversor externo configurado. O acesso ao sistema fica atrás de
-//! [`SystemShell`], substituível nos testes (que nunca abrem nem imprimem
-//! nada de verdade).
+//! PDF, print, DXF and DWG dialogs. Start with the export state: a worker thread generates output with progress and cancellation. Printing hands a temporary PDF to the system; DWG uses the configured external converter. SystemShell isolates OS access and is replaced in tests, which never open or print real files.
 use crate::app::{CadApp, Level};
 use crate::dwg;
 use crate::error::{GuiError, GuiResult};
@@ -23,27 +18,27 @@ use std::time::Duration;
 pub enum PdfMode {
     Export,
     Print,
-    /// Etapa 22: um DXF R12 por página numa pasta.
+    /// One R12 DXF per page in a directory.
     Dxf,
-    /// Etapa 22: DXF convertido em DWG pelo conversor externo.
+    /// DXF converted to DWG by the external converter.
     Dwg,
 }
 
 impl PdfMode {
     fn title(self) -> &'static str {
         match self {
-            Self::Export => "Exportar PDF",
-            Self::Print => "Imprimir",
-            Self::Dxf => "Exportar DXF",
-            Self::Dwg => "Exportar DWG",
+            Self::Export => crate::strings::EXPORT_PDF,
+            Self::Print => crate::strings::PRINT,
+            Self::Dxf => crate::strings::EXPORT_DXF,
+            Self::Dwg => crate::strings::EXPORT_DWG,
         }
     }
     fn action(self) -> &'static str {
         match self {
-            Self::Export => "Exportar",
+            Self::Export => crate::strings::EXPORT,
             Self::Print => "Imprimir agora",
-            Self::Dxf => "Exportar DXF",
-            Self::Dwg => "Exportar DWG",
+            Self::Dxf => crate::strings::EXPORT_DXF,
+            Self::Dwg => crate::strings::EXPORT_DWG,
         }
     }
     fn produced(self) -> &'static str {
@@ -55,13 +50,13 @@ impl PdfMode {
     }
 }
 
-/// Abrir e imprimir arquivos pelo sistema operacional.
+/// Open and print files through the operating system.
 pub trait SystemShell: Send {
     fn open(&mut self, path: &Path) -> Result<(), String>;
     fn print(&mut self, path: &Path) -> Result<(), String>;
 }
 
-/// Leitor de PDF padrão do sistema (verbo "imprimir" no Windows).
+/// System-default PDF reader, using the print verb on Windows.
 pub struct NativeShell;
 impl SystemShell for NativeShell {
     fn open(&mut self, path: &Path) -> Result<(), String> {
@@ -71,7 +66,7 @@ impl SystemShell for NativeShell {
     }
     fn print(&mut self, path: &Path) -> Result<(), String> {
         let mut command = if cfg!(windows) {
-            // Aspas simples do PowerShell: duplicar as do caminho.
+            // Escape single quotes in the path by doubling them for PowerShell.
             let quoted = path.display().to_string().replace('\'', "''");
             let mut c = std::process::Command::new("powershell");
             c.args([
@@ -108,13 +103,13 @@ pub enum PaperChoice {
 
 enum Message {
     Progress(usize, usize),
-    /// Resumo do relatório ou erro.
+    /// Report summary or error.
     Done(GuiResult<String>),
 }
 
 struct Job {
     mode: PdfMode,
-    /// Arquivo (PDF) ou pasta (DXF/DWG) produzidos.
+    /// Produced PDF file or DXF/DWG directory.
     path: PathBuf,
     receiver: mpsc::Receiver<Message>,
     cancel: Arc<AtomicBool>,
@@ -130,12 +125,12 @@ pub struct PdfWindow {
     pub open_after: bool,
     pub paper: PaperChoice,
     pub fit: PaperFit,
-    /// Etapa 22: argumento de versão do ODA File Converter (`ACAD2018`…).
+    /// ODA File Converter version argument, such as ACAD2018.
     pub dwg_version: &'static str,
-    /// Etapa 22: tempo limite do conversor DWG.
+    /// DWG converter timeout.
     pub dwg_timeout: Duration,
     job: Option<Job>,
-    /// Resultado da última geração (relatório ou erro).
+    /// Latest generation result: report or error.
     pub result: Option<Result<String, String>>,
     pub shell: Box<dyn SystemShell>,
 }
@@ -192,7 +187,7 @@ impl PdfWindow {
         }
     }
 
-    /// Recebe mensagens da thread; ao terminar, abre/imprime e guarda o relatório.
+    /// Receive worker messages; open or print completed output and retain its report.
     fn poll(&mut self, ctx: &Context) -> Option<(Level, String)> {
         let job = self.job.as_mut()?;
         let mut finished = None;
@@ -247,7 +242,7 @@ impl PdfWindow {
     }
 }
 
-/// Trabalho da thread: recebe o callback de progresso e devolve o resumo.
+/// Worker task accepting a progress callback and returning the summary.
 type Work = Box<dyn FnOnce(&mut dyn FnMut(usize, usize) -> bool) -> GuiResult<String> + Send>;
 
 fn error_text(e: PdfError) -> GuiError {
@@ -343,7 +338,7 @@ impl CadApp {
             .default_width(420.0)
             .show(ctx, |ui| {
                 let Some(project) = self.session.project() else {
-                    ui.weak("Nenhum projeto aberto.");
+                    ui.weak(crate::strings::NO_OPEN_PROJECT_NOTICE);
                     return;
                 };
                 let w = &mut self.pdf;

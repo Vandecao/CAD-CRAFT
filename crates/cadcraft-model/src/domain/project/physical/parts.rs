@@ -4,6 +4,7 @@
 use super::*;
 use std::collections::BTreeSet;
 
+/// Entities created while assigning a catalog part to a component.
 #[derive(Clone, Debug, PartialEq)]
 pub struct PartAssignmentDelta {
     part: Part,
@@ -12,41 +13,55 @@ pub struct PartAssignmentDelta {
     functions: Vec<Function>,
     points: Vec<ConnectionPoint>,
 }
+/// Before and after copies of an updated project catalog part.
 #[derive(Clone, Debug, PartialEq)]
 pub struct PartUpdateDelta {
     before: Part,
     after: Part,
     components: Vec<(Component, Component)>,
 }
+/// Recorded removal of a component part assignment.
 #[derive(Clone, Debug, PartialEq)]
 pub struct PartRemovalDelta {
     component: Component,
     removed_part: Option<Part>,
 }
 impl PartAssignmentDelta {
+    /// Return the component identifier.
     pub fn component_id(&self) -> ComponentId {
         self.component.id()
     }
+    /// Return the number of contained entries or entity changes recorded by this value.
     pub fn len(&self) -> usize {
         2 + self.functions.len() + self.points.len()
     }
+    /// Whether this collection or recorded edit contains no effective entries or changes.
     pub fn is_empty(&self) -> bool {
         false
     }
 }
 
+/// Derived bill-of-materials row with part identity and quantity.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct BomRow {
+    /// Associated logical device.
     pub device: DeviceId,
+    /// Display designation of the associated device.
     pub device_designation: String,
+    /// Stable catalog identity of the assigned part.
     pub part_id: PartId,
+    /// Declared manufacturer.
     pub manufacturer: String,
+    /// Stable rule or catalog code.
     pub code: String,
+    /// Descriptive text.
     pub description: String,
+    /// Number of assigned physical part units.
     pub quantity: u32,
 }
 
 impl Project {
+    /// Update project catalog copies as a validated batch, preserving reversible changes.
     pub fn update_parts(&mut self, parts: Vec<Part>) -> Result<Vec<PartUpdateDelta>> {
         let mut candidate = self.clone();
         let mut seen = BTreeSet::new();
@@ -65,6 +80,8 @@ impl Project {
         *self = candidate;
         Ok(deltas)
     }
+    /// Replay the recorded part updates change; forward reapplies it and false restores the prior
+    /// state. Reject a mismatched expected state.
     pub fn restore_part_updates(
         &mut self,
         deltas: &[PartUpdateDelta],
@@ -83,15 +100,17 @@ impl Project {
         *self = candidate;
         Ok(())
     }
+    /// Find the part by its stable identifier; return None when absent.
     pub fn part(&self, id: &PartId) -> Option<&Part> {
         self.parts.get(id)
     }
+    /// Iterate parts without exposing mutable access.
     pub fn parts(&self) -> impl Iterator<Item = &Part> {
         self.parts.values()
     }
 
-    /// Atualiza a cópia interna, preservando as atribuições. Uma função
-    /// representada que desapareceria do modelo impede a troca.
+    /// Update the internal copy while preserving assignments. Reject if a represented function would
+    /// disappear.
     pub fn update_part(&mut self, after: Part) -> Result<PartUpdateDelta> {
         after.validate()?;
         let before = self
@@ -166,6 +185,8 @@ impl Project {
         self.restore_part_update(&delta, true)?;
         Ok(delta)
     }
+    /// Replay the recorded part update change; forward reapplies it and false restores the prior
+    /// state. Reject a mismatched expected state.
     pub fn restore_part_update(&mut self, delta: &PartUpdateDelta, forward: bool) -> Result<()> {
         let (expected, replacement) = if forward {
             (&delta.before, &delta.after)
@@ -198,6 +219,7 @@ impl Project {
         *self = candidate;
         Ok(())
     }
+    /// Remove a component part assignment and retain its state for exact replay.
     pub fn remove_part_assignment(
         &mut self,
         component_id: ComponentId,
@@ -230,6 +252,8 @@ impl Project {
         self.restore_part_removal(&delta, true)?;
         Ok(delta)
     }
+    /// Replay the recorded part removal change; forward reapplies it and false restores the prior
+    /// state. Reject a mismatched expected state.
     pub fn restore_part_removal(&mut self, delta: &PartRemovalDelta, forward: bool) -> Result<()> {
         let mut candidate = self.clone();
         if forward {
@@ -254,7 +278,7 @@ impl Project {
         Ok(())
     }
 
-    /// Associa uma peça, criando somente as funções e pontos ausentes.
+    /// Assign a part, creating only missing functions and points.
     pub fn assign_part(
         &mut self,
         device_id: DeviceId,
@@ -355,6 +379,8 @@ impl Project {
         Ok(delta)
     }
 
+    /// Replay the recorded part assignment change; forward reapplies it and false restores the prior
+    /// state. Reject a mismatched expected state.
     pub fn restore_part_assignment(
         &mut self,
         delta: &PartAssignmentDelta,
@@ -415,6 +441,7 @@ impl Project {
         Ok(())
     }
 
+    /// Derive bill-of-materials rows from current component part assignments.
     pub fn bom_rows(&self) -> Vec<BomRow> {
         let mut rows: BTreeMap<(DeviceId, PartId), BomRow> = BTreeMap::new();
         for component in self.components.values() {

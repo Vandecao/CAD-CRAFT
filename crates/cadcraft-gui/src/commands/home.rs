@@ -8,7 +8,7 @@ use super::{
 
 pub(super) const EXPORT_LIST: CommandSpec = (
     C::ExportList,
-    "Exportar lista",
+    crate::strings::EXPORT_LIST,
     "Exporta relatório tabular em CSV ou XLSX",
     T::Home,
     "Sessão",
@@ -63,7 +63,7 @@ pub(super) const DEMO: CommandSpec = (
 
 pub(super) const IMPORT_QET: CommandSpec = (
     C::ImportQet,
-    "Importar projeto QElectroTech",
+    crate::strings::IMPORT_QET_PROJECT,
     "Cria um projeto novo a partir de um .qet do QElectroTech, com relatório do que foi convertido",
     T::Home,
     "Sessão",
@@ -107,7 +107,7 @@ pub(super) const SAVE_PROJECT: CommandSpec = (
 
 pub(super) const SAVE_PROJECT_AS: CommandSpec = (
     C::SaveProjectAs,
-    "Salvar como",
+    crate::strings::SAVE_AS,
     "Grava o projeto em um novo arquivo .cadcraft (Ctrl+Shift+S)",
     T::Home,
     "Sessão",
@@ -118,7 +118,7 @@ pub(super) const SAVE_PROJECT_AS: CommandSpec = (
 
 pub(super) const OPEN_PROJECT: CommandSpec = (
     C::OpenProject,
-    "Abrir projeto",
+    crate::strings::OPEN_PROJECT,
     "Abre um projeto .cadcraft ou um snapshot técnico JSON (formato v0) (Ctrl+O)",
     T::Home,
     "Sessão",
@@ -129,7 +129,7 @@ pub(super) const OPEN_PROJECT: CommandSpec = (
 
 pub(super) const EXPORT_PDF: CommandSpec = (
     C::ExportPdf,
-    "Exportar PDF",
+    crate::strings::EXPORT_PDF,
     "PDF vetorial multipágina com links nas referências cruzadas e marcadores",
     T::Home,
     "Sessão",
@@ -140,7 +140,7 @@ pub(super) const EXPORT_PDF: CommandSpec = (
 
 pub(super) const EXPORT_DXF: CommandSpec = (
     C::ExportDxf,
-    "Exportar DXF",
+    crate::strings::EXPORT_DXF,
     "DXF R12 em mm, um arquivo por página, camadas por categoria",
     T::Home,
     "Sessão",
@@ -151,7 +151,7 @@ pub(super) const EXPORT_DXF: CommandSpec = (
 
 pub(super) const EXPORT_DWG: CommandSpec = (
     C::ExportDwg,
-    "Exportar DWG",
+    crate::strings::EXPORT_DWG,
     "DWG pelo conversor externo configurado (ODA File Converter)",
     T::Home,
     "Sessão",
@@ -162,7 +162,7 @@ pub(super) const EXPORT_DWG: CommandSpec = (
 
 pub(super) const PRINT: CommandSpec = (
     C::Print,
-    "Imprimir",
+    crate::strings::PRINT,
     "Imprime pelo leitor de PDF do sistema (PDF temporário)",
     T::Home,
     "Sessão",
@@ -173,7 +173,7 @@ pub(super) const PRINT: CommandSpec = (
 
 pub(super) const NUMBER_PAGES: CommandSpec = (
     C::NumberPages,
-    "Numerar páginas",
+    crate::strings::NUMBER_PAGES,
     "Prévia e aplicação da numeração das páginas do documento",
     T::Home,
     "Página",
@@ -195,7 +195,7 @@ pub(super) const MACRO_PAGE: CommandSpec = (
 
 pub(super) const NEW_DOCUMENT: CommandSpec = (
     C::NewDocument,
-    "Novo documento",
+    crate::strings::NEW_DOCUMENT,
     "Cria um documento usando o Core",
     T::Home,
     "Página",
@@ -206,7 +206,7 @@ pub(super) const NEW_DOCUMENT: CommandSpec = (
 
 pub(super) const NEW_PAGE: CommandSpec = (
     C::NewPage,
-    "Nova página",
+    crate::strings::NEW_PAGE,
     "Cria uma folha no documento selecionado",
     T::Home,
     "Página",
@@ -253,7 +253,7 @@ pub(super) const SYNC_SELECTION: CommandSpec = (
     "Sincronizar seleção",
     "Seleciona no navegador a página aberta",
     T::Home,
-    "Procurar",
+    crate::strings::BROWSE,
     R::ActivePage,
     I::Check,
     "seleção",
@@ -275,7 +275,7 @@ pub(super) const FIND_PAGES: CommandSpec = (
     "Procurar páginas",
     "Abre e foca o filtro de páginas/documentos",
     T::Home,
-    "Procurar",
+    crate::strings::BROWSE,
     R::Always,
     I::Search,
     "buscar filtro pesquisa",
@@ -344,7 +344,7 @@ pub(super) const FREE_DUPLICATE: FreeCommandSpec = (
 
 pub(super) const FREE_DELETE_FREE: FreeCommandSpec = (
     C::DeleteFree,
-    "Excluir",
+    crate::strings::DELETE,
     T::Home,
     "Área de transferência",
     R::GraphicSelection,
@@ -360,7 +360,7 @@ pub(super) const GROUP_AREA_DE_TRANSFERENCIA: PlannedGroupSpec = (
         "Colar",
         "Recortar",
         "Copiar",
-        "Excluir",
+        crate::strings::DELETE,
         "Copiar formato",
         "Atribuir formato",
     ],

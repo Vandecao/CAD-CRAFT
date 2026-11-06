@@ -19,15 +19,15 @@ pub enum GraphicEdit {
         target: Option<RepresentationTarget>,
         transform: Transform2D,
     },
-    /// Etapa 12: inserção que cria dispositivo/função/pontos na mesma transação.
+    /// Insertion creates the device, function and points in one transaction.
     PlaceSymbol {
         definition: SymbolDefinitionId,
         plan: crate::interaction::DevicePlan,
         transform: Transform2D,
     },
-    /// Etapa 12: criação, exclusão e reordenação de documentos/páginas.
+    /// Create, delete and reorder documents and pages.
     Document(DocumentEdit),
-    /// Etapa 13: molduras, atribuição por página e metadados.
+    /// Frames, page assignments and metadata.
     Frame(FrameEdit),
     Undo,
     Redo,

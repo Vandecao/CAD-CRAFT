@@ -62,6 +62,7 @@ impl Project {
         Ok((available / 6.0).floor() as usize)
     }
 
+    /// Calculate report pagination without creating or changing project pages.
     pub fn preview_report(&self, request: &ReportRequest) -> Result<ReportPreview> {
         self.require(EntityRef::Document(request.document))?;
         let table = self.report_table(request.kind, &request.filter)?;
@@ -76,6 +77,7 @@ impl Project {
         })
     }
 
+    /// Generate report pages in one validated reversible operation.
     pub fn generate_report(&mut self, request: &ReportRequest) -> Result<ReportDelta> {
         let preview = self.preview_report(request)?;
         let group = ReportId::new();
@@ -111,6 +113,7 @@ impl Project {
         Ok(delta)
     }
 
+    /// Whether current report data differs from the stored report pages.
     pub fn report_stale(&self, group: ReportId) -> Result<bool> {
         let pages: Vec<_> = self
             .pages
@@ -134,6 +137,7 @@ impl Project {
         Ok(pages.len() != needed)
     }
 
+    /// Regenerate one report group and return the reversible page changes.
     pub fn update_report(&mut self, group: ReportId) -> Result<ReportDelta> {
         let mut before: Vec<_> = self
             .pages
@@ -185,11 +189,12 @@ impl Project {
         Ok(delta)
     }
 
+    /// Regenerate the selected report groups as one reversible page change.
     pub fn update_reports(&mut self, groups: &[ReportId]) -> Result<ReportDelta> {
         let mut candidate = self.clone();
         let unique: BTreeSet<_> = groups.iter().copied().collect();
-        // Um índice pode incluir páginas criadas por outro relatório do lote.
-        // Recalcular até que todos os grupos tenham a contagem final.
+        // An index can contain pages created by another report in the batch. Recompute until all groups
+        // have their final count.
         for _ in 0..=unique.len() {
             let mut changed = false;
             for group in &unique {
@@ -229,6 +234,8 @@ impl Project {
         Ok(delta)
     }
 
+    /// Replay the recorded report change; forward reapplies it and false restores the prior state.
+    /// Reject a mismatched expected state.
     pub fn restore_report(&mut self, delta: &ReportDelta, forward: bool) -> Result<()> {
         self.check_project(delta.project)?;
         let (expected, next) = if forward {
@@ -257,6 +264,7 @@ impl Project {
         Ok(())
     }
 
+    /// Derive report columns and filtered data rows without changing the project.
     pub fn report_table(&self, kind: ReportKind, filter: &ReportFilter) -> Result<ReportTable> {
         if let Some(document) = filter.document {
             self.require(EntityRef::Document(document))?;

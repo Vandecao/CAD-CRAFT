@@ -2,12 +2,12 @@
 // Copyright (C) 2026 Vanderlei Braga e colaboradores do CAD-CRAFT
 //! ASCII DXF frame exchange; start at `import` or `export` and follow the phase modules.
 //!
-//! Leitura: `LINE`, `LWPOLYLINE`/`POLYLINE` (com arcos por bulge),
-//! `CIRCLE`, `ARC`, `TEXT`, `MTEXT` simples, `ATTDEF`/`ATTRIB` e blocos
-//! (`INSERT` expandido). Textos `<<código>>` ou `%{código}` e atributos viram
-//! textos especiais. Escrita: DXF R12 (AC1009) em mm; a espessura vai no nome
-//! da camada (`CAD-CRAFT 0.35mm`) e área útil/zonas num comentário `999`,
-//! para que o CAD-CRAFT reimporte a moldura sem perdas de geometria.
+//! Reads `LINE`, `LWPOLYLINE`/`POLYLINE` (including bulge arcs),
+//! `CIRCLE`, `ARC`, `TEXT`, simple `MTEXT`, `ATTDEF`/`ATTRIB` and blocks
+//! with expanded `INSERT`s. `<<code>>` or `%{code}` texts and attributes become
+//! special texts. Writes DXF R12 (AC1009) in mm; stroke width is encoded in
+//! the layer name (`CAD-CRAFT 0.35mm`), with usable area and zones in a `999` comment,
+//! allowing CAD-CRAFT to reimport frames without losing geometry.
 use crate::build::{Builder, round3};
 use crate::{
     ImportReport, ImportResult, ImportedFrame, check_size, fail, parse_special_code, qet_variable,
@@ -30,9 +30,9 @@ const WATERMARK_LAYER: &str = "CAD-CRAFT marca d'agua";
 #[derive(Debug, Clone)]
 pub struct DxfImportOptions {
     pub name: String,
-    /// mm por unidade do desenho; `None` = do cabeçalho (`$INSUNITS`) ou mm.
+    /// Millimetres per drawing unit; `None` uses `$INSUNITS`, falling back to mm.
     pub unit_mm: Option<f64>,
-    /// Folha imposta; `None` = limites do desenho ou envoltória.
+    /// Explicit sheet; `None` uses drawing limits or the bounding box.
     pub sheet: Option<Size2D>,
 }
 impl DxfImportOptions {

@@ -20,11 +20,9 @@ mod geometry;
 mod input;
 mod state;
 
-pub use files::load_image_file;
 pub(crate) use files::read_external_frame;
 use files::*;
 use forms::*;
-pub use geometry::element_distance;
 use geometry::*;
 use state::*;
 pub use state::{FrameEditor, FrameTool};

@@ -30,7 +30,7 @@ impl Default for EdzLimits {
         }
     }
 }
-/// Identidade estável e segura para o catálogo (não é caminho de disco).
+/// Stable, safe catalog identity, distinct from a filesystem path.
 pub(super) fn identifier(raw: &str) -> String {
     let name: String = raw
         .chars()
@@ -43,7 +43,7 @@ pub(super) fn identifier(raw: &str) -> String {
         })
         .take(120)
         .collect();
-    // Hash FNV-1a estável evita colisões após substituição de caracteres.
+    // A stable FNV-1a hash avoids collisions after character replacement.
     let hash = raw.bytes().fold(0xcbf29ce484222325u64, |h, b| {
         (h ^ b as u64).wrapping_mul(0x100000001b3)
     });

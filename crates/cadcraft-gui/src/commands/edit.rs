@@ -117,7 +117,7 @@ pub(super) const REPEAT: CommandSpec = (
 
 pub(super) const RENAME_PAGE: CommandSpec = (
     C::RenamePage,
-    "Renomear página",
+    crate::strings::RENAME_PAGE,
     "Edita o nome da página por operação validada",
     T::Edit,
     "Página",
@@ -128,7 +128,7 @@ pub(super) const RENAME_PAGE: CommandSpec = (
 
 pub(super) const DELETE_PAGE: CommandSpec = (
     C::DeletePage,
-    "Excluir página",
+    crate::strings::DELETE_PAGE,
     "Remove somente página sem representações ou referências externas",
     T::Edit,
     "Página",

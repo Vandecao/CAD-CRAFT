@@ -404,7 +404,7 @@ fn draw_editor_page(
             .min(page.size().width() * 0.1)
             .min(page.size().height() * 0.1);
         if let Some(frame) = frame {
-            // Etapa 13: a moldura substitui a margem e o cabeçalho provisórios.
+            // The frame supplies the sheet margin and header.
             crate::frame_view::paint_frame(painter, project, page_id, frame, camera, viewport);
         } else if let Ok(inner) = Rect2D::new(
             Point2D::new(margin, margin).expect("finite margin"),
@@ -495,7 +495,7 @@ fn draw_editor_page(
                     color,
                 ),
             );
-            // Etapa 22: mesma posição do PDF/DXF, em tamanho de folha (mm).
+            // Use the same position as PDF/DXF in sheet millimetres.
             if let Some(number) = project
                 .connection(route.connection_id())
                 .and_then(Connection::number)
@@ -672,7 +672,12 @@ fn paint_report_page(
                 if *closed
                     && points.len() > 2
                     && let (Some(a), Some(b)) = (
-                        camera.world_to_screen(*points.last().unwrap(), viewport),
+                        camera.world_to_screen(
+                            *points
+                                .last()
+                                .expect("closed outline has more than two points"),
+                            viewport,
+                        ),
                         camera.world_to_screen(points[0], viewport),
                     )
                 {

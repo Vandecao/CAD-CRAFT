@@ -21,9 +21,9 @@ impl eframe::App for Preview {
                 .app
                 .session
                 .project()
-                .unwrap()
+                .expect("the QA demo has an open project")
                 .representations_on_page(page)
-                .unwrap()
+                .expect("the QA page belongs to the demo project")
                 .iter()
                 .map(|r| r.id())
                 .collect();
@@ -40,15 +40,37 @@ impl eframe::App for Preview {
                     .graphic_edit(cad_gui::editing::GraphicEdit::MirrorHorizontal);
             }
             if self.mode == "preview" {
-                let p = self.app.session.project().unwrap();
-                let anchor = p.representation(ids[0]).unwrap().transform().translation();
+                let p = self
+                    .app
+                    .session
+                    .project()
+                    .expect("the QA demo has an open project");
+                let anchor = p
+                    .representation(ids[0])
+                    .expect("the selected QA representation exists")
+                    .transform()
+                    .translation();
                 let mut interaction = std::mem::take(&mut self.app.session.graphics);
                 interaction
-                    .begin_move(self.app.session.project().unwrap(), page, ids[0], anchor)
-                    .unwrap();
+                    .begin_move(
+                        self.app
+                            .session
+                            .project()
+                            .expect("the QA demo has an open project"),
+                        page,
+                        ids[0],
+                        anchor,
+                    )
+                    .expect("the selected QA representation can start a move");
                 interaction
-                    .update_move(anchor.translated(40.0, 16.0).unwrap(), 4.0, true)
-                    .unwrap();
+                    .update_move(
+                        anchor
+                            .translated(40.0, 16.0)
+                            .expect("the bounded QA translation remains finite"),
+                        4.0,
+                        true,
+                    )
+                    .expect("the bounded QA preview move is valid");
                 self.app.session.graphics = interaction;
             }
         }
@@ -130,7 +152,7 @@ fn main() -> eframe::Result {
             let route = app
                 .session
                 .project()
-                .unwrap()
+                .expect("the connection QA demo has an open project")
                 .connection_routes()
                 .next()
                 .map(|r| r.id());
@@ -152,14 +174,14 @@ fn main() -> eframe::Result {
                                 45.0 + (i % 3) as f64 * 85.0,
                                 45.0 + (i / 3) as f64 * 42.0,
                             )
-                            .unwrap(),
+                            .expect("the bounded QA grid coordinates are finite"),
                             (i % 4) as f64 * 90.0,
                             i % 3 == 0,
                             false,
                         )
-                        .unwrap(),
+                        .expect("the QA orthogonal transform is valid"),
                     })
-                    .unwrap();
+                    .expect("the builtin QA symbol can be inserted");
                 if d.id().as_str() == "cad-craft.motor" {
                     selected = app.session.graphics.selection.primary();
                 }

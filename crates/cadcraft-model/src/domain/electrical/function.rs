@@ -3,22 +3,30 @@
 //! Electrical functions belonging to devices; start with Function and FunctionKind.
 use super::*;
 use serde::{Deserialize, Serialize};
+/// Declared electrical purpose of a device function.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub enum FunctionKind {
+    /// Coil function.
     Coil,
+    /// Auxiliary contact function.
     AuxiliaryContact,
+    /// Main contact function.
     MainContact,
+    /// User-defined documentary category.
     Other(Text),
 }
-/// Papel explicitamente atribuído, independente da geometria e do tipo funcional.
+/// Explicitly assigned role independent of geometry and function kind.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub enum FunctionRole {
+    /// No explicit classification supplied.
     #[default]
     Unspecified,
+    /// Explicit main function.
     Main,
+    /// Explicit auxiliary function.
     Auxiliary,
 }
-/// Entidade destacada; relações são validadas por Project na inserção/importação.
+/// Detached entity; Project validates relations on insertion or import.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Function {
@@ -32,6 +40,7 @@ pub struct Function {
     pub(in crate::domain) properties: TechnicalProperties,
 }
 impl Function {
+    /// Create a detached electrical function owned by the supplied device.
     pub fn new(
         project_id: ProjectId,
         device_id: DeviceId,
@@ -48,31 +57,40 @@ impl Function {
             properties: TechnicalProperties::default(),
         }
     }
+    /// Return this entity or definition's stable identifier.
     pub fn id(&self) -> FunctionId {
         self.id
     }
+    /// Return the project identifier.
     pub fn project_id(&self) -> ProjectId {
         self.project_id
     }
+    /// Return the properties.
     pub fn properties(&self) -> &TechnicalProperties {
         &self.properties
     }
+    /// Return this value with properties replaced.
     pub fn with_properties(mut self, properties: TechnicalProperties) -> Self {
         self.properties = properties;
         self
     }
+    /// Return the device identifier.
     pub fn device_id(&self) -> DeviceId {
         self.device_id
     }
+    /// Return the designation.
     pub fn designation(&self) -> &Designation {
         &self.designation
     }
+    /// Return the kind.
     pub fn kind(&self) -> &FunctionKind {
         &self.kind
     }
+    /// Return the role.
     pub fn role(&self) -> FunctionRole {
         self.role
     }
+    /// Return this value with role replaced.
     pub fn with_role(mut self, role: FunctionRole) -> Self {
         self.role = role;
         self

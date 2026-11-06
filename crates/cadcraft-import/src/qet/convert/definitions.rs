@@ -23,7 +23,7 @@ impl Importer<'_> {
                     match elmt::import_definition(def, &options) {
                         Ok(imported) => {
                             for (note, count) in imported.report.notes {
-                                // As contagens por símbolo só poluem o relatório.
+                                // Per-symbol counts would only clutter the report.
                                 if note.kind == crate::NoteKind::Info {
                                     continue;
                                 }
@@ -106,7 +106,7 @@ impl Importer<'_> {
         }
     }
 
-    /// Moldura com a grade do QElectroTech (zonas) e o carimbo embutido.
+    /// Frame with QElectroTech's zone grid and embedded titleblock.
     pub(in crate::qet) fn frame_for(
         &mut self,
         sheet: Sheet,
@@ -167,7 +167,7 @@ impl Importer<'_> {
                 });
             }
         }
-        // Borda do desenho e área útil (abaixo dos cabeçalhos).
+        // Drawing border and usable area below the headers.
         let m = MARGIN_PX * s;
         let diagram_h = (HEADER_PX + sheet.rows as f64 * sheet.rowsize) * s;
         let diagram = Rect2D::new(

@@ -7,7 +7,7 @@ const LINE_WIDTH: f64 = 0.25;
 const BORDER_WIDTH: f64 = 0.35;
 const DEFAULT_FONT: f64 = 9.0;
 
-/// Texto preferido entre as traduções (pt-BR, pt, en, primeira) e as demais.
+/// Preferred translated text (pt-BR, pt, en, first) and remaining translations.
 fn translations(e: Option<&Element>) -> LocalizedText {
     let mut entries: Vec<(String, String)> = e
         .map(|e| {
@@ -90,7 +90,7 @@ fn tokens(value: &str) -> Vec<Token> {
     out
 }
 
-/// Larguras das colunas (mm) a partir da especificação da grade.
+/// Column widths in mm from the grid specification.
 fn column_widths(spec: &str, total: f64, s: f64) -> ImportResult<Vec<f64>> {
     enum Col {
         Fixed(f64),
@@ -297,7 +297,7 @@ fn field(b: &mut Builder, cell: &Element, (x0, y0, x1, y1): (f64, f64, f64, f64)
         b.report
             .approximated("célula com rótulo/variáveis dividida em textos separados");
     }
-    // Largura estimada (0,6 × altura por caractere; campo especial ≈ 8).
+    // Estimated width: 0.6 × height per character; special fields use about eight characters.
     let widths: Vec<f64> = parts
         .iter()
         .map(|p| match p {
@@ -319,7 +319,7 @@ fn field(b: &mut Builder, cell: &Element, (x0, y0, x1, y1): (f64, f64, f64, f64)
         _ => ((y0 + y1) / 2.0, TextAlign::MiddleLeft),
     };
     let style = FrameTextStyle::new(round3(h), align);
-    // Valor só com texto fixo (sem rótulo): mantém as traduções.
+    // Fixed-text value without a label: preserve its translations.
     let single = parts.len() == 1;
     for (part, w) in parts.into_iter().zip(widths) {
         let at = (round3(x.min(x1 - pad)), round3(y));

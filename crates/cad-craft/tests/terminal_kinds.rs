@@ -1,7 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (C) 2026 Vanderlei Braga e colaboradores do CAD-CRAFT
-//! Etapa 11 — especializações de bornes: regras verificáveis por tipo, sem
-//! criação implícita de continuidade, redes ou terra.
+//! Terminal specialization rules never create implicit continuity, networks or earth.
+// Synthetic test fixtures intentionally fail fast when setup is invalid.
+#![allow(clippy::unwrap_used)]
+
 mod physical_common;
 use cad_craft::domain::*;
 use physical_common::part;
@@ -396,7 +398,7 @@ fn specializations_round_trip_with_undo_and_old_snapshots_stay_valid() {
     let mut bad = json;
     bad["terminals"][terminal_index]["levels"][1]["positions"] = serde_json::json!(["a"]);
     assert!(serde_json::from_value::<Project>(bad).is_err());
-    // Snapshot from before Etapa 11 (no specialization fields) loads as generic.
+    // Older snapshots without specialization fields load as generic terminals.
     let old = physical_common::populated();
     let loaded: Project = serde_json::from_value(serde_json::to_value(&old).unwrap()).unwrap();
     assert!(

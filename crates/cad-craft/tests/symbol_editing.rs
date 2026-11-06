@@ -1,7 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (C) 2026 Vanderlei Braga e colaboradores do CAD-CRAFT
-//! Etapa 17: primitivas ampliadas, estilos, textos dinâmicos e atualização de
-//! símbolos do projeto.
+//! Extended symbol primitives, styles, dynamic text and project-wide symbol updates.
+// Synthetic test fixtures intentionally fail fast when setup is invalid.
+#![allow(clippy::unwrap_used)]
+
 mod document_common;
 use cad_craft::domain::*;
 use document_common::fixture;
@@ -101,7 +103,7 @@ fn ellipse_bounds_follow_rotation_and_styles_are_validated() {
         ..Default::default()
     };
     assert!(bad.check(&e).is_err());
-    // Estilo apontando para primitiva inexistente é recusado.
+    // A style referencing a missing primitive is refused.
     let mut styles = BTreeMap::new();
     styles.insert(9, PrimitiveStyle::default());
     styles.insert(
@@ -112,7 +114,7 @@ fn ellipse_bounds_follow_rotation_and_styles_are_validated() {
         },
     );
     assert!(lamp(1, "2").with_styles(styles).is_err());
-    // Estilos padrão não são guardados.
+    // Default styles are not stored.
     let mut only_default = BTreeMap::new();
     only_default.insert(0, PrimitiveStyle::default());
     assert!(
@@ -122,7 +124,7 @@ fn ellipse_bounds_follow_rotation_and_styles_are_validated() {
             .styles()
             .is_empty()
     );
-    // Conteúdo livre: elipse arrastada e preenchida.
+    // Free content includes a dragged, filled ellipse.
     let g = PageGraphic::from_drag(GraphicKind::Ellipse, p(0.0, 0.0), p(20.0, 10.0), 0.25)
         .unwrap()
         .with_style(fill)
@@ -178,7 +180,7 @@ fn dynamic_texts_resolve_designation_port_reference_and_property() {
 fn symbol_update_keeps_occurrences_and_refuses_missing_ports() {
     let (mut project, _, id) = placed();
     let before = project.clone();
-    // Nova versão compatível (mesmas portas, geometria diferente).
+    // The compatible revision preserves ports while changing geometry.
     let v1 = project
         .symbol_definition(&SymbolDefinitionId::new("teste.sinaleiro").unwrap())
         .unwrap()
@@ -206,14 +208,14 @@ fn symbol_update_keeps_occurrences_and_refuses_missing_ports() {
     assert_eq!(project, before);
     project.restore_symbol_update(&delta, true).unwrap();
     assert_eq!(project.symbol_definition(v2.id()), Some(&v2));
-    // Versão sem a porta "2" (em uso): recusada sem alterar nada.
+    // Removing port 2 while it is in use is refused without changes.
     let after = project.clone();
     let broken = lamp(3, "3");
     let problems = project.symbol_update_problems(&broken);
     assert!(problems.iter().any(|p| p.contains("'2'")), "{problems:?}");
     assert!(project.update_symbol_definition(broken).is_err());
     assert_eq!(project, after);
-    // Registrar uma definição nova sem ocorrências; outra versão é recusada.
+    // Register a new definition without occurrences; refuse a conflicting revision.
     let other = lamp(1, "2")
         .with_identity(SymbolDefinitionId::new("teste.outro").unwrap(), "Outro")
         .unwrap();
@@ -232,7 +234,7 @@ fn cadsym_round_trip_and_invalid_files_are_refused() {
     let mut truncated = bytes.clone();
     truncated.truncate(bytes.len() / 2);
     assert!(persistence::read_symbol_package(&truncated).is_err());
-    // Outro tipo de pacote (moldura) não é aceito como símbolo.
+    // A frame package cannot be imported as a symbol.
     let (project, _, _) = placed();
     let frame = project.frames().next().map(|f| f.id());
     if let Some(id) = frame {

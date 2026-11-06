@@ -1,11 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (C) 2026 Vanderlei Braga e colaboradores do CAD-CRAFT
-//! Etapa 12: projeto `.cadcraft` no sistema de arquivos.
-//!
-//! O formato em bytes pertence ao Core (`cad_craft::persistence`). Aqui ficam a
-//! gravação atômica (temporário na mesma pasta + substituição), a trava
-//! `<arquivo>.lock`, a recuperação após encerramento abrupto, a lista de
-//! recentes e o seletor de arquivos (nativo via `rfd`, roteirizado em testes).
+//! Filesystem services for .cadcraft projects; start with load and save. Core owns the byte format. This module provides atomic replacement using a temporary file beside the destination, cooperative .lock files, crash recovery, recent files and native rfd pickers replaceable by scripts in tests.
 use crate::error::{GuiError, GuiResult};
 use cad_craft::{
     domain::Project,
@@ -29,7 +24,7 @@ fn now() -> u64 {
         .unwrap_or(0)
 }
 
-/// Garante a extensão `.cadcraft` em caminhos escolhidos pelo usuário.
+/// Ensure user-selected paths have the .cadcraft extension.
 pub fn with_extension(path: PathBuf) -> PathBuf {
     if path
         .extension()
@@ -50,8 +45,7 @@ pub fn load(path: &Path) -> GuiResult<LoadedProject> {
         .map_err(|e| GuiError::context(path.display().to_string(), e))
 }
 
-/// Serializa e valida em memória antes de tocar o destino; o arquivo anterior
-/// só é substituído depois que o temporário completo foi sincronizado.
+/// Serialize and validate in memory before touching the destination; replace the previous file only after syncing the complete temporary file.
 pub fn save(project: &Project, path: &Path) -> GuiResult<()> {
     let bytes = persistence::write_project_to_vec(project).map_err(GuiError::from)?;
     write_atomic(path, &mut bytes.as_slice()).map_err(|e| GuiError::at_path(path, e))
@@ -61,7 +55,7 @@ pub fn write_atomic(path: &Path, source: &mut impl Read) -> io::Result<()> {
     crate::snapshots::write_from(path, source, true)
 }
 
-// ---------------------------------------------------------------- trava
+// File locking.
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct LockInfo {
@@ -69,7 +63,7 @@ pub struct LockInfo {
     pub host: String,
     pub pid: u32,
     pub opened_at: u64,
-    /// Distingue duas sessões do mesmo processo (testes, janelas futuras).
+    /// Distinguish sessions within one process, including tests and future windows.
     #[serde(default)]
     pub token: String,
 }
@@ -102,7 +96,7 @@ pub fn lock_path(path: &Path) -> PathBuf {
 
 #[derive(Debug)]
 pub enum LockError {
-    /// Outra sessão mantém o arquivo; descrição legível do dono.
+    /// Another session holds the file; readable owner description.
     Held(String),
     Io(io::Error),
 }
@@ -115,8 +109,7 @@ impl std::fmt::Display for LockError {
     }
 }
 
-/// Trava cooperativa: arquivo criado com `create_new`. É removida ao soltar,
-/// desde que ainda seja desta sessão (não foi assumida por outra).
+/// Cooperative lock created with create_new. Remove it on drop only if it still belongs to this session and has not been taken over.
 #[derive(Debug)]
 pub struct FileLock {
     path: PathBuf,
@@ -147,7 +140,7 @@ impl FileLock {
             Err(e) => Err(LockError::Io(e)),
         }
     }
-    /// Decisão explícita do usuário: substitui uma trava existente.
+    /// Explicit user decision to replace an existing lock.
     pub fn take_over(project: &Path) -> io::Result<Self> {
         let path = lock_path(project);
         let info = LockInfo::current();
@@ -171,8 +164,7 @@ impl Drop for FileLock {
     }
 }
 
-/// Arquivo associado à sessão. Somente leitura: aberto sem trava ou gravado
-/// por formato mais novo; "Salvar" passa a exigir "Salvar como".
+/// Session-associated file. Read-only files are unlocked or written by a newer format; saving requires Save As.
 #[derive(Debug)]
 pub struct ProjectFile {
     pub path: PathBuf,
@@ -203,7 +195,7 @@ impl ProjectFile {
     }
 }
 
-// ---------------------------------------------------------- recuperação
+// Recovery.
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct RecoveryEntry {
@@ -213,9 +205,7 @@ pub struct RecoveryEntry {
     pub saved_at: u64,
 }
 
-/// Cópias de segurança automáticas de projetos com alterações não salvas.
-/// Um encerramento normal ou salvamento remove a entrada; após encerramento
-/// abrupto ela permanece e é oferecida na próxima abertura.
+/// Automatic recovery copies of unsaved projects. Normal exit or saving removes the entry; after abrupt termination it remains and is offered at next startup.
 #[derive(Clone, Debug)]
 pub struct Recovery {
     dir: PathBuf,
@@ -255,7 +245,7 @@ impl Recovery {
         let json = serde_json::to_vec_pretty(&entry).map_err(GuiError::from)?;
         write_atomic(&meta, &mut json.as_slice()).map_err(GuiError::from)
     }
-    /// Entradas completas, mais recentes primeiro. Descrições sem dados são ignoradas.
+    /// Complete entries, newest first; ignore descriptions without data.
     pub fn entries(&self) -> Vec<RecoveryEntry> {
         let Ok(dir) = fs::read_dir(&self.dir) else {
             return Vec::new();
@@ -280,7 +270,7 @@ impl Recovery {
     }
 }
 
-// --------------------------------------------------------------- recentes
+// Recent files.
 
 pub fn push_recent(list: &mut Vec<PathBuf>, path: &Path) {
     list.retain(|p| p != path);
@@ -288,32 +278,32 @@ pub fn push_recent(list: &mut Vec<PathBuf>, path: &Path) {
     list.truncate(MAX_RECENT);
 }
 
-// ----------------------------------------------------- seletor de arquivo
+// File picker.
 
 pub trait FilePicker {
     fn open_project(&mut self) -> Option<PathBuf>;
     fn save_project(&mut self, suggested_name: &str) -> Option<PathBuf>;
-    /// Etapa 14: logotipo PNG/JPEG para moldura.
+    /// PNG/JPEG logo for a frame.
     fn pick_image(&mut self) -> Option<PathBuf>;
-    /// Etapa 14: `.cadframe`, começando na pasta da biblioteca, se houver.
+    /// .cadframe file, starting in the library directory if configured.
     fn open_frame(&mut self, library: Option<&Path>) -> Option<PathBuf>;
     fn save_frame(&mut self, suggested_name: &str, library: Option<&Path>) -> Option<PathBuf>;
     fn open_external_frame(&mut self, library: Option<&Path>) -> Option<PathBuf>;
     fn save_dxf(&mut self, suggested_name: &str, library: Option<&Path>) -> Option<PathBuf>;
-    /// Etapa 17: símbolo `.cadsym`, começando na pasta da biblioteca.
+    /// .cadsym symbol, starting in the library directory.
     fn open_symbol(&mut self, library: Option<&Path>) -> Option<PathBuf>;
     fn save_symbol(&mut self, suggested_name: &str, library: Option<&Path>) -> Option<PathBuf>;
-    /// Etapa 17: um ou mais elementos `.elmt` do QElectroTech.
+    /// One or more QElectroTech .elmt elements.
     fn open_elmt(&mut self) -> Vec<PathBuf>;
-    /// Etapa 25: projeto `.qet` do QElectroTech.
+    /// QElectroTech .qet project.
     fn open_qet(&mut self) -> Option<PathBuf>;
-    /// Etapa 26: pacotes de fabricantes. Padrão preserva pickers existentes.
+    /// Manufacturer packages; the default preserves existing pickers.
     fn open_edz(&mut self) -> Vec<PathBuf> {
         Vec::new()
     }
-    /// Etapa 17: pasta (importação em lote de `.elmt`).
+    /// Directory for batch .elmt import.
     fn pick_folder(&mut self, title: &str) -> Option<PathBuf>;
-    /// Etapa 21: destino do PDF exportado.
+    /// Exported PDF destination.
     fn save_pdf(&mut self, suggested_name: &str) -> Option<PathBuf>;
     fn save_list(&mut self, suggested_name: &str, xlsx: bool) -> Option<PathBuf>;
 }
@@ -324,7 +314,7 @@ fn in_library(dialog: rfd::FileDialog, library: Option<&Path>) -> rfd::FileDialo
     }
 }
 
-/// Diálogos nativos do sistema operacional.
+/// Native operating-system dialogs.
 pub struct NativePicker;
 impl FilePicker for NativePicker {
     fn open_edz(&mut self) -> Vec<PathBuf> {
@@ -385,13 +375,13 @@ impl FilePicker for NativePicker {
     }
     fn open_symbol(&mut self, library: Option<&Path>) -> Option<PathBuf> {
         in_library(rfd::FileDialog::new(), library)
-            .set_title("Importar símbolo")
+            .set_title(crate::strings::IMPORT_SYMBOL)
             .add_filter("Símbolo CAD-CRAFT", &[persistence::SYMBOL_EXTENSION])
             .pick_file()
     }
     fn save_symbol(&mut self, suggested_name: &str, library: Option<&Path>) -> Option<PathBuf> {
         in_library(rfd::FileDialog::new(), library)
-            .set_title("Exportar símbolo")
+            .set_title(crate::strings::EXPORT_SYMBOL)
             .add_filter("Símbolo CAD-CRAFT", &[persistence::SYMBOL_EXTENSION])
             .set_file_name(format!(
                 "{suggested_name}.{}",
@@ -417,7 +407,7 @@ impl FilePicker for NativePicker {
     }
     fn save_pdf(&mut self, suggested_name: &str) -> Option<PathBuf> {
         rfd::FileDialog::new()
-            .set_title("Exportar PDF")
+            .set_title(crate::strings::EXPORT_PDF)
             .add_filter("PDF", &["pdf"])
             .set_file_name(format!("{suggested_name}.pdf"))
             .save_file()
@@ -425,14 +415,14 @@ impl FilePicker for NativePicker {
     fn save_list(&mut self, suggested_name: &str, xlsx: bool) -> Option<PathBuf> {
         let extension = if xlsx { "xlsx" } else { "csv" };
         rfd::FileDialog::new()
-            .set_title("Exportar lista")
+            .set_title(crate::strings::EXPORT_LIST)
             .add_filter("Lista", &[extension])
             .set_file_name(format!("{suggested_name}.{extension}"))
             .save_file()
     }
 }
 
-/// Respostas pré-definidas, consumidas em ordem (testes e automação).
+/// Predefined answers consumed in order, for tests and automation.
 #[derive(Default)]
 pub struct ScriptedPicker {
     pub open: VecDeque<PathBuf>,
@@ -499,8 +489,7 @@ impl FilePicker for ScriptedPicker {
     }
 }
 
-/// Serviços de arquivo da aplicação. `recovery` é `None` por padrão (testes);
-/// a aplicação desktop ativa a pasta do usuário em `CadApp::new`.
+/// Application file services. Recovery is disabled by default for tests; CadApp::new enables the user's directory in the desktop application.
 pub struct FileServices {
     pub picker: Box<dyn FilePicker>,
     pub recovery: Option<Recovery>,
@@ -568,7 +557,7 @@ mod tests {
             other => panic!("{other:?}"),
         }
         let second = FileLock::take_over(&path).unwrap();
-        drop(first); // não remove a trava assumida pela segunda sessão
+        drop(first); // does not remove the lock taken over by the second session
         assert!(lock_path(&path).is_file());
         drop(second);
         assert!(!lock_path(&path).exists());

@@ -1,9 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (C) 2026 Vanderlei Braga e colaboradores do CAD-CRAFT
-//! Etapa 13 — critérios de aceitação na interface: moldura de fábrica em
-//! projeto novo, páginas A3/A4, textos especiais e rótulos de zona na folha,
-//! referências por coluna no painel e na folha, troca de moldura por página
-//! com Desfazer/Refazer e persistência.
+//! GUI frame acceptance tests: factory frames in new projects, A3/A4 pages, special text and zone labels, column references on the sheet and inspector, page-frame replacement with undo/redo and persistence.
+// Fixture helpers use validated synthetic inputs and fail immediately on setup errors.
+#![allow(clippy::unwrap_used)]
 use cad_craft::domain::*;
 use cad_gui::{
     app::CadApp,
@@ -138,7 +137,7 @@ impl Ui {
         self.key(Key::Escape, Modifiers::NONE);
         self.app.session.graphics.selection.primary().unwrap()
     }
-    /// Textos desenhados dentro da área de desenho.
+    /// Text painted within the drawing area.
     fn sheet_texts(&mut self) -> Vec<String> {
         let out = self.settle(1);
         let vp = self.app.last_viewport.unwrap();
@@ -190,7 +189,7 @@ fn find(out: &egui::FullOutput, label: &str) -> Pos2 {
         .unwrap_or_else(|| panic!("widget {label:?} ausente"))
 }
 
-/// Critérios 1, 2, 3, 4 e 6 do prompt da Etapa 13.
+/// Factory frames, special text, references, assignment and persistence.
 #[test]
 fn new_project_frames_zones_special_texts_and_column_references() {
     let mut ui = Ui::new();
@@ -233,12 +232,12 @@ fn new_project_frames_zones_special_texts_and_column_references() {
             PaperFormat::A4.size(false),
         )
         .unwrap();
-    // A3 herda a padrão; A4 recebe a moldura do mesmo tamanho.
+    // A3 inherits the default; A4 receives the matching frame.
     assert_eq!(ui.project().page(force).unwrap().frame(), None);
     assert_eq!(ui.project().page_frame(force).unwrap().id(), a3);
     assert_eq!(ui.project().page(cmd).unwrap().frame(), Some(a4));
 
-    // Bobina K1 na página 1 (coluna 4: x 128..169) e contato na página 2 (coluna 2).
+    // K1 coil on page 1, column 4 (x 128..169), and contact on page 2, column 2.
     ui.view(force, [150., 150.], 2.);
     let coil = ui.place(
         "coil",
@@ -258,8 +257,7 @@ fn new_project_frames_zones_special_texts_and_column_references() {
     assert_eq!(labels, vec!["/1.4".to_string(), "/2.2".to_string()]);
 
     ui.view(cmd, [105., 148.5], 1.5);
-    // Na folha da página 2: rótulos de coluna, textos especiais e a referência
-    // da bobina (principal) abaixo do contato.
+    // Page 2 shows column labels, special text and the main coil reference below the contact.
     let texts = ui.sheet_texts();
     for expected in [
         "1",
@@ -272,17 +270,17 @@ fn new_project_frames_zones_special_texts_and_column_references() {
     ] {
         assert!(texts.iter().any(|t| t == expected), "{expected}: {texts:?}");
     }
-    // Na página 1 a bobina lista o contato.
+    // On page 1 the coil lists the contact.
     ui.view(force, [210., 148.5], 1.5);
     assert!(ui.sheet_texts().iter().any(|t| t == "/2.2"));
-    // No painel de propriedades do dispositivo, a referência por coluna.
+    // The device-properties panel shows the column reference.
     ui.app
         .session
         .select(Selection::Electrical(RepresentationTarget::Device(k1)));
     let panel = ui.panel_texts();
     assert!(panel.iter().any(|t| t.contains("/2.2")), "{panel:?}");
 
-    // Renumerar a página atualiza o texto especial e as referências.
+    // Renumbering the page updates special text and references.
     ui.app
         .session
         .apply(Edit::PageNumber(cmd, "20".into()))
@@ -293,7 +291,7 @@ fn new_project_frames_zones_special_texts_and_column_references() {
     );
     assert!(ui.sheet_texts().iter().any(|t| t == "/20.2"));
 
-    // Trocar a moldura da página recalcula a referência; Ctrl+Z/Ctrl+Y exatos.
+    // Changing the page frame recalculates the reference; Ctrl+Z/Ctrl+Y restore exact states.
     let before = ui.project().clone();
     ui.app
         .graphic_edit(GraphicEdit::Frame(FrameEdit::SetPageFrame {
@@ -316,7 +314,7 @@ fn new_project_frames_zones_special_texts_and_column_references() {
     ui.app.execute(CommandId::Redo, &ui.ctx.clone());
     assert_eq!(ui.project(), &after);
 
-    // Salvar/reabrir preserva molduras e atribuições.
+    // Saving and reopening preserves frames and assignments.
     let dir = tempfile::tempdir().unwrap();
     let path = dir.path().join("ccm.cadcraft");
     project_file::save(ui.project(), &path).unwrap();
@@ -325,7 +323,7 @@ fn new_project_frames_zones_special_texts_and_column_references() {
     assert_eq!(&loaded.project, ui.project());
 }
 
-/// Seletores do painel Propriedades: moldura da página e metadados do projeto.
+/// Properties-panel selectors for the page frame and project metadata.
 #[test]
 fn properties_panel_assigns_page_frame_and_edits_project_metadata() {
     let mut ui = Ui::new();
@@ -343,7 +341,7 @@ fn properties_panel_assigns_page_frame_and_edits_project_metadata() {
             PaperFormat::A3.size(true),
         )
         .unwrap();
-    // Página selecionada: abrir o seletor de moldura e escolher a A4.
+    // Select a page, open the frame selector and choose A4.
     ui.app.session.select(Selection::Page(page));
     let out = ui.settle(3);
     let label = find(&out, "Moldura");
@@ -371,7 +369,7 @@ fn properties_panel_assigns_page_frame_and_edits_project_metadata() {
     ui.key(Key::Z, Modifiers::CTRL);
     assert_eq!(ui.project().page(page).unwrap().frame(), None);
 
-    // Projeto selecionado: o campo Autor alimenta o texto especial do carimbo.
+    // The selected project's author field supplies the title block's special text.
     ui.app.session.select(Selection::Project);
     let out = ui.settle(3);
     let author = find(&out, "Autor");

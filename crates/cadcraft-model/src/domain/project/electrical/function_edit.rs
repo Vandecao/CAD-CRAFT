@@ -1,42 +1,69 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (C) 2026 Vanderlei Braga e colaboradores do CAD-CRAFT
-//! Reversible function and connection point edits; start with FunctionEdit.
+//! Reversible function and connection point edits; start with FunctionPointEdit.
 use super::*;
 
+/// Function or connection-point creation, removal or property edit.
 #[derive(Clone, Debug)]
 pub enum FunctionPointEdit {
+    /// Create function.
     CreateFunction {
+        /// Associated logical device.
         device: DeviceId,
+        /// Documentary designation; does not imply electrical connectivity.
         designation: Designation,
+        /// Declared category of this record or operation.
         kind: FunctionKind,
+        /// Explicitly declared functional role.
         role: FunctionRole,
     },
+    /// Update function.
     UpdateFunction {
+        /// Associated electrical function.
         function: FunctionId,
+        /// Documentary designation; does not imply electrical connectivity.
         designation: Designation,
+        /// Declared category of this record or operation.
         kind: FunctionKind,
+        /// Explicitly declared functional role.
         role: FunctionRole,
     },
+    /// Remove function.
     RemoveFunction {
+        /// Associated electrical function.
         function: FunctionId,
     },
+    /// Create point.
     CreatePoint {
+        /// Associated electrical function.
         function: FunctionId,
+        /// Documentary designation; does not imply electrical connectivity.
         designation: DesignationPart,
     },
+    /// Rename point.
     RenamePoint {
+        /// Explicit functional connection point.
         point: ConnectionPointId,
+        /// Documentary designation; does not imply electrical connectivity.
         designation: DesignationPart,
     },
+    /// Remove point.
     RemovePoint {
+        /// Explicit functional connection point.
         point: ConnectionPointId,
     },
+    /// Set function properties.
     SetFunctionProperties {
+        /// Associated electrical function.
         function: FunctionId,
+        /// Typed technical properties.
         properties: TechnicalProperties,
     },
+    /// Set point properties.
     SetPointProperties {
+        /// Explicit functional connection point.
         point: ConnectionPointId,
+        /// Typed technical properties.
         properties: TechnicalProperties,
     },
 }
@@ -46,6 +73,7 @@ struct Change<T> {
     before: Option<T>,
     after: Option<T>,
 }
+/// Touched functions and points retained for exact replay.
 #[derive(Clone, Debug, PartialEq)]
 pub struct FunctionPointDelta {
     project: ProjectId,
@@ -53,15 +81,18 @@ pub struct FunctionPointDelta {
     points: Vec<Change<ConnectionPoint>>,
 }
 impl FunctionPointDelta {
+    /// Return the number of contained entries or entity changes recorded by this value.
     pub fn len(&self) -> usize {
         self.functions.len() + self.points.len()
     }
+    /// Whether this collection or recorded edit contains no effective entries or changes.
     pub fn is_empty(&self) -> bool {
         self.len() == 0
     }
 }
 
 impl Project {
+    /// Validate and apply the function point operation, returning the recorded reversible change.
     pub fn edit_function_point(&mut self, edit: FunctionPointEdit) -> Result<FunctionPointDelta> {
         let mut delta = FunctionPointDelta {
             project: self.id,
@@ -233,6 +264,8 @@ impl Project {
         Ok(delta)
     }
 
+    /// Replay the recorded function point change; forward reapplies it and false restores the prior
+    /// state. Reject a mismatched expected state.
     pub fn restore_function_point(
         &mut self,
         delta: &FunctionPointDelta,

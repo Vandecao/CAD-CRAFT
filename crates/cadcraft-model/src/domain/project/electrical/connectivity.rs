@@ -6,8 +6,8 @@ use crate::graph::ConnectivityGraph;
 use std::collections::BTreeSet;
 
 impl Project {
-    /// Conectividade explícita transitiva. IDs ausentes são erros, inclusive A–A.
-    /// Um ponto existente está conectado a si, mesmo isolado.
+    /// Explicit transitive connectivity. Missing IDs are errors, including a self-query. An existing
+    /// point connects to itself even when isolated.
     pub fn are_connected(
         &self,
         source: ConnectionPointId,
@@ -18,7 +18,7 @@ impl Project {
         Ok(self.graph.are_connected(source, target))
     }
 
-    /// Vizinhos diretos em ordem de ID; não inclui o próprio ponto.
+    /// Direct neighbors in ID order, excluding the point itself.
     pub fn directly_connected_points(
         &self,
         point: ConnectionPointId,
@@ -27,7 +27,7 @@ impl Project {
         Ok(self.graph.neighbors(point).map(|(id, _)| id).collect())
     }
 
-    /// Arestas incidentes em ordem de ConnectionId.
+    /// Incident edges in ConnectionId order.
     pub fn incident_connections(&self, point: ConnectionPointId) -> Result<Vec<ConnectionId>> {
         self.require(EntityRef::ConnectionPoint(point))?;
         let mut edges: Vec<_> = self.graph.neighbors(point).map(|(_, id)| id).collect();
@@ -35,8 +35,8 @@ impl Project {
         Ok(edges)
     }
 
-    /// Redes ordenadas pelo menor ponto; inclui todos os pontos isolados.
-    /// Recalcula a cada chamada, sem cache de redes nem identidade persistente.
+    /// Networks ordered by their smallest point, including isolated points. Recomputed per call without
+    /// caching or persistent identity.
     pub fn networks(&self) -> Vec<Network> {
         let components = self.components_by_function();
         let mut visited = BTreeSet::new();
@@ -50,19 +50,19 @@ impl Project {
         networks
     }
 
+    /// Derive the complete logical network containing the registered point.
     pub fn network_for_point(&self, point: ConnectionPointId) -> Result<Network> {
         self.require(EntityRef::ConnectionPoint(point))?;
         let (points, connections) = self.graph.component(point, &mut BTreeSet::new());
         Ok(self.describe_network(points, connections, &self.components_by_function()))
     }
 
-    /// Verdadeiro se alguma rede contém pontos de ambos os dispositivos.
-    /// Mesmo dispositivo retorna true se possui ponto, false se não possui.
-    /// Não implica continuidade interna nem ligação de todos os polos.
+    /// Whether any network contains points of both devices. A self-query is true only if the device has
+    /// a point. Does not imply internal continuity or connection of every pole.
     pub fn are_devices_connected(&self, source: DeviceId, target: DeviceId) -> Result<bool> {
         self.require(EntityRef::Device(source))?;
         self.require(EntityRef::Device(target))?;
-        // Consulta apenas topologia/proprietários; não precisa enriquecer componentes.
+        // Only topology and owners are needed; component enrichment is unnecessary.
         let mut visited = BTreeSet::new();
         for &point in self.connection_points.keys() {
             if visited.contains(&point) {
@@ -101,7 +101,7 @@ impl Project {
         let mut functions = BTreeSet::new();
         let mut devices = BTreeSet::new();
         let mut components = BTreeSet::new();
-        // Todas as referências são garantidas pela inserção/importação do agregado.
+        // Aggregate insertion and import guarantee all references exist.
         for point in points
             .iter()
             .filter_map(|id| self.connection_points.get(id))
@@ -130,16 +130,17 @@ impl Project {
         }
     }
 
+    /// Find the connection by its stable identifier; return None when absent.
     pub fn connection(&self, id: ConnectionId) -> Option<&Connection> {
         self.connections.get(&id)
     }
 
-    /// Conexões em ordem crescente de ID, sem acesso mutável ao agregado.
+    /// Connections in ascending ID order without mutable aggregate access.
     pub fn connections(&self) -> impl Iterator<Item = &Connection> {
         self.connections.values()
     }
 
-    /// Insere uma aresta explícita; conectividade indireta não impede ciclos.
+    /// Insert an explicit edge; indirect connectivity does not prevent cycles.
     pub fn insert_connection(&mut self, connection: Connection) -> Result<ConnectionId> {
         let id = connection.id();
         if self.connections.contains_key(&id) {
@@ -151,7 +152,7 @@ impl Project {
         Ok(id)
     }
 
-    /// Remove somente a aresta. Pontos, funções, terminais e dispositivos permanecem.
+    /// Remove only the edge, retaining points, functions, terminals and devices.
     pub fn remove_connection(&mut self, id: ConnectionId) -> Result<Connection> {
         if self.drawing_owns_connection(id)
             || self.marker_owns_connection(id)

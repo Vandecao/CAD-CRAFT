@@ -26,7 +26,7 @@ pub(crate) use summary::{physical_summary, renumber_edits};
 
 use lists::terminal_text;
 
-// Existing test setup stays unchanged after the draft moved into a child module.
+// Test fixtures for the physical editor.
 #[cfg(test)]
 #[allow(clippy::field_reassign_with_default)]
 mod tests {
@@ -95,7 +95,7 @@ mod tests {
         );
     }
 
-    /// Etapa 11: Régua → Borne → Níveis and Conector → Contatos.
+    /// Terminal strip, terminal and levels; connector and contacts.
     #[test]
     fn navigator_shows_levels_and_connector_contacts_hierarchically() {
         let (mut p, strip, _) = project();

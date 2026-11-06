@@ -5,29 +5,35 @@ use super::*;
 use std::collections::BTreeSet;
 
 impl Project {
+    /// Return the optional identification; absence represents an unset value or relation.
     pub fn identification(&self) -> Option<&Text> {
         self.identification.as_ref()
     }
+    /// Replace or clear the project documentary identification.
     pub fn set_identification(&mut self, identification: Option<Text>) {
         self.identification = identification;
     }
 
+    /// Change the page name after validating the supplied text.
     pub fn rename_page(&mut self, id: PageId, name: impl Into<String>) -> Result<()> {
         let name = Text::new(name)?;
         self.page_mut(id)?.name = name;
         Ok(())
     }
+    /// Change the documentary page number after validating the supplied text.
     pub fn identify_page(&mut self, id: PageId, number: impl Into<String>) -> Result<()> {
         let number = Text::new(number)?;
         self.page_mut(id)?.number = number;
         Ok(())
     }
+    /// Replace the page kind and sheet dimensions.
     pub fn set_page_format(&mut self, id: PageId, kind: PageKind, size: Size2D) -> Result<()> {
         let page = self.page_mut(id)?;
         page.kind = kind;
         page.size = size;
         Ok(())
     }
+    /// Replace the page functional and location classification.
     pub fn set_page_structure(&mut self, id: PageId, structure: DocumentStructure) -> Result<()> {
         self.page_mut(id)?.structure = structure;
         Ok(())
@@ -37,14 +43,14 @@ impl Project {
             .get_mut(&id)
             .ok_or(DomainError::MissingEntity(EntityRef::Page(id)))
     }
-    /// Ordem explícita, depois PageId; páginas sem ordem vêm ao final por ID.
+    /// Explicit order followed by PageId; unordered pages come last, sorted by ID.
     pub fn ordered_pages(&self, document: DocumentId) -> Result<Vec<&Page>> {
         self.require(EntityRef::Document(document))?;
         let mut pages: Vec<_> = self.pages_in_document(document).collect();
         pages.sort_by_key(|p| (p.order().is_none(), p.order(), p.id()));
         Ok(pages)
     }
-    /// Permutação completa de um único documento; valida tudo antes de escrever.
+    /// Complete permutation within one document; validate everything before writing.
     pub fn reorder_pages(&mut self, document: DocumentId, order: &[PageId]) -> Result<()> {
         self.require(EntityRef::Document(document))?;
         let expected: BTreeSet<_> = self.pages_in_document(document).map(Page::id).collect();
@@ -59,7 +65,7 @@ impl Project {
         }
         Ok(())
     }
-    /// Árvore derivada, sem criar registros ou identidade para grupos de caminhos.
+    /// Derived tree without records or identity for path groups.
     pub fn page_tree(&self, document: DocumentId, axis: StructureAxis) -> Result<Vec<PageGroup>> {
         let mut groups: BTreeMap<Vec<DesignationPart>, Vec<PageId>> = BTreeMap::new();
         for page in self.ordered_pages(document)? {
@@ -74,7 +80,7 @@ impl Project {
             .map(|(path, pages)| PageGroup { path, pages })
             .collect())
     }
-    /// Sem cascata. Referências da própria página desaparecem com ela.
+    /// No cascading removal. References owned by the page disappear with it.
     pub fn remove_page(&mut self, id: PageId) -> Result<Page> {
         self.require(EntityRef::Page(id))?;
         let reference = EntityRef::Page(id);
@@ -92,7 +98,7 @@ impl Project {
                 .values()
                 .any(|p| p.id() != id && p.report().is_some_and(|r| r.filter.page == Some(id)))
     }
-    /// Propriedades técnicas que citam `target`, exceto as da página ignorada.
+    /// Technical properties referring to `target`, excluding those of the ignored page.
     pub(in crate::domain::project) fn properties_reference(
         &self,
         target: EntityRef,

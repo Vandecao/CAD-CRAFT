@@ -1,5 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (C) 2026 Vanderlei Braga e colaboradores do CAD-CRAFT
+// Synthetic test fixtures intentionally fail fast when setup is invalid.
+#![allow(clippy::unwrap_used)]
+
 mod common;
 use cad_craft::domain::*;
 use common::{connect, fixture};
@@ -50,7 +53,7 @@ fn growing_chains_traverse_iteratively_split_and_reconstruct() {
             assert_eq!(loaded.networks(), networks);
             loaded.validate().unwrap();
         }
-        println!(
+        eprintln!(
             "chain n={size} samples=3 median_ms build={:.3} networks={:.3} remove={:.3} split={:.3} import={:.3}",
             median_ms(builds),
             median_ms(derives),
@@ -94,7 +97,7 @@ fn growing_stars_keep_neighbor_and_incidence_queries_correct_after_removals() {
             assert_eq!(p.networks().len(), 1 + size / 2);
             p.validate().unwrap();
         }
-        println!(
+        eprintln!(
             "star n={size} samples=3 median_ms build={:.3} networks={:.3} neighbors_and_incidence={:.3}",
             median_ms(builds),
             median_ms(derives),
@@ -155,7 +158,7 @@ fn growing_isolated_sets_include_explicit_components_without_implicit_edges() {
             }
             p.validate().unwrap();
         }
-        println!(
+        eprintln!(
             "isolated n={size} samples=3 median_ms build={:.3} networks={:.3}",
             median_ms(builds),
             median_ms(derives)

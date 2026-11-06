@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (C) 2026 Vanderlei Braga e colaboradores do CAD-CRAFT
-//! Montagem comum da moldura importada: elementos, imagens, folha e área útil.
+//! Shared imported-frame assembly: elements, images, sheet and usable area; start at `Builder`.
 use super::{ImportReport, ImportResult, ImportedFrame, fail};
 use cadcraft_model::domain::{
     FrameElement, FramePackage, FrameTemplate, FrameTextStyle, ImageAsset, LocalizedText,
@@ -13,8 +13,8 @@ pub(crate) fn pt(x: f64, y: f64) -> Option<Point2D> {
     Point2D::new(x, y).ok()
 }
 
-/// Arco definido por dois pontos e o "bulge" (tan de 1/4 do ângulo; positivo
-/// = anti-horário), como no DXF e nas polilinhas do EPLAN.
+/// Arc defined by two points and a bulge (tangent of one quarter of the angle;
+/// positive means counterclockwise), as in DXF and EPLAN polylines.
 pub(crate) fn bulge_arc(
     a: (f64, f64),
     b: (f64, f64),
@@ -90,7 +90,7 @@ impl Builder {
             });
         self.push(e, "arco");
     }
-    /// Trecho de polilinha: reta ou arco conforme o bulge.
+    /// Polyline segment: straight line or arc according to its bulge.
     pub fn segment(&mut self, a: (f64, f64), b: (f64, f64), bulge: f64, width: f64) {
         match bulge_arc(a, b, bulge) {
             Some((c, r, s, w)) => self.arc((c.x(), c.y()), r, s, w, width),
@@ -124,7 +124,7 @@ impl Builder {
         });
         self.push(e, "texto especial");
     }
-    /// Imagem a partir dos bytes (PNG/JPEG); reaproveita imagens iguais.
+    /// Builds an image from PNG/JPEG bytes, reusing identical images.
     pub fn image(&mut self, a: (f64, f64), b: (f64, f64), bytes: Vec<u8>, label: &str) {
         let Some(rect) = rect_from(a, b) else {
             self.report
@@ -149,7 +149,7 @@ impl Builder {
         self.elements.push(FrameElement::Image { rect, asset });
     }
 
-    /// Envoltória (mínimo, máximo) dos elementos.
+    /// Bounding box (minimum, maximum) of the elements.
     fn bounds(&self) -> Option<((f64, f64), (f64, f64))> {
         let mut b: Option<((f64, f64), (f64, f64))> = None;
         let mut add = |x: f64, y: f64| {
@@ -179,9 +179,9 @@ impl Builder {
         b
     }
 
-    /// Fecha a moldura. Sem folha informada, a folha é a envoltória do desenho
-    /// (deslocado para a origem quando `to_origin` ou quando há coordenadas
-    /// negativas). Área útil ausente = folha inteira.
+    /// Finishes the frame. Without an explicit sheet, use the drawing bounds,
+    /// shifted to the origin when `to_origin` is set or coordinates are
+    /// negative. An omitted usable area defaults to the whole sheet.
     pub fn finish(
         mut self,
         name: &str,
@@ -275,7 +275,7 @@ impl Builder {
                     .ignored(format!("divisão em {what} maior que a área útil"));
                 *axis = ZoneAxis::none();
             } else if axis.total() > size {
-                // Diferença de arredondamento: ajusta a última zona.
+                // Adjust the last zone to compensate for rounding.
                 let excess = axis.total() - size;
                 if let Some(last) = axis.sizes.last_mut() {
                     *last -= excess;
@@ -324,13 +324,13 @@ mod tests {
 
     #[test]
     fn bulge_gives_quarter_and_half_circles() {
-        // Bulge 1 = semicírculo anti-horário de (0,0) a (2,0): centro (1,0).
+        // Bulge 1 is a counterclockwise semicircle from (0,0) to (2,0), centered at (1,0).
         let (c, r, start, sweep) = bulge_arc((0.0, 0.0), (2.0, 0.0), 1.0).unwrap();
         assert!((c.x() - 1.0).abs() < 1e-9 && c.y().abs() < 1e-9);
         assert!((r - 1.0).abs() < 1e-9);
         assert!((start.abs() - 180.0).abs() < 1e-9);
         assert!((sweep - 180.0).abs() < 1e-9);
-        // tan(22,5°): quarto de círculo; negativo = horário.
+        // tan(22.5°) gives a quarter circle; a negative value means clockwise.
         let b = (std::f64::consts::PI / 8.0).tan();
         let (c, r, _, sweep) = bulge_arc((1.0, 0.0), (0.0, 1.0), b).unwrap();
         assert!(c.x().abs() < 1e-9 && c.y().abs() < 1e-9 && (r - 1.0).abs() < 1e-9);

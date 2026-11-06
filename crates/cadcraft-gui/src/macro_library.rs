@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (C) 2026 Vanderlei Braga e colaboradores do CAD-CRAFT
-//! Etapa 19: biblioteca de macros (`.cadmacro` em pasta configurável) e
-//! navegador: árvore por categoria, busca, miniatura, criar da seleção ou da
-//! página, inserir, importar, exportar e excluir.
+//! Macro library in a configurable .cadmacro directory and its browser. Start with the catalog: category tree, search, thumbnails, capture selection or page, insertion, import, export and deletion.
 use crate::error::{GuiError, GuiResult};
 use crate::{camera::Camera, preferences::Preferences, state::Session};
 use cad_craft::{domain::*, persistence};
@@ -76,7 +74,7 @@ impl MacroLibrary {
             self.selected = None;
         }
     }
-    /// Macro escolhida para inserir (a aplicação liga a ferramenta).
+    /// Macro chosen for insertion; the application activates the tool.
     pub fn take_insert(&mut self) -> Option<MacroDefinition> {
         self.insert.take()
     }
@@ -136,8 +134,7 @@ impl MacroLibrary {
             .into())
         }
     }
-    /// Grava na pasta (se configurada) e no catálogo da sessão. Mesmo ID:
-    /// substitui como nova versão.
+    /// Save in the configured directory and session catalog; the same ID replaces the macro as a new version.
     pub fn store(
         &mut self,
         mut definition: MacroDefinition,
@@ -228,7 +225,7 @@ impl MacroLibrary {
     }
 
     fn navigator_ui(&mut self, ui: &mut Ui, action: &mut Option<Action>) {
-        ui.heading("Navegador de macros");
+        ui.heading(crate::strings::MACRO_NAVIGATOR);
         ui.horizontal(|ui| {
             ui.label("Buscar");
             ui.add(egui::TextEdit::singleline(&mut self.search).hint_text("nome, ID ou categoria"));
@@ -404,12 +401,20 @@ impl MacroLibrary {
                 })
             }
             Action::Insert(id) => {
-                let definition = self.catalog.get(&id).cloned().ok_or("macro ausente")?;
+                let definition = self
+                    .catalog
+                    .get(&id)
+                    .cloned()
+                    .ok_or(crate::strings::MISSING_MACRO)?;
                 self.insert = Some(definition);
                 Ok("Clique na folha para inserir; Girar/Espelhar ajustam; Esc encerra.".into())
             }
             Action::InsertPage(id) => {
-                let definition = self.catalog.get(&id).cloned().ok_or("macro ausente")?;
+                let definition = self
+                    .catalog
+                    .get(&id)
+                    .cloned()
+                    .ok_or(crate::strings::MISSING_MACRO)?;
                 let (_, report) = session
                     .insert_page_macro(&definition)
                     .map_err(GuiError::from)?;
@@ -423,7 +428,7 @@ impl MacroLibrary {
             }
             Action::Delete(id) => self.delete(&id, preferences),
             Action::Export(id) => {
-                let definition = self.catalog.get(&id).ok_or("macro ausente")?;
+                let definition = self.catalog.get(&id).ok_or(crate::strings::MISSING_MACRO)?;
                 let path = PathBuf::from(self.path.trim());
                 if path.as_os_str().is_empty() {
                     return Err("informe o arquivo de destino".into());
@@ -445,7 +450,7 @@ impl MacroLibrary {
     }
 }
 
-/// Miniatura vetorial ajustada ao retângulo.
+/// Vector thumbnail fitted to the rectangle.
 fn paint_thumbnail(ui: &mut Ui, definition: &MacroDefinition) {
     let (rect, _) = ui.allocate_exact_size(egui::vec2(260.0, 160.0), egui::Sense::hover());
     let painter = ui.painter_at(rect);

@@ -60,6 +60,7 @@ fn write<K: Ord + Clone, V: Clone>(
     }
 }
 impl Project {
+    /// Resolve an explicit symbol port into page coordinates.
     pub fn port_position(&self, port: &PortRef) -> Result<Point2D> {
         let r = self
             .representation(port.representation_id())
@@ -81,11 +82,12 @@ impl Project {
             .ok_or(drawing_error())?;
         t.apply(local.position())
     }
+    /// Return the functional point explicitly bound to this symbol port.
     pub fn port_binding(&self, port: &PortRef) -> Option<ConnectionPointId> {
         self.port_bindings.get(port).copied()
     }
-    /// Pontos existentes compatíveis com o alvo explícito da ocorrência, em
-    /// ordem de identidade. Não escolhe nem associa automaticamente uma porta.
+    /// Existing points compatible with the occurrence's explicit target, in ID order. Never selects or
+    /// binds a port automatically.
     pub fn port_binding_candidates(&self, port: &PortRef) -> Result<Vec<ConnectionPointId>> {
         self.port_position(port)?;
         Ok(self
@@ -95,20 +97,25 @@ impl Project {
             .filter(|&point| self.check_binding(port, point).is_ok())
             .collect())
     }
+    /// Iterate explicit symbol-port bindings without inferring connectivity.
     pub fn port_bindings(&self) -> impl Iterator<Item = (&PortRef, ConnectionPointId)> {
         self.port_bindings
             .iter()
             .map(|(port, &point)| (port, point))
     }
+    /// Find the connection route by its stable identifier; return None when absent.
     pub fn connection_route(&self, id: RepresentationId) -> Option<&ConnectionRoute> {
         self.connection_routes.get(&id)
     }
+    /// Iterate connection routes without exposing mutable access.
     pub fn connection_routes(&self) -> impl Iterator<Item = &ConnectionRoute> {
         self.connection_routes.values()
     }
+    /// Find the connection junction by its stable identifier; return None when absent.
     pub fn connection_junction(&self, id: ConnectionJunctionId) -> Option<&ConnectionJunction> {
         self.connection_junctions.get(&id)
     }
+    /// Iterate connection junctions without exposing mutable access.
     pub fn connection_junctions(&self) -> impl Iterator<Item = &ConnectionJunction> {
         self.connection_junctions.values()
     }
@@ -261,6 +268,7 @@ impl Project {
         }
         Ok(())
     }
+    /// Validate and apply a route, junction or binding operation as one reversible edit.
     pub fn edit_connection_drawing(
         &mut self,
         edit: ConnectionDrawingEdit,
@@ -586,6 +594,7 @@ pub(in crate::domain::project) fn route_representation(
 }
 
 impl Project {
+    /// Move occurrences and repair their connected routes in one validated reversible edit.
     pub fn transform_representations_with_drawing(
         &mut self,
         transforms: &[(RepresentationId, Transform2D)],

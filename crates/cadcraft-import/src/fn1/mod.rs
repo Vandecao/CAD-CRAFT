@@ -2,11 +2,11 @@
 // Copyright (C) 2026 Vanderlei Braga e colaboradores do CAD-CRAFT
 //! EPLAN frame import; start at `import`, then read, convert and report.
 //!
-//! O nome dos elementos (`O178`, `O179`…) muda de arquivo para arquivo; o
-//! tipo estável é o primeiro número de `A19="tipo/id"`. Códigos conferidos
-//! nas molduras do usuário e na prévia SVG embutida pelo próprio EPLAN:
-//! 21 moldura, 26 grupo, 30 texto, 31 linha, 34 polilinha, 53 texto
-//! especial, 76 configuração, 89 retângulo, 91 imagem, 212 campo de usuário.
+//! Element names (`O178`, `O179`…) vary between files; the stable
+//! type is the first number in `A19="type/id"`. Codes were checked
+//! against user frames and EPLAN's own embedded SVG preview:
+//! 21 frame, 26 group, 30 text, 31 line, 34 polyline, 53 special
+//! text, 76 configuration, 89 rectangle, 91 image, 212 user field.
 use crate::build::{Builder, round3};
 use crate::xml::{self, Element};
 use crate::{ImportResult, ImportedFrame, check_size, fail};
@@ -15,18 +15,18 @@ use cadcraft_model::domain::{
     ZoneLabelStyle, ZoneLayout,
 };
 
-/// Espessura usada quando o EPLAN indica "da camada" (`L`).
+/// Stroke width used when EPLAN specifies the layer default (`L`).
 const DEFAULT_WIDTH: f64 = 0.25;
 const DEFAULT_TEXT_HEIGHT: f64 = 2.5;
-/// Classe de estrutura do identificador 1001/1003: função (=) e local (+).
+/// Structure class for identifiers 1001/1003: function (=) and location (+).
 const STRUCTURE_FUNCTION: &str = "20132";
 const STRUCTURE_LOCATION: &str = "20134";
-/// Rótulos de coluna e de linha desenhados pela moldura EPLAN.
+/// Column and row labels drawn by the EPLAN frame.
 const COLUMN_LABEL: u32 = 19005;
 const ROW_LABEL: u32 = 19006;
 
-/// Imagens referenciadas (`$(MD_IMG)\logo.jpg`) são pedidas ao chamador,
-/// que sabe onde fica a pasta de imagens do EPLAN.
+/// Referenced images (`$(MD_IMG)\logo.jpg`) are requested from the caller,
+/// which knows where EPLAN's image directory is located.
 pub type ImageResolver<'a> = dyn FnMut(&str) -> Option<Vec<u8>> + 'a;
 
 mod convert;

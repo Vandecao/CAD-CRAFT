@@ -5,7 +5,7 @@ use super::*;
 use std::collections::BTreeSet;
 
 impl Project {
-    /// Veias em ordem de ID, sem clonagem do registro. Cabo ausente produz iterador vazio.
+    /// Cores in ID order without cloning records; an absent cable yields an empty iterator.
     pub fn cores_for_cable(&self, cable: CableId) -> impl Iterator<Item = &CableCore> {
         self.physical_index
             .cores_by_cable
@@ -14,24 +14,26 @@ impl Project {
             .flatten()
             .filter_map(|id| self.cable_core(*id))
     }
+    /// Return the core explicitly assigned to the conductor, if any.
     pub fn core_for_conductor(&self, conductor: ConductorId) -> Option<&CableCore> {
         self.physical_index
             .core_by_conductor
             .get(&conductor)
             .and_then(|id| self.cable_core(*id))
     }
-    /// Referência opcional de cabo do condutor, derivada da única associação na veia.
+    /// Optional conductor cable derived from the single core assignment.
     pub fn cable_for_conductor(&self, conductor: ConductorId) -> Option<&Cable> {
         self.core_for_conductor(conductor)
             .and_then(|core| self.cable(core.cable_id()))
     }
+    /// Return the strip explicitly containing the terminal, if any.
     pub fn strip_for_terminal(&self, terminal: TerminalId) -> Option<&TerminalStrip> {
         self.physical_index
             .strip_by_terminal
             .get(&terminal)
             .and_then(|id| self.terminal_strip(*id))
     }
-    /// Pontos funcionais na ordem source/target do condutor; None é engenharia incompleta válida.
+    /// Functional points in conductor source/target order; absence is valid incomplete engineering.
     pub fn functional_points_for_conductor(
         &self,
         conductor: ConductorId,
@@ -43,6 +45,7 @@ impl Project {
             .map(|link| self.check_conductor_connection(wire, link))
             .transpose()
     }
+    /// Derive physical entities explicitly associated with the registered logical connection.
     pub fn physical_for_connection(&self, connection: ConnectionId) -> Result<PhysicalElements> {
         self.connection(connection)
             .ok_or(DomainError::MissingConnection(connection))?;
@@ -61,9 +64,9 @@ impl Project {
             .collect();
         Ok(self.describe_physical(wires, terminals))
     }
-    /// Terminais do dispositivo (inclusive componentes explicitamente associados),
-    /// condutores incidentes, suas veias/cabos e réguas desses terminais.
-    /// Não inclui terminais do outro dispositivo só porque existe um condutor entre eles.
+    /// Device terminals, including explicitly assigned components, incident conductors, their
+    /// cores/cables and terminal strips. Excludes another device's terminals merely reached by a
+    /// conductor.
     pub fn physical_for_device(&self, device: DeviceId) -> Result<PhysicalElements> {
         self.require(EntityRef::Device(device))?;
         let terminals: BTreeSet<_> = self

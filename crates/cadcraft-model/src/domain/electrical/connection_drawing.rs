@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (C) 2026 Vanderlei Braga e colaboradores do CAD-CRAFT
-//! Geometria documental ligada explicitamente ao grafo elétrico existente.
+//! Document geometry explicitly bound to the existing electrical graph; start with ConnectionRoute.
 use super::*;
 use crate::error::{DomainError, Result};
 use serde::{Deserialize, Serialize};
@@ -9,6 +9,7 @@ pub(in crate::domain) fn drawing_error() -> DomainError {
     DomainError::InvalidRelation("desenho de conexão inconsistente ou referenciado")
 }
 
+/// Explicit symbol occurrence and local port identifier.
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 #[serde(try_from = "PortRefData")]
 pub struct PortRef {
@@ -28,6 +29,7 @@ impl TryFrom<PortRefData> for PortRef {
     }
 }
 impl PortRef {
+    /// Create an explicit port reference with a validated local port identifier.
     pub fn new(representation: RepresentationId, port: impl Into<String>) -> Result<Self> {
         let port = port.into();
         if port.trim().is_empty() {
@@ -38,14 +40,17 @@ impl PortRef {
             port,
         })
     }
+    /// Return the representation identifier.
     pub fn representation_id(&self) -> RepresentationId {
         self.representation
     }
+    /// Return the port identifier.
     pub fn port_id(&self) -> &str {
         &self.port
     }
 }
 
+/// Documentary wire geometry bound to an existing logical connection.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(try_from = "RouteData")]
 pub struct ConnectionRoute {
@@ -129,6 +134,7 @@ impl TryFrom<RouteData> for ConnectionRoute {
     }
 }
 impl ConnectionRoute {
+    /// Create a wire route with fresh occurrence identity and validated orthogonal geometry.
     pub fn new(
         project_id: ProjectId,
         page_id: PageId,
@@ -151,27 +157,35 @@ impl ConnectionRoute {
             number_label_position: None,
         })
     }
+    /// Return this entity or definition's stable identifier.
     pub fn id(&self) -> RepresentationId {
         self.id
     }
+    /// Return the project identifier.
     pub fn project_id(&self) -> ProjectId {
         self.project_id
     }
+    /// Return the page identifier.
     pub fn page_id(&self) -> PageId {
         self.page_id
     }
+    /// Return the connection identifier.
     pub fn connection_id(&self) -> ConnectionId {
         self.connection_id
     }
+    /// Return the source.
     pub fn source(&self) -> &PortRef {
         &self.source
     }
+    /// Return the target.
     pub fn target(&self) -> &PortRef {
         &self.target
     }
+    /// Return the points in their stored order.
     pub fn points(&self) -> &[Point2D] {
         &self.points
     }
+    /// Return the optional number label position; absence represents an unset value or relation.
     pub fn number_label_position(&self) -> Option<Point2D> {
         self.number_label_position
     }
@@ -182,6 +196,7 @@ impl ConnectionRoute {
         self.number_label_position = position;
         self
     }
+    /// Replace the route polyline and authored constraints after geometry validation.
     pub fn with_points(mut self, points: Vec<Point2D>) -> Result<Self> {
         validate_route_points(&points)?;
         if points != self.points {
@@ -192,9 +207,9 @@ impl ConnectionRoute {
         }
         Ok(self)
     }
-    /// Prévia pura e compartilhada com a confirmação: translação comum conserva
-    /// o percurso; movimento independente repara somente os segmentos terminais.
-    /// Não gera identidade, mutação elétrica nem transação de histórico.
+    /// Pure preview shared with confirmation. A common translation preserves the route; independent
+    /// movement repairs only terminal segments. Creates no identity, electrical mutation or history
+    /// transaction.
     pub fn points_with_endpoints(&self, a: Point2D, b: Point2D) -> Result<Vec<Point2D>> {
         if let Some(intent) = &self.routing_intent {
             return self.intent_with_endpoints(intent, a, b)?.points_at(a, b);
@@ -276,13 +291,14 @@ impl ConnectionRoute {
         validate_route_points(&base)?;
         Ok(base)
     }
+    /// Whether the supplied point or entity lies in this record.
     pub fn contains(&self, p: Point2D) -> bool {
         self.points
             .windows(2)
             .any(|s| point_on_segment(p, s[0], s[1]))
     }
-    /// Etapa 19: a mesma rota sob uma transformação rígida da folha (macros).
-    /// Giro de 90°/270° troca a orientação de cada trecho em L da intenção.
+    /// The same route under a rigid sheet transform, used by macros. A 90°/270° rotation swaps each
+    /// intended L span's orientation.
     pub(in crate::domain) fn transformed(&self, t: Transform2D) -> Result<Self> {
         let map = |points: &[Point2D]| {
             points
@@ -332,6 +348,7 @@ impl TryFrom<RouteIntentData> for RouteIntent {
     }
 }
 impl RouteIntent {
+    /// Create a route intent; reject invalid input.
     pub fn new(anchors: Vec<Point2D>, horizontal_first: Vec<bool>) -> Result<Self> {
         if anchors.len() < 2 || anchors.len() > 4096 || horizontal_first.len() + 1 != anchors.len()
         {
@@ -344,6 +361,7 @@ impl RouteIntent {
         intent.points()?;
         Ok(intent)
     }
+    /// Return the points.
     pub fn points(&self) -> Result<Vec<Point2D>> {
         self.points_at(
             self.anchors[0],
@@ -460,8 +478,8 @@ pub(in crate::domain) fn validate_route_points(points: &[Point2D]) -> Result<()>
     Ok(())
 }
 
-/// Um nó documental explícito. As arestas auxiliares pertencem exclusivamente
-/// a esta junção; não representam condutores nem dispositivos físicos.
+/// Explicit document junction. Auxiliary edges belong exclusively to this junction and represent
+/// neither conductors nor physical devices.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct ConnectionJunction {
@@ -472,65 +490,99 @@ pub struct ConnectionJunction {
     pub(in crate::domain) connections: Vec<ConnectionId>,
 }
 impl ConnectionJunction {
+    /// Return this entity or definition's stable identifier.
     pub fn id(&self) -> ConnectionJunctionId {
         self.id
     }
+    /// Return the page identifier.
     pub fn page_id(&self) -> PageId {
         self.page_id
     }
+    /// Return the position in millimetre coordinates.
     pub fn position(&self) -> Point2D {
         self.position
     }
+    /// Return the routes in their stored order.
     pub fn routes(&self) -> &[RepresentationId] {
         &self.routes
     }
+    /// Return the connections in their stored order.
     pub fn connections(&self) -> &[ConnectionId] {
         &self.connections
     }
 }
 
+/// Validated route, port-binding, junction or coordinated transform operation.
 #[derive(Clone, Debug, PartialEq)]
 pub enum ConnectionDrawingEdit {
+    /// Create route with intent.
     CreateRouteWithIntent {
+        /// Explicit source endpoint.
         source: PortRef,
+        /// Explicit target of this record or operation.
         target: PortRef,
+        /// Authored route constraints, excluding automatically generated bends.
         intent: RouteIntent,
     },
+    /// Bind port.
     BindPort {
+        /// Explicit symbol occurrence and local port.
         port: PortRef,
+        /// Explicit functional connection point.
         point: Option<ConnectionPointId>,
     },
+    /// Create route.
     CreateRoute {
+        /// Explicit source endpoint.
         source: PortRef,
+        /// Explicit target of this record or operation.
         target: PortRef,
+        /// Connection points or authored geometric vertices.
         points: Vec<Point2D>,
     },
-    /// Etapa 25: rota com a geometria dada, sem desvio automático de símbolos
-    /// (importação: o percurso do arquivo de origem é preservado).
+    /// Route with supplied geometry and no automatic symbol avoidance, preserving imported paths.
     CreateRouteExact {
+        /// Explicit source endpoint.
         source: PortRef,
+        /// Explicit target of this record or operation.
         target: PortRef,
+        /// Connection points or authored geometric vertices.
         points: Vec<Point2D>,
     },
+    /// Set route.
     SetRoute {
+        /// Stable identifier of the affected object.
         id: RepresentationId,
+        /// Connection points or authored geometric vertices.
         points: Vec<Point2D>,
     },
+    /// Set number label position.
     SetNumberLabelPosition {
+        /// Stable identifier of the affected object.
         id: RepresentationId,
+        /// Position in the containing page or terminal.
         position: Option<Point2D>,
     },
+    /// Delete route.
     DeleteRoute {
+        /// Stable identifier of the affected object.
         id: RepresentationId,
     },
+    /// Create junction.
     CreateJunction {
+        /// Page identifier used by this operation or filter.
         page: PageId,
+        /// Position in the containing page or terminal.
         position: Point2D,
+        /// Route occurrence identifiers participating in this operation.
         routes: Vec<RepresentationId>,
     },
+    /// Delete junction.
     DeleteJunction {
+        /// Stable identifier of the affected object.
         id: ConnectionJunctionId,
     },
+    /// Transform.
     Transform(Vec<(RepresentationId, Transform2D)>),
 }
 
@@ -540,8 +592,8 @@ pub(in crate::domain) struct DrawingChange<K, V> {
     pub before: Option<V>,
     pub after: Option<V>,
 }
-/// Somente entidades tocadas, inclusive geometria e arestas auxiliares.
-/// Replay verifica o estado esperado antes de escrever e nunca clona Project.
+/// Only touched entities, including geometry and auxiliary edges. Replay checks expected state
+/// before writing and never clones Project.
 #[derive(Clone, Debug, PartialEq)]
 pub struct ConnectionDrawingDelta {
     pub(in crate::domain) project: ProjectId,
@@ -562,6 +614,7 @@ impl ConnectionDrawingDelta {
             connections: vec![],
         }
     }
+    /// Return the number of contained entries or entity changes recorded by this value.
     pub fn len(&self) -> usize {
         self.bindings.len()
             + self.routes.len()
@@ -569,12 +622,13 @@ impl ConnectionDrawingDelta {
             + self.representations.len()
             + self.connections.len()
     }
+    /// Whether this collection or recorded edit contains no effective entries or changes.
     pub fn is_empty(&self) -> bool {
         self.len() == 0
     }
 }
 
-/// Lista em snapshots para detectar vínculos duplicados antes de construir o índice.
+/// Snapshot list detects duplicate bindings before index construction.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub(in crate::domain) struct PortBinding {

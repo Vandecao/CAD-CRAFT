@@ -22,7 +22,7 @@ pub(super) fn convert(raw: read::RawEdz) -> ImportResult<EdzImport> {
         unknown_codes: BTreeSet::new(),
     };
     let mut converted_macros: BTreeMap<String, Option<MacroDefinition>> = BTreeMap::new();
-    // Validar TODAS as referências antes de converter qualquer dado.
+    // Validate every reference before converting any data.
     for item in parts::descendants(&manifest, "item") {
         let kind = item.attr("type").ok_or_else(|| fail("item sem tipo"))?;
         let raw_locator = item

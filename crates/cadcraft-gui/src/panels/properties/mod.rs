@@ -233,7 +233,7 @@ impl CadApp {
         let mut related = None;
         let mut drawing_edit = None;
         egui::ScrollArea::vertical().auto_shrink([false,false]).show(ui,|ui| {
-            let Some(project)=self.session.project()else{ui.weak("Nenhum projeto aberto.");return;};
+            let Some(project)=self.session.project()else{ui.weak(crate::strings::NO_OPEN_PROJECT_NOTICE);return;};
             if let Selection::Representation(id)=self.session.selection {drawing_edit=crate::connection_properties::port_controls(ui,project,id);}
             if self.session.selection==Selection::None {ui.weak("Selecione um projeto, documento, página ou representação.");return;}
             let show_identity=inspector.profile==0||inspector.profile==1;
@@ -494,7 +494,7 @@ fn target_properties(p: &Project, target: RepresentationTarget) -> Option<&Techn
     }
 }
 
-/// Etapa 13: chaves de metadados sempre oferecidas (fonte dos textos especiais).
+/// Always-available metadata keys, used as special-text sources.
 const PROJECT_KEYS: &[&str] = &["Autor", "Cliente", "Desenhista", "Data", "Revisão"];
 const PAGE_KEYS: &[&str] = &["Data", "Desenhista", "Revisão"];
 fn metadata_rows(metadata: &Metadata, standard: &[&str]) -> Vec<(String, String)> {
@@ -516,7 +516,7 @@ fn metadata_rows(metadata: &Metadata, standard: &[&str]) -> Vec<(String, String)
     }
     rows
 }
-/// Moldura (padrão do projeto ou da página) e formato das referências.
+/// Project-default or page frame and reference format.
 fn frame_rows(
     ui: &mut Ui,
     query: &str,

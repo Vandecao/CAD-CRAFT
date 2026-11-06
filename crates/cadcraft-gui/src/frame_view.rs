@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (C) 2026 Vanderlei Braga e colaboradores do CAD-CRAFT
-//! Etapa 13: desenho da moldura, dos rótulos de zona e das referências
-//! cruzadas na folha. Somente leitura do Core; nada é calculado fora dele
-//! além da conversão para a tela.
+//! Paint frames, zone labels and cross-references on the sheet. Start with the page-frame renderer. Core data is read-only; only screen conversion is performed here.
 use crate::{camera::Camera, theme};
 use cad_craft::domain::*;
 use eframe::egui::{self, Rect, Stroke, vec2};
@@ -49,7 +47,7 @@ fn arc(
     }
 }
 
-/// Texto em milímetros com alinhamento de 9 pontos e rotação anti-horária.
+/// Text in millimetres with nine-point alignment and counterclockwise rotation.
 pub(crate) fn paint_text(
     painter: &egui::Painter,
     camera: Camera,
@@ -86,7 +84,7 @@ pub(crate) fn paint_text(
     painter.add(egui::epaint::TextShape::new(anchor + rotated, galley, color).with_angle(angle));
 }
 
-/// Cor clara da marca d'água (Etapa 14).
+/// Light watermark color.
 pub(crate) const WATERMARK: egui::Color32 = egui::Color32::from_rgb(200, 205, 212);
 
 fn is_watermark(element: &FrameElement) -> bool {
@@ -96,8 +94,7 @@ fn is_watermark(element: &FrameElement) -> bool {
     )
 }
 
-/// Moldura completa da página: marcas d'água primeiro, depois elementos,
-/// textos especiais e rótulos de zona.
+/// Complete page frame: watermarks first, then elements, special text and zone labels.
 pub(crate) fn paint_frame(
     painter: &egui::Painter,
     project: &Project,
@@ -140,8 +137,7 @@ pub(crate) fn paint_zone_labels(
     }
 }
 
-/// Um elemento. Sem página (editor), o texto especial mostra o nome do campo.
-/// `color` substitui a cor padrão (seleção no editor).
+/// Paint one element. Without a page (in the editor), special text shows the field name. Color overrides the default for editor selection.
 pub(crate) fn paint_element(
     painter: &egui::Painter,
     project: &Project,
@@ -241,7 +237,7 @@ pub(crate) fn paint_element(
     }
 }
 
-// ------------------------------------------------------------- imagens
+// Images.
 
 type TextureCache = std::sync::Arc<
     std::sync::Mutex<std::collections::HashMap<AssetId, Option<egui::TextureHandle>>>,
@@ -252,7 +248,7 @@ fn textures(ctx: &egui::Context) -> TextureCache {
             .clone()
     })
 }
-/// Decodifica PNG/JPEG completo (a validação do Core é só de cabeçalho).
+/// Fully decode PNG/JPEG; Core validation checks only the header.
 pub fn decode_image(bytes: &[u8]) -> Result<egui::ColorImage, String> {
     let image = image::load_from_memory(bytes).map_err(|e| format!("imagem inválida: {e}"))?;
     let rgba = image.to_rgba8();
@@ -262,7 +258,7 @@ pub fn decode_image(bytes: &[u8]) -> Result<egui::ColorImage, String> {
         rgba.as_raw(),
     ))
 }
-/// Textura carregada (e mantida em cache) para a imagem do projeto.
+/// Load and cache the texture for a project image.
 pub fn texture(
     ctx: &egui::Context,
     project: &Project,
@@ -273,8 +269,7 @@ pub fn texture(
     if let Some(entry) = cache.get(&asset) {
         return entry.clone();
     }
-    // Sem conteúdo no projeto (ex.: pré-visualização antes da inserção) não
-    // há o que memorizar; só a decodificação definitiva entra no cache.
+    // Without project content, such as a preview before insertion, there is nothing to cache. Cache only the final decoding result.
     let bytes = project.asset(asset).and_then(ImageAsset::bytes)?;
     let handle = decode_image(bytes)
         .ok()
@@ -312,7 +307,7 @@ fn paint_image(
             );
         }
         None => {
-            // Imagem sem conteúdo (snapshot técnico) ou inválida: marcador.
+            // Use a placeholder for missing snapshot image content or invalid images.
             let s = Stroke::new(1.0_f32, color.unwrap_or(theme::GRID));
             painter.rect_stroke(screen, 0, s, egui::StrokeKind::Inside);
             painter.line_segment([screen.left_top(), screen.right_bottom()], s);
@@ -329,18 +324,17 @@ fn paint_image(
     }
 }
 
-/// Posições (mm) dos rótulos de zona: no centro da faixa de até 5 mm entre a
-/// área útil e a borda da folha, em cada lado habilitado.
+/// Zone label positions in millimetres, centered in the strip of up to 5 mm between the usable area and sheet edge on each enabled side.
 pub fn zone_labels(frame: &FrameTemplate) -> Vec<(String, Point2D)> {
     cad_craft::display::frame_zone_labels(frame)
 }
 
-/// Referências cruzadas (texto completo por ocorrência), montadas no Core.
+/// Cross-references assembled by Core, with complete text per occurrence.
 pub fn cross_reference_texts(project: &Project, page: PageId) -> Vec<(RepresentationId, String)> {
     texts_of(project, page, SheetReferenceKind::CrossReference)
 }
 
-/// Espelho derivado: um contato do cadastro aparece mesmo sem representação.
+/// Derived contact mirror includes registered contacts without representations.
 pub fn contact_mirror_texts(project: &Project, page: PageId) -> Vec<(RepresentationId, String)> {
     texts_of(project, page, SheetReferenceKind::ContactMirror)
 }

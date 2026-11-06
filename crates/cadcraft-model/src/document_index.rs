@@ -4,7 +4,7 @@
 use crate::domain::{PageId, Representation, RepresentationId, RepresentationTarget};
 use std::collections::{BTreeMap, BTreeSet};
 
-/// Índices reconstruíveis; nunca são serializados ou fonte de identidade.
+/// Rebuildable indexes; never serialized or used as an identity source.
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub(crate) struct DocumentIndex {
     pub(crate) by_page: BTreeMap<PageId, BTreeSet<RepresentationId>>,

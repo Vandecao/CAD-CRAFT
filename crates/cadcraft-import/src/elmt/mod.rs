@@ -2,10 +2,10 @@
 // Copyright (C) 2026 Vanderlei Braga e colaboradores do CAD-CRAFT
 //! QElectroTech symbol import; start at `import`, then read, convert and report.
 //!
-//! Coordenadas QET: px relativos ao ponto de inserção (hotspot), Y para
-//! baixo. CAD-CRAFT: mm, Y para cima. Escala padrão aprovada: 0,5 mm/px.
-//! Os elementos da coleção QElectroTech (CC-BY 3.0) servem só de entrada do
-//! usuário; não são versionados nem usados como dados de aprendizado.
+//! QET coordinates are pixels relative to the insertion hotspot, with Y
+//! downward. CAD-CRAFT uses mm and Y upward. Default scale: 0.5 mm/px.
+//! QElectroTech collection elements (CC-BY 3.0) are user-provided inputs;
+//! they are neither versioned here nor used as training data.
 use crate::xml::{self, Element};
 use crate::{ImportReport, ImportResult, check_size, fail};
 use cadcraft_model::domain::{
@@ -14,15 +14,15 @@ use cadcraft_model::domain::{
 };
 use std::collections::{BTreeMap, BTreeSet};
 
-/// Escala padrão (mm por px do QElectroTech), decisão da Etapa 17.
+/// Default scale in mm per QElectroTech pixel.
 pub const DEFAULT_MM_PER_PX: f64 = 0.5;
 
 #[derive(Debug, Clone)]
 pub struct ElmtOptions {
     pub mm_per_px: f64,
-    /// Categoria na biblioteca (ex.: nome da pasta de origem).
+    /// Library category, such as the source folder name.
     pub category: String,
-    /// Base do ID quando o elemento não tem UUID (ex.: nome do arquivo).
+    /// ID base when the element has no UUID, such as the filename.
     pub id_hint: String,
 }
 impl ElmtOptions {

@@ -4,8 +4,8 @@
 
 use super::*;
 
-/// Posições (mm) dos rótulos de zona: no centro da faixa de até 5 mm entre a
-/// área útil e a borda da folha, em cada lado habilitado.
+/// Zone label positions in mm: centered in the strip of at most 5 mm between
+/// the usable area and sheet border on each enabled side.
 pub fn frame_zone_labels(frame: &FrameTemplate) -> Vec<(String, Point2D)> {
     let u = frame.usable();
     let (min, max) = (u.origin(), u.max());
@@ -129,7 +129,7 @@ impl Builder<'_> {
         }
     }
 
-    /// Margem e cabeçalho provisórios de página sem moldura (como na tela).
+    /// Fallback margin and header for a page without a frame, matching the screen.
     pub(super) fn provisional_frame(&mut self, page: &Page) {
         self.layer = DisplayLayer::Guides;
         let (w, h) = (page.size().width(), page.size().height());

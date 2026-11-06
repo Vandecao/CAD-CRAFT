@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (C) 2026 Vanderlei Braga e colaboradores do CAD-CRAFT
-//! Etapas 21–22: cenário comum dos testes de saída (PDF e DXF).
+//! Shared synthetic output fixture for PDF and DXF tests.
+// Synthetic test fixtures intentionally fail fast when setup is invalid.
+#![allow(clippy::unwrap_used)]
 #![allow(dead_code)]
 use cad_craft::domain::*;
 
@@ -14,7 +16,7 @@ pub fn rect(x: f64, y: f64, w: f64, h: f64) -> Rect2D {
     Rect2D::new(p(x, y), Size2D::new(w, h).unwrap()).unwrap()
 }
 
-/// Logotipo PNG real (4×2, com transparência).
+/// Synthetic 4-by-2 PNG logo with transparency.
 pub fn logo() -> Vec<u8> {
     let mut image = image::RgbaImage::new(4, 2);
     for (i, px) in image.pixels_mut().enumerate() {
@@ -25,7 +27,7 @@ pub fn logo() -> Vec<u8> {
     bytes.into_inner()
 }
 
-/// Bobina com a designação como texto dinâmico.
+/// Coil with its designation rendered as dynamic text.
 pub fn coil() -> SymbolDefinition {
     SymbolDefinition::new(
         SymbolDefinitionId::new("teste.bobina").unwrap(),
@@ -126,8 +128,8 @@ pub struct Fixture {
     pub contact: RepresentationId,
 }
 
-/// Três páginas A3 com moldura de fábrica + logotipo; bobina -K1 e fio
-/// numerado na página 1; contato de -K1 na página 2; interrupções 2 ↔ 3.
+/// Three A3 pages share a factory frame and logo; page 1 has coil -K1 and a numbered wire, page
+/// 2 its contact, and pages 2/3 paired interruptions.
 pub fn fixture(name: &str) -> Fixture {
     let mut project = Project::new(name).unwrap();
     let doc = project
@@ -228,8 +230,8 @@ pub fn fixture(name: &str) -> Fixture {
     }
 }
 
-/// Projeto de escala: uma página A3 com moldura, 30 bobinas e 30 fios,
-/// copiada até `pages` páginas.
+/// Scale fixture: repeat an A3 page with a frame, 30 coils and 30 wires to the requested page
+/// count.
 pub fn scale_project(pages: usize) -> Project {
     let mut project = Project::new("Escala").unwrap();
     let doc = project
@@ -282,14 +284,13 @@ pub fn scale_project(pages: usize) -> Project {
             })
             .unwrap();
     }
-    // Copia a página no JSON com IDs novos e valida uma vez ao carregar
-    // (inserir macros de página validaria o projeto inteiro a cada vez).
+    // Copy pages in JSON with fresh identifiers and validate once at load; individual macro
+    // insertion would repeatedly validate the entire project.
     replicate_page(&project, pages)
 }
 
-/// Projeto de uma página → `count` páginas iguais (IDs novos, número da
-/// página sequencial). Coleções compartilhadas (documentos, símbolos,
-/// molduras, imagens) não são copiadas.
+/// Expand one page into count pages with fresh identifiers and sequential numbers. Shared
+/// documents, symbols, frames and images are not duplicated.
 pub fn replicate_page(project: &Project, count: usize) -> Project {
     const COPIED: [&str; 12] = [
         "pages",

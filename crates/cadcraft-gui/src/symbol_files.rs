@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (C) 2026 Vanderlei Braga e colaboradores do CAD-CRAFT
-//! Etapa 17: biblioteca externa de símbolos (`.cadsym`), importação `.elmt`
-//! e atualização dos símbolos do projeto.
+//! External .cadsym symbol library, .elmt import and project-symbol updates; start with library loading.
 use crate::app::{CadApp, Level};
 use crate::commands::CommandId;
 use crate::error::{GuiError, GuiResult};
@@ -37,7 +36,7 @@ fn collect(dir: &Path, ext: &str, depth: usize, out: &mut Vec<PathBuf>) {
     }
 }
 
-/// Nome de arquivo seguro a partir do nome do símbolo.
+/// Safe filename derived from the symbol name.
 fn file_stem(name: &str) -> String {
     let stem: String = name
         .chars()
@@ -76,8 +75,7 @@ impl CadApp {
         (!s.is_empty()).then(|| PathBuf::from(s))
     }
 
-    /// Lê a pasta da biblioteca; símbolos repetidos ficam na maior versão.
-    /// Devolve quantos símbolos foram carregados.
+    /// Read the library directory, keeping the highest version for duplicate symbols; return the number loaded.
     pub fn reload_symbol_library(&mut self) -> usize {
         let mut by_id: BTreeMap<SymbolDefinitionId, SymbolDefinition> = BTreeMap::new();
         let mut errors = Vec::new();
@@ -105,7 +103,7 @@ impl CadApp {
                 ));
             }
         }
-        // Símbolos só em memória (sem pasta) continuam disponíveis.
+        // Symbols held only in memory remain available without a directory.
         if self.symbol_library_dir().is_none() {
             for d in std::mem::take(&mut self.session.symbol_library) {
                 by_id.entry(d.id().clone()).or_insert(d);
@@ -126,8 +124,7 @@ impl CadApp {
         count
     }
 
-    /// Grava na pasta da biblioteca (ou guarda em memória se não houver
-    /// pasta) e recarrega.
+    /// Save to the library directory, or retain in memory without one, then reload.
     pub(crate) fn add_to_symbol_library(
         &mut self,
         definition: SymbolDefinition,
@@ -145,7 +142,7 @@ impl CadApp {
         let bytes = persistence::write_symbol_package(&definition).map_err(GuiError::from)?;
         let stem = file_stem(definition.name());
         let mut path = dir.join(format!("{stem}.{}", persistence::SYMBOL_EXTENSION));
-        // Arquivo de outro símbolo com o mesmo nome: acrescenta o ID.
+        // Append the ID when another symbol has the same filename.
         if path.exists() && read_symbol_file(&path).is_ok_and(|d| d.id() != definition.id()) {
             path = dir.join(format!(
                 "{stem}-{}.{}",
@@ -157,8 +154,7 @@ impl CadApp {
         Ok(Some(path))
     }
 
-    /// Símbolo atual para exportar: editor aberto, ocorrência selecionada ou
-    /// escolhido no Centro de inserção.
+    /// Current export symbol: open editor, selected occurrence or insertion-centre selection.
     pub(crate) fn current_symbol(&self) -> Option<SymbolDefinition> {
         if let Some(d) = self.symbol_editor.definition() {
             return Some(d);
@@ -276,7 +272,7 @@ impl CadApp {
         }
     }
 
-    /// Converte `.elmt` (escala padrão 0,5 mm/px) para a biblioteca.
+    /// Convert .elmt files into the library; default scale is 0.5 mm per pixel.
     pub(crate) fn import_elmt_files(&mut self, files: Vec<PathBuf>) {
         let (mut ok, mut failed, mut notes) = (0usize, Vec::new(), 0usize);
         for path in &files {
@@ -328,8 +324,7 @@ impl CadApp {
         }
     }
 
-    /// Troca as definições do projeto pelas versões mais novas da biblioteca
-    /// com portas compatíveis (um passo de Desfazer); lista as recusadas.
+    /// Replace project definitions with the latest library versions having compatible ports in one undo step; list rejected updates.
     pub(crate) fn update_project_symbols(&mut self) {
         let Some(project) = self.session.project() else {
             return;

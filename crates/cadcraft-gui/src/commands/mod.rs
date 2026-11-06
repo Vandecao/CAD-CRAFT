@@ -192,7 +192,7 @@ impl Command {
         self.reason(s).is_none()
     }
     pub fn reason(&self, s: &Session) -> Option<&'static str> {
-        // Etapa 19: girar/espelhar ajustam a macro ainda em posicionamento.
+        // Rotation and mirroring adjust the macro being positioned.
         if s.graphics.macro_draft.is_some()
             && matches!(
                 self.id,
@@ -361,7 +361,7 @@ pub fn registry() -> Vec<Command> {
                 "Colar"
                     | "Recortar"
                     | "Copiar"
-                    | "Excluir"
+                    | crate::strings::DELETE
                     | "Duplicar"
                     | "Texto"
                     | "Inserir texto"

@@ -12,16 +12,16 @@ use cad_craft::{
     error::{DomainError, Result},
 };
 
-/// Etapa 16: área de transferência da sessão (não persiste).
+/// Session clipboard, never persisted.
 #[derive(Clone, Debug)]
 pub struct PageClipboard {
     project: ProjectId,
     items: Vec<ClipItem>,
-    /// Canto inferior esquerdo do conjunto: ponto de referência da colagem.
+    /// Lower-left corner of the set, used as the paste reference point.
     origin: Point2D,
-    /// Colar símbolo como nova função do mesmo dispositivo (em vez de novo).
+    /// Paste a symbol as a new function of the same device instead of a new device.
     pub keep_device: bool,
-    /// Etapa 19: seleção com fios — colada pelo motor de macros.
+    /// Selection with wires, pasted by the macro engine.
     wired: Option<MacroContent>,
 }
 impl PageClipboard {
@@ -37,13 +37,13 @@ impl PageClipboard {
     pub fn is_empty(&self) -> bool {
         self.len() == 0
     }
-    /// Etapa 19: a cópia leva fios (colagem pelo motor de macros).
+    /// The copy includes wires and uses the macro engine for pasting.
     pub fn is_wired(&self) -> bool {
         self.wired.is_some()
     }
 }
 
-/// Deslocamento de Duplicar (Ctrl+D), em mm.
+/// Duplicate (Ctrl+D) offset in millimetres.
 pub const DUPLICATE_OFFSET: (f64, f64) = (10.0, -10.0);
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
@@ -77,11 +77,11 @@ pub struct Session {
     pub graphics: Interaction,
     pub history: History,
     pub clipboard: Option<PageClipboard>,
-    /// Etapa 17: símbolos da biblioteca externa (pasta `.cadsym`).
+    /// External symbol library from the .cadsym directory.
     pub symbol_library: Vec<SymbolDefinition>,
-    /// Muda a cada recarga da biblioteca (invalida filtros).
+    /// Changes on each library reload, invalidating filters.
     pub symbol_library_revision: u64,
-    /// Etapa 12: arquivo `.cadcraft` associado (com trava) ou `None`.
+    /// Associated .cadcraft file with its lock, or None.
     pub file: Option<crate::project_file::ProjectFile>,
 }
 mod clipboard;
@@ -90,19 +90,19 @@ mod domain;
 mod graphics;
 
 impl Session {
-    /// IDs da seleção gráfica na página ativa, conferindo visibilidade.
+    /// Graphical selection IDs on the active page, checking visibility.
     fn clipboard_selection(&self) -> Result<Vec<RepresentationId>> {
         if self.graphics.junction_selection.is_some() {
             return Err(DomainError::InvalidRelation(
                 "junção não admitida na área de transferência",
             ));
         }
-        let p = self
-            .project()
-            .ok_or(DomainError::InvalidRelation("nenhum projeto aberto"))?;
+        let p = self.project().ok_or(DomainError::InvalidRelation(
+            crate::strings::NO_OPEN_PROJECT,
+        ))?;
         let page = self
             .active
-            .ok_or(DomainError::InvalidRelation("abra uma página"))?;
+            .ok_or(DomainError::InvalidRelation(crate::strings::OPEN_PAGE))?;
         let ids: Vec<_> = self.graphics.selection.ids().iter().copied().collect();
         for id in &ids {
             let r = p
@@ -117,9 +117,9 @@ impl Session {
         Ok(ids)
     }
     fn clipboard_from(&self, items: Vec<ClipItem>) -> Result<PageClipboard> {
-        let p = self
-            .project()
-            .ok_or(DomainError::InvalidRelation("nenhum projeto aberto"))?;
+        let p = self.project().ok_or(DomainError::InvalidRelation(
+            crate::strings::NO_OPEN_PROJECT,
+        ))?;
         let mut min = (f64::INFINITY, f64::INFINITY);
         for item in &items {
             let b = item.representation().bounds()?;
@@ -133,12 +133,11 @@ impl Session {
             wired: None,
         })
     }
-    /// Etapa 19: seleção com fios vira conteúdo de macro (fios e junções
-    /// internos entram; o resto segue a regra da Etapa 16).
+    /// Convert a selection with wires to macro content, including internal wires and junctions; other content follows the graphical clipboard rules.
     fn wired_selection(&self, ids: &[RepresentationId]) -> Result<Option<MacroContent>> {
-        let p = self
-            .project()
-            .ok_or(DomainError::InvalidRelation("nenhum projeto aberto"))?;
+        let p = self.project().ok_or(DomainError::InvalidRelation(
+            crate::strings::NO_OPEN_PROJECT,
+        ))?;
         if !ids.iter().any(|id| p.connection_route(*id).is_some()) {
             return Ok(None);
         }
@@ -150,7 +149,7 @@ impl Session {
         }
         Ok(Some(content))
     }
-    /// Etapa 19: cola o conteúdo com fios em `at` (canto inferior esquerdo).
+    /// Paste content with wires at the lower-left corner at.
     fn paste_wired(
         &mut self,
         content: &MacroContent,
@@ -159,7 +158,7 @@ impl Session {
     ) -> Result<Vec<RepresentationId>> {
         let page = self
             .active
-            .ok_or(DomainError::InvalidRelation("abra uma página"))?;
+            .ok_or(DomainError::InvalidRelation(crate::strings::OPEN_PAGE))?;
         let p = self.project_mut()?;
         let (delta, _) = p.insert_macro_content(
             content,
@@ -179,9 +178,9 @@ impl Session {
         self.project.as_ref()
     }
     fn project_mut(&mut self) -> Result<&mut Project> {
-        self.project
-            .as_mut()
-            .ok_or(DomainError::InvalidRelation("nenhum projeto aberto"))
+        self.project.as_mut().ok_or(DomainError::InvalidRelation(
+            crate::strings::NO_OPEN_PROJECT,
+        ))
     }
     fn changed(&mut self) {
         self.dirty = true;
@@ -198,7 +197,7 @@ impl Session {
         self.selection_revision = self.selection_revision.wrapping_add(1);
         self.graphics = Interaction::default();
     }
-    /// Abas de páginas removidas (exclusão ou Undo de criação) são fechadas.
+    /// Close tabs for pages removed by deletion or undoing creation.
     fn prune_tabs(&mut self) {
         let missing: Vec<_> = self
             .tabs
@@ -212,7 +211,7 @@ impl Session {
     }
 }
 
-/// Prefixo de designação sugerido por símbolo (editável no centro de inserção).
+/// Suggested designation prefix per symbol, editable in the insertion centre.
 pub fn default_prefix(definition: &SymbolDefinition) -> &'static str {
     match definition.id().as_str() {
         "cad-craft.contact-no" | "cad-craft.contact-nc" | "cad-craft.coil" => "K",
@@ -225,7 +224,7 @@ pub fn default_prefix(definition: &SymbolDefinition) -> &'static str {
         _ => "D",
     }
 }
-/// Tipo funcional da nova função; símbolos sem tipo próprio usam o nome.
+/// Function type for a new function; untyped symbols use their name.
 pub fn function_kind(definition: &SymbolDefinition) -> Result<FunctionKind> {
     Ok(match definition.id().as_str() {
         "cad-craft.coil" => FunctionKind::Coil,
@@ -234,7 +233,7 @@ pub fn function_kind(definition: &SymbolDefinition) -> Result<FunctionKind> {
     })
 }
 
-/// Etapa 13: projeto novo recebe as molduras de fábrica; A3 é a padrão.
+/// Add factory frames to a new project, with A3 as the default.
 pub fn with_factory_frames(mut project: Project) -> Result<Project> {
     let a3 = FrameTemplate::factory_a3();
     let id = a3.id();
@@ -243,7 +242,7 @@ pub fn with_factory_frames(mut project: Project) -> Result<Project> {
     project.edit_frame(FrameEdit::SetDefaultFrame(Some(id)))?;
     Ok(project)
 }
-/// Moldura do projeto cuja folha coincide com o tamanho (tolerância 0,5 mm).
+/// Project frame matching the sheet dimensions within 0.5 mm.
 pub fn frame_for_size(project: &Project, size: Size2D) -> Option<FrameTemplateId> {
     project
         .frames()

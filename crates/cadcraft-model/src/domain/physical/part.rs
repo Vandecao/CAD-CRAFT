@@ -6,11 +6,12 @@ use crate::error::{DomainError, Result};
 use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, BTreeSet};
 
-/// Chave textual estável da peça, independente dos IDs UUID do projeto.
+/// Stable textual part key independent of project UUIDs.
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
 #[serde(try_from = "String", into = "String")]
 pub struct PartId(String);
 impl PartId {
+    /// Validate a stable textual catalog key without project UUID semantics.
     pub fn new(value: impl Into<String>) -> Result<Self> {
         let value = value.into();
         if value.trim() != value
@@ -22,6 +23,7 @@ impl PartId {
         }
         Ok(Self(value))
     }
+    /// Borrow the validated textual value.
     pub fn as_str(&self) -> &str {
         &self.0
     }
@@ -38,6 +40,7 @@ impl From<PartId> for String {
     }
 }
 
+/// Function and point template supplied by a catalog part.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(try_from = "PartFunctionData")]
 pub struct PartFunction {
@@ -65,6 +68,7 @@ impl TryFrom<PartFunctionData> for PartFunction {
     }
 }
 impl PartFunction {
+    /// Create a catalog function template with validated, unique point labels.
     pub fn new<'a>(
         kind: FunctionKind,
         role: FunctionRole,
@@ -86,24 +90,30 @@ impl PartFunction {
             suggested_symbol: None,
         })
     }
+    /// Return the kind.
     pub fn kind(&self) -> &FunctionKind {
         &self.kind
     }
+    /// Return the role.
     pub fn role(&self) -> FunctionRole {
         self.role
     }
+    /// Return the points in their stored order.
     pub fn points(&self) -> &[Text] {
         &self.points
     }
+    /// Return the optional suggested symbol; absence represents an unset value or relation.
     pub fn suggested_symbol(&self) -> Option<&SymbolDefinitionId> {
         self.suggested_symbol.as_ref()
     }
+    /// Return this value with suggested symbol replaced.
     pub fn with_suggested_symbol(mut self, symbol: SymbolDefinitionId) -> Self {
         self.suggested_symbol = Some(symbol);
         self
     }
 }
 
+/// Catalog part copied into the project, including properties and function templates.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(try_from = "PartData")]
 pub struct Part {
@@ -152,6 +162,7 @@ impl TryFrom<PartData> for Part {
     }
 }
 impl Part {
+    /// Check local value constraints and report the first violated invariant.
     pub fn validate(&self) -> Result<()> {
         if self.functions.len() > 128 {
             return Err(DomainError::InvalidRelation("funções demais na peça"));
@@ -173,6 +184,7 @@ impl Part {
         }
         Ok(())
     }
+    /// Create a catalog part with validated identity, manufacturer, code and description.
     pub fn new(
         id: impl Into<String>,
         manufacturer: impl Into<String>,
@@ -191,34 +203,44 @@ impl Part {
             functions: Vec::new(),
         })
     }
+    /// Return this entity or definition's stable identifier.
     pub fn id(&self) -> &PartId {
         &self.id
     }
+    /// Return the manufacturer.
     pub fn manufacturer(&self) -> &Text {
         &self.manufacturer
     }
+    /// Return the code.
     pub fn code(&self) -> &Text {
         &self.code
     }
+    /// Return the description.
     pub fn description(&self) -> &Text {
         &self.description
     }
+    /// Return the classification.
     pub fn classification(&self) -> &Text {
         &self.classification
     }
+    /// Return the properties.
     pub fn properties(&self) -> &TechnicalProperties {
         &self.properties
     }
+    /// Return the functions in their stored order.
     pub fn functions(&self) -> &[PartFunction] {
         &self.functions
     }
+    /// Borrow localized descriptions indexed by language key.
     pub fn translations(&self) -> &BTreeMap<Text, Text> {
         &self.translations
     }
+    /// Return this value with properties replaced.
     pub fn with_properties(mut self, properties: TechnicalProperties) -> Self {
         self.properties = properties;
         self
     }
+    /// Return this value with translation replaced.
     pub fn with_translation(
         mut self,
         language: impl Into<String>,
@@ -228,6 +250,7 @@ impl Part {
             .insert(Text::new(language)?, Text::new(description)?);
         Ok(self)
     }
+    /// Return this value with functions replaced, rejecting invalid input.
     pub fn with_functions(mut self, functions: Vec<PartFunction>) -> Result<Self> {
         self.functions = functions;
         self.validate()?;
