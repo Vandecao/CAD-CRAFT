@@ -98,7 +98,7 @@ impl InsertionState {
 impl CadApp {
     /// Etapa 17: símbolo escolhido no Centro de inserção.
     pub(crate) fn selected_library_symbol(&self) -> Option<SymbolDefinitionId> {
-        self.insertion.symbols.selected.clone()
+        self.panels_state.insertion.symbols.selected.clone()
     }
     pub(crate) fn show_insertion(&mut self, ui: &mut Ui) {
         // Etapa 27: the "Assistente" tab shares the panel with the insertion
@@ -124,32 +124,32 @@ impl CadApp {
                 ui.label("Conteúdo livre · clique na folha para posicionar");
                 if self.session.graphics.tool == crate::interaction::Tool::InsertText {
                     ui.add(
-                        egui::TextEdit::singleline(&mut self.free_text)
+                        egui::TextEdit::singleline(&mut self.free_content.free_text)
                             .hint_text("Texto fixo Unicode"),
                     );
                     ui.horizontal(|ui| {
                         ui.label("Altura (mm)");
                         ui.add(
-                            egui::DragValue::new(&mut self.free_height)
+                            egui::DragValue::new(&mut self.free_content.free_height)
                                 .range(0.1..=100.0)
                                 .speed(0.1),
                         );
                     });
                     egui::ComboBox::from_id_salt("free_text_align")
-                        .selected_text(format!("{:?}", self.free_align))
+                        .selected_text(format!("{:?}", self.free_content.free_align))
                         .show_ui(ui, |ui| {
                             ui.selectable_value(
-                                &mut self.free_align,
+                                &mut self.free_content.free_align,
                                 TextAlignment::Left,
                                 "Esquerda",
                             );
                             ui.selectable_value(
-                                &mut self.free_align,
+                                &mut self.free_content.free_align,
                                 TextAlignment::Center,
                                 "Centro",
                             );
                             ui.selectable_value(
-                                &mut self.free_align,
+                                &mut self.free_content.free_align,
                                 TextAlignment::Right,
                                 "Direita",
                             );
@@ -158,7 +158,7 @@ impl CadApp {
                 ui.horizontal(|ui| {
                     ui.label("Traço (mm)");
                     ui.add(
-                        egui::DragValue::new(&mut self.free_stroke)
+                        egui::DragValue::new(&mut self.free_content.free_stroke)
                             .range(0.01..=10.0)
                             .speed(0.01),
                     );
@@ -167,7 +167,7 @@ impl CadApp {
             });
         }
         ui.add(
-            egui::TextEdit::singleline(&mut self.insertion.query)
+            egui::TextEdit::singleline(&mut self.panels_state.insertion.query)
                 .hint_text("Pesquisar registros disponíveis")
                 .desired_width(f32::INFINITY),
         );
@@ -177,32 +177,33 @@ impl CadApp {
                 Icon::ArrowLeft,
                 "",
                 "Voltar categoria",
-                self.insertion.position > 0,
+                self.panels_state.insertion.position > 0,
                 false,
                 false,
             )
             .clicked()
             {
-                self.insertion.position -= 1;
+                self.panels_state.insertion.position -= 1;
             }
             if icons::button(
                 ui,
                 Icon::ArrowRight,
                 "",
                 "Avançar categoria",
-                self.insertion.position + 1 < self.insertion.history.len(),
+                self.panels_state.insertion.position + 1
+                    < self.panels_state.insertion.history.len(),
                 false,
                 false,
             )
             .clicked()
             {
-                self.insertion.position += 1;
+                self.panels_state.insertion.position += 1;
             }
             if icons::tiny(ui, Icon::Home, "Página inicial do centro de inserção").clicked() {
-                self.insertion.navigate("Página inicial");
+                self.panels_state.insertion.navigate("Página inicial");
             }
         });
-        let category = self.insertion.history[self.insertion.position];
+        let category = self.panels_state.insertion.history[self.panels_state.insertion.position];
         ui.small(category);
         ui.separator();
         if category == "Símbolos" {
@@ -215,7 +216,7 @@ impl CadApp {
                         .show_ui(ui, |ui| {
                             for name in CATEGORIES {
                                 if ui.selectable_label(name == category, name).clicked() {
-                                    self.insertion.navigate(name);
+                                    self.panels_state.insertion.navigate(name);
                                 }
                             }
                         });
@@ -230,7 +231,7 @@ impl CadApp {
             .show(ui, |ui| {
                 for name in CATEGORIES {
                     if ui.selectable_label(name == category, name).clicked() {
-                        self.insertion.navigate(name);
+                        self.panels_state.insertion.navigate(name);
                     }
                 }
                 ui.separator();
@@ -252,14 +253,14 @@ impl CadApp {
                             device.classification().as_str()
                         );
                         let in_category = match category {
-                            "Favoritos" => self.insertion.favorites.contains(&target),
-                            "Últimos utilizados" => self.insertion.recent.contains(&target),
+                            "Favoritos" => self.panels_state.insertion.favorites.contains(&target),
+                            "Últimos utilizados" => self.panels_state.insertion.recent.contains(&target),
                             _ => true,
                         };
                         if !in_category
                             || !text
                                 .to_lowercase()
-                                .contains(&self.insertion.query.to_lowercase())
+                                .contains(&self.panels_state.insertion.query.to_lowercase())
                         {
                             continue;
                         }
@@ -280,7 +281,7 @@ impl CadApp {
                                 "",
                                 "Adicionar/remover dos favoritos desta sessão",
                                 true,
-                                self.insertion.favorites.contains(&target),
+                                self.panels_state.insertion.favorites.contains(&target),
                                 false,
                             )
                             .clicked()
@@ -299,32 +300,38 @@ impl CadApp {
             });
         if let Some(target) = selected {
             self.session.select(Selection::Electrical(target));
-            self.insertion.recent.retain(|id| *id != target);
-            self.insertion.recent.insert(0, target);
-            self.insertion.recent.truncate(20);
+            self.panels_state
+                .insertion
+                .recent
+                .retain(|id| *id != target);
+            self.panels_state.insertion.recent.insert(0, target);
+            self.panels_state.insertion.recent.truncate(20);
         }
         if let Some(target) = favorite {
-            if self.insertion.favorites.contains(&target) {
-                self.insertion.favorites.retain(|id| *id != target);
+            if self.panels_state.insertion.favorites.contains(&target) {
+                self.panels_state
+                    .insertion
+                    .favorites
+                    .retain(|id| *id != target);
             } else {
-                self.insertion.favorites.push(target);
+                self.panels_state.insertion.favorites.push(target);
             }
         }
     }
     fn show_symbol_browser(&mut self, ui: &mut Ui) {
         let mut start = None;
         let revision = (self.session.revision, self.session.symbol_library_revision);
-        if self.insertion.symbols.catalog_revision != Some(revision) {
-            self.insertion.symbols.catalog = self
+        if self.panels_state.insertion.symbols.catalog_revision != Some(revision) {
+            self.panels_state.insertion.symbols.catalog = self
                 .session
                 .symbol_catalog()
                 .into_iter()
                 .map(std::sync::Arc::new)
                 .collect();
-            self.insertion.symbols.catalog_revision = Some(revision);
-            self.insertion.symbols.cached_filter = None;
+            self.panels_state.insertion.symbols.catalog_revision = Some(revision);
+            self.panels_state.insertion.symbols.cached_filter = None;
         }
-        let browser = &mut self.insertion.symbols;
+        let browser = &mut self.panels_state.insertion.symbols;
         let categories: std::collections::BTreeSet<String> = browser
             .catalog
             .iter()
@@ -338,7 +345,7 @@ impl CadApp {
                     ui.selectable_value(&mut browser.category, Some(category.clone()), category);
                 }
             });
-        browser.filter(&self.insertion.query);
+        browser.filter(&self.panels_state.insertion.query);
         let active = self.session.active.is_some();
         let selected_definition = browser
             .selected

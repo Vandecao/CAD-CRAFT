@@ -4,6 +4,7 @@
 //! e atualização dos símbolos do projeto.
 use crate::app::{CadApp, Level};
 use crate::commands::CommandId;
+use crate::error::{GuiError, GuiResult};
 use cad_craft::{domain::*, interchange::elmt, persistence};
 use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
@@ -60,13 +61,13 @@ fn file_stem(name: &str) -> String {
     }
 }
 
-pub(crate) fn read_symbol_file(path: &Path) -> Result<SymbolDefinition, String> {
-    let meta = std::fs::metadata(path).map_err(|e| e.to_string())?;
+pub(crate) fn read_symbol_file(path: &Path) -> GuiResult<SymbolDefinition> {
+    let meta = std::fs::metadata(path).map_err(GuiError::from)?;
     if meta.len() > MAX_SYMBOL_FILE {
         return Err("arquivo de símbolo acima de 16 MiB".into());
     }
-    let bytes = std::fs::read(path).map_err(|e| e.to_string())?;
-    persistence::read_symbol_package(&bytes).map_err(|e| e.to_string())
+    let bytes = std::fs::read(path).map_err(GuiError::from)?;
+    persistence::read_symbol_package(&bytes).map_err(GuiError::from)
 }
 
 impl CadApp {
@@ -130,7 +131,7 @@ impl CadApp {
     pub(crate) fn add_to_symbol_library(
         &mut self,
         definition: SymbolDefinition,
-    ) -> Result<Option<PathBuf>, String> {
+    ) -> GuiResult<Option<PathBuf>> {
         let Some(dir) = self.symbol_library_dir() else {
             self.session
                 .symbol_library
@@ -140,8 +141,8 @@ impl CadApp {
                 self.session.symbol_library_revision.wrapping_add(1);
             return Ok(None);
         };
-        std::fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
-        let bytes = persistence::write_symbol_package(&definition).map_err(|e| e.to_string())?;
+        std::fs::create_dir_all(&dir).map_err(GuiError::from)?;
+        let bytes = persistence::write_symbol_package(&definition).map_err(GuiError::from)?;
         let stem = file_stem(definition.name());
         let mut path = dir.join(format!("{stem}.{}", persistence::SYMBOL_EXTENSION));
         // Arquivo de outro símbolo com o mesmo nome: acrescenta o ID.
@@ -152,8 +153,7 @@ impl CadApp {
                 persistence::SYMBOL_EXTENSION
             ));
         }
-        crate::project_file::write_atomic(&path, &mut bytes.as_slice())
-            .map_err(|e| e.to_string())?;
+        crate::project_file::write_atomic(&path, &mut bytes.as_slice()).map_err(GuiError::from)?;
         Ok(Some(path))
     }
 
@@ -206,10 +206,10 @@ impl CadApp {
                     path
                 };
                 let result = persistence::write_symbol_package(&d)
-                    .map_err(|e| e.to_string())
+                    .map_err(GuiError::from)
                     .and_then(|bytes| {
                         crate::project_file::write_atomic(&path, &mut bytes.as_slice())
-                            .map_err(|e| e.to_string())
+                            .map_err(GuiError::from)
                     });
                 match result {
                     Ok(()) => {
@@ -294,15 +294,15 @@ impl CadApp {
                 options.category = category;
             }
             let result = std::fs::metadata(path)
-                .map_err(|e| e.to_string())
+                .map_err(GuiError::from)
                 .and_then(|m| {
                     if m.len() > MAX_SYMBOL_FILE {
                         Err("arquivo acima de 16 MiB".into())
                     } else {
-                        std::fs::read(path).map_err(|e| e.to_string())
+                        std::fs::read(path).map_err(GuiError::from)
                     }
                 })
-                .and_then(|bytes| elmt::import(&bytes, &options).map_err(|e| e.to_string()));
+                .and_then(|bytes| elmt::import(&bytes, &options).map_err(GuiError::from));
             match result.and_then(|s| {
                 notes += s.report.notes.iter().map(|(_, n)| n).sum::<usize>();
                 self.add_to_symbol_library(s.definition)

@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (C) 2026 Vanderlei Braga e colaboradores do CAD-CRAFT
 //! Diálogos de geração, atualização e exportação de relatórios tabulares.
+use crate::error::{GuiError, GuiResult};
 use crate::{project_file::FileServices, state::Session};
 use cad_craft::domain::*;
 use cad_craft::report_export::{export_csv, export_xlsx};
@@ -24,7 +25,7 @@ enum WorkResult {
 struct ReportWork {
     progress: Arc<AtomicUsize>,
     cancel: Arc<AtomicBool>,
-    receiver: Receiver<Result<WorkResult, String>>,
+    receiver: Receiver<GuiResult<WorkResult>>,
 }
 impl std::fmt::Debug for ReportWork {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -132,7 +133,7 @@ impl ReportWindow {
                             Ok(WorkResult::Export(path)) => {
                                 Ok(format!("Lista exportada: {}", path.display()))
                             }
-                            Err(e) => Err(e),
+                            Err(e) => Err(e.to_string()),
                         }
                     });
                 }
@@ -350,12 +351,10 @@ impl ReportWindow {
                 let mut project = project.clone();
                 self.start_work(ctx, move |progress, cancel| {
                     if cancel.load(Ordering::Relaxed) {
-                        return Err("Operação cancelada".to_owned());
+                        return Err(GuiError::Report("Operação cancelada".to_owned()));
                     }
                     progress.store(1, Ordering::Relaxed);
-                    let delta = project
-                        .generate_report(&request)
-                        .map_err(|e| e.to_string())?;
+                    let delta = project.generate_report(&request).map_err(GuiError::from)?;
                     progress.store(2, Ordering::Relaxed);
                     Ok(WorkResult::Generate(delta))
                 });
@@ -368,10 +367,10 @@ impl ReportWindow {
                 let mut project = project.clone();
                 self.start_work(ctx, move |progress, cancel| {
                     if cancel.load(Ordering::Relaxed) {
-                        return Err("Operação cancelada".to_owned());
+                        return Err(GuiError::Report("Operação cancelada".to_owned()));
                     }
                     progress.store(1, Ordering::Relaxed);
-                    let delta = project.update_reports(&groups).map_err(|e| e.to_string())?;
+                    let delta = project.update_reports(&groups).map_err(GuiError::from)?;
                     progress.store(2, Ordering::Relaxed);
                     Ok(WorkResult::Update(delta, count))
                 });
@@ -388,16 +387,16 @@ impl ReportWindow {
                     let xlsx = self.xlsx;
                     self.start_work(ctx, move |progress, cancel| {
                         if cancel.load(Ordering::Relaxed) {
-                            return Err("Operação cancelada".to_owned());
+                            return Err(GuiError::Report("Operação cancelada".to_owned()));
                         }
                         let tables = kinds
                             .iter()
                             .map(|k| project.report_table(*k, &filter))
                             .collect::<cad_craft::error::Result<Vec<_>>>()
-                            .map_err(|e| e.to_string())?;
+                            .map_err(GuiError::from)?;
                         progress.store(1, Ordering::Relaxed);
                         if cancel.load(Ordering::Relaxed) {
-                            return Err("Operação cancelada".to_owned());
+                            return Err(GuiError::Report("Operação cancelada".to_owned()));
                         }
                         let bytes = if xlsx {
                             export_xlsx(&tables)
@@ -405,9 +404,9 @@ impl ReportWindow {
                             export_csv(&tables[0])
                         }?;
                         if cancel.load(Ordering::Relaxed) {
-                            return Err("Operação cancelada".to_owned());
+                            return Err(GuiError::Report("Operação cancelada".to_owned()));
                         }
-                        std::fs::write(&path, bytes).map_err(|e| e.to_string())?;
+                        std::fs::write(&path, bytes).map_err(GuiError::from)?;
                         progress.store(2, Ordering::Relaxed);
                         Ok(WorkResult::Export(path))
                     });
@@ -419,9 +418,7 @@ impl ReportWindow {
     fn start_work(
         &mut self,
         ctx: &Context,
-        task: impl FnOnce(Arc<AtomicUsize>, Arc<AtomicBool>) -> Result<WorkResult, String>
-        + Send
-        + 'static,
+        task: impl FnOnce(Arc<AtomicUsize>, Arc<AtomicBool>) -> GuiResult<WorkResult> + Send + 'static,
     ) {
         let (sender, receiver) = mpsc::channel();
         let progress = Arc::new(AtomicUsize::new(0));

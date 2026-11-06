@@ -1,5 +1,9 @@
 # Problemas conhecidos
 
+## R4/R5 — reorganização (2026-11-05)
+
+Amostras reais comparadas com R3 sem mudança de conversões/perdas. GUI-L01 e limitações anteriores permanecem; R5 não altera renderização ociosa ou contratos de importação. A autenticação real do assistente não foi repetida neste roteiro: painel/provedor/contexto e bloqueio de envio sem sessão foram conferidos no app, sem novo teste OAuth/conversa real. O helper apresentou timeout de captura e bloqueou inspeção adicional do Edge por não verificar a URL; o PDF foi confirmado pela mensagem do app e pela janela do visualizador. DXF e QET sintético concluídos na retomada nativa. Resultados finais de validação e app em ../reports/R5_GUI.md.
+
 ## R3 — modelo por assunto (2026-11-05)
 
 Sem novo problema funcional identificado; validação completa e Release aprovados. Comparações exatas de coordenadas/ângulos/topologia foram mantidas para não alterar contratos; inventário conservador em ../reports/R3_COMPARACOES_F64.md. Aplicação geral de tolerância fora dos contratos atuais exige etapa comportamental própria. Problemas anteriores permanecem abaixo.

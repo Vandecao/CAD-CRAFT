@@ -27,7 +27,9 @@ impl CadApp {
         let Some(p) = self.session.project() else {
             return false;
         };
-        self.connection_scene.sync(p, page, self.session.revision);
+        self.panels_state
+            .connection_scene
+            .sync(p, page, self.session.revision);
         let cursor = ui
             .input(|i| i.pointer.interact_pos())
             .and_then(|s| camera.screen_to_world(s, rect));
@@ -42,7 +44,7 @@ impl CadApp {
                 | Tool::RemoveVertex
         );
         let hit = cursor.map(|c| {
-            self.connection_scene.snap(
+            self.panels_state.connection_scene.snap(
                 c,
                 camera.scale(),
                 self.preferences.grid_mm,
@@ -71,7 +73,8 @@ impl CadApp {
                     self.session.graphics.connection_suggestion =
                         d.source.as_ref().and_then(|source| {
                             let origin = *d.anchors.first()?;
-                            self.connection_scene
+                            self.panels_state
+                                .connection_scene
                                 .aligned_port(source, origin, hit.position, camera.scale())
                                 .map(|(_, target)| [origin, target])
                         });
@@ -96,7 +99,7 @@ impl CadApp {
             if response.clicked_by(PointerButton::Primary)
                 && let Some(hit) = hit
             {
-                let routes = self.connection_scene.routes_at(hit.position);
+                let routes = self.panels_state.connection_scene.routes_at(hit.position);
                 self.graphic_edit(GraphicEdit::Drawing(
                     ConnectionDrawingEdit::CreateJunction {
                         page,
@@ -147,6 +150,7 @@ impl CadApp {
         if response.clicked_by(PointerButton::Primary)
             && let Some(cursor) = cursor
             && let Some((id, _)) = self
+                .panels_state
                 .connection_scene
                 .junctions
                 .iter()
@@ -183,6 +187,7 @@ impl CadApp {
                     front
                 };
                 let route = self
+                    .panels_state
                     .connection_scene
                     .routes
                     .iter()

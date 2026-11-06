@@ -8,6 +8,7 @@
 
 mod document_index;
 pub mod domain;
+pub mod dxf;
 pub mod error;
 mod graph;
 mod physical_index;

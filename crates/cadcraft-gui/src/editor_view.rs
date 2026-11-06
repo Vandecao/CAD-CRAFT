@@ -20,8 +20,8 @@ impl CadApp {
         camera: Camera,
         rect: Rect,
     ) {
-        let blocked = self.dialog.is_some()
-            || self.backstage.is_some()
+        let blocked = self.dialogs_state.dialog.is_some()
+            || self.dialogs_state.backstage.is_some()
             || ui.input(|i| {
                 !i.focused
                     || i.events
@@ -68,11 +68,11 @@ impl CadApp {
                             if let Ok(graphic) = PageGraphic::new(
                                 SymbolPrimitive::Text {
                                     origin: Point2D::new(0.0, 0.0).expect("origin"),
-                                    text: self.free_text.clone(),
-                                    height: self.free_height,
+                                    text: self.free_content.free_text.clone(),
+                                    height: self.free_content.free_height,
                                 },
-                                self.free_stroke,
-                                self.free_align,
+                                self.free_content.free_stroke,
+                                self.free_content.free_align,
                             ) {
                                 let transform =
                                     Transform2D::new(position, 0.0, false, false).expect("cursor");
@@ -99,7 +99,7 @@ impl CadApp {
                                         kind,
                                         local_start,
                                         local_end,
-                                        self.free_stroke,
+                                        self.free_content.free_stroke,
                                     )
                                 {
                                     let transform =
@@ -368,10 +368,10 @@ impl CadApp {
                 .and_then(|r| r.graphic())
                 .map(|g| g.primitive().clone())
         {
-            self.dialog = Some(crate::dialogs::Dialog::EditFreeText { id, text });
+            self.dialogs_state.dialog = Some(crate::dialogs::Dialog::EditFreeText { id, text });
         }
         if response.secondary_clicked() {
-            self.context_object = hovered;
+            self.chrome.context_object = hovered;
             self.session.graphics.cancel();
             if let Some(id) = hovered
                 && !self.session.graphics.selection.ids().contains(&id)
@@ -392,7 +392,7 @@ impl CadApp {
             ui.ctx().set_cursor_icon(cursor);
         }
         // Menu position is stable while open, independent of current hover.
-        let menu_object = self.context_object;
+        let menu_object = self.chrome.context_object;
         response.context_menu(|ui| {
             let commands: &[CommandId] = if menu_object.is_some_and(|id| {
                 self.session

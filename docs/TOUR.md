@@ -25,7 +25,7 @@ version to a fixture. File locking and atomic replacement belong to the GUI.
 
 ## 3. cadcraft-render: describe a sheet
 
-- [display.rs](../crates/cadcraft-render/src/display.rs): DisplayItem, DisplayList and PageDisplayList, then the builder that resolves frames, symbols, wires and references.
+- [display.rs](../crates/cadcraft-render/src/display/mod.rs): DisplayItem, DisplayList and PageDisplayList, then the builder that resolves frames, symbols, wires and references.
 - [font.rs](../crates/cadcraft-render/src/font.rs): shared text widths and supported font encoding.
 
 Try 02_place_symbol. Notice that the display list contains exportable geometry,
@@ -33,8 +33,8 @@ while selection handles and other interaction aids belong to the viewport.
 
 ## 4. cadcraft-export: consume the model and display list
 
-- [pdf.rs](../crates/cadcraft-export/src/pdf.rs): PdfOptions, PdfReport and export_pdf; trace page scope, references, fonts and images.
-- [dxf_export.rs](../crates/cadcraft-export/src/dxf_export.rs): per-page DXF R12 and DxfReport.
+- [pdf.rs](../crates/cadcraft-export/src/pdf/mod.rs): PdfOptions, PdfReport and export_pdf; trace page scope, references, fonts and images.
+- [dxf_export.rs](../crates/cadcraft-export/src/dxf_export/mod.rs): per-page DXF R12 and DxfReport.
 - [report_export.rs](../crates/cadcraft-export/src/report_export.rs): the same ReportTable becomes CSV or XLSX.
 
 Try 05_export_pdf. Read the result report as well as the bytes; target formats
@@ -43,7 +43,7 @@ cannot represent everything in the project.
 ## 5. cadcraft-import: translate external data with an explicit report
 
 - [lib.rs](../crates/cadcraft-import/src/lib.rs): ImportReport, NoteKind and frame format dispatch; also re-exports the part CSV functions.
-- [qet.rs](../crates/cadcraft-import/src/qet.rs): a whole QElectroTech project, embedded symbols, linked occurrences and conductor topology.
+- [qet.rs](../crates/cadcraft-import/src/qet/mod.rs): a whole QElectroTech project, embedded symbols, linked occurrences and conductor topology.
 - [edz/mod.rs](../crates/cadcraft-import/src/edz/mod.rs): manufacturer archive entry point; follow archive, parts and pxf for bounded decoding and conversion.
 
 Try 06_import_qet. ELMT, titleblock, FN1 and frame DXF readers sit beside qet.rs;
@@ -52,8 +52,8 @@ tests are under crates/cad-craft/tests; optional personal samples stay outside G
 
 ## 6. cadcraft-gui: wire the editor to domain operations
 
-- [app.rs](../crates/cadcraft-gui/src/app.rs): CadApp owns application state and orchestrates frames and command handling.
-- [state.rs](../crates/cadcraft-gui/src/state.rs): Session and editing dispatch; follow the history module for undo/redo transactions.
+- [app.rs](../crates/cadcraft-gui/src/app/mod.rs): CadApp owns application state and orchestrates frames and command handling.
+- [state.rs](../crates/cadcraft-gui/src/state/mod.rs): Session and editing dispatch; follow the history module for undo/redo transactions.
 - [viewport.rs](../crates/cadcraft-gui/src/viewport.rs): camera, sheet content and pointer interaction; panels are separate modules.
 
 Read commands.rs when adding an action and project_file.rs for save/recovery.

@@ -5,6 +5,7 @@
 //! projeto novo (decisão 5); opcionalmente abre as Verificações.
 use crate::app::{CadApp, Level};
 use crate::dialogs::PendingAction;
+use crate::error::{GuiError, GuiResult};
 use cad_craft::interchange::NoteKind;
 use cad_craft::interchange::qet::{self, QetImport, QetOptions};
 use eframe::egui::{self, Context};
@@ -19,7 +20,7 @@ pub struct QetImportPanel {
     pub open_checks: bool,
     pub status: String,
     pub preview: Option<Box<QetImport>>,
-    job: Option<mpsc::Receiver<Result<QetImport, String>>>,
+    job: Option<mpsc::Receiver<GuiResult<QetImport>>>,
 }
 impl Default for QetImportPanel {
     fn default() -> Self {
@@ -38,7 +39,7 @@ impl QetImportPanel {
     }
 }
 
-fn read_and_import(path: &str, options: &QetOptions) -> Result<QetImport, String> {
+fn read_and_import(path: &str, options: &QetOptions) -> GuiResult<QetImport> {
     let path = std::path::Path::new(path.trim());
     if !path
         .extension()
@@ -46,12 +47,12 @@ fn read_and_import(path: &str, options: &QetOptions) -> Result<QetImport, String
     {
         return Err("Escolha um projeto do QElectroTech (.qet).".into());
     }
-    let size = std::fs::metadata(path).map_err(|e| e.to_string())?.len();
+    let size = std::fs::metadata(path).map_err(GuiError::from)?.len();
     if size > MAX_QET_BYTES {
         return Err("Arquivo maior que 64 MB.".into());
     }
-    let bytes = std::fs::read(path).map_err(|e| e.to_string())?;
-    qet::import(&bytes, options).map_err(|e| e.to_string())
+    let bytes = std::fs::read(path).map_err(GuiError::from)?;
+    qet::import(&bytes, options).map_err(GuiError::from)
 }
 
 impl CadApp {
@@ -191,7 +192,7 @@ impl CadApp {
     pub(crate) fn install_imported(
         &mut self,
         project: cad_craft::domain::Project,
-    ) -> Result<(), String> {
+    ) -> GuiResult<()> {
         let first = project
             .documents()
             .next()
@@ -199,9 +200,9 @@ impl CadApp {
             .and_then(|pages| pages.first().map(|p| p.id()));
         self.session
             .replace(project, false)
-            .map_err(|e| e.to_string())?;
+            .map_err(GuiError::from)?;
         if let Some(page) = first {
-            self.session.open_page(page).map_err(|e| e.to_string())?;
+            self.session.open_page(page).map_err(GuiError::from)?;
         }
         self.session.dirty = true;
         self.qet.status = "Projeto importado: salve-o como .cadcraft.".into();

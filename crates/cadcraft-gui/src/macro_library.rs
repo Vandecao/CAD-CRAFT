@@ -3,6 +3,7 @@
 //! Etapa 19: biblioteca de macros (`.cadmacro` em pasta configurável) e
 //! navegador: árvore por categoria, busca, miniatura, criar da seleção ou da
 //! página, inserir, importar, exportar e excluir.
+use crate::error::{GuiError, GuiResult};
 use crate::{camera::Camera, preferences::Preferences, state::Session};
 use cad_craft::{domain::*, persistence};
 use eframe::egui::{self, Context, Ui};
@@ -52,13 +53,12 @@ fn safe_stem(id: &MacroId) -> String {
         })
         .collect()
 }
-pub fn read_macro(path: &Path) -> Result<MacroDefinition, String> {
-    if std::fs::metadata(path).map_err(|e| e.to_string())?.len() > persistence::MAX_MACRO_FILE_BYTES
-    {
+pub fn read_macro(path: &Path) -> GuiResult<MacroDefinition> {
+    if std::fs::metadata(path).map_err(GuiError::from)?.len() > persistence::MAX_MACRO_FILE_BYTES {
         return Err("arquivo .cadmacro grande demais".into());
     }
-    persistence::read_macro_package(&std::fs::read(path).map_err(|e| e.to_string())?)
-        .map_err(|e| e.to_string())
+    persistence::read_macro_package(&std::fs::read(path).map_err(GuiError::from)?)
+        .map_err(GuiError::from)
 }
 
 impl MacroLibrary {
@@ -90,7 +90,7 @@ impl MacroLibrary {
         let path = preferences.macro_library.trim();
         (!path.is_empty()).then(|| PathBuf::from(path))
     }
-    pub fn reload(&mut self, preferences: &Preferences) -> Result<usize, String> {
+    pub fn reload(&mut self, preferences: &Preferences) -> GuiResult<usize> {
         let Some(dir) = Self::folder(preferences) else {
             return Ok(self.catalog.len());
         };
@@ -101,10 +101,10 @@ impl MacroLibrary {
         let mut next = BTreeMap::new();
         let mut refused = Vec::new();
         for entry in std::fs::read_dir(&dir)
-            .map_err(|e| e.to_string())?
+            .map_err(GuiError::from)?
             .take(50_000)
         {
-            let path = entry.map_err(|e| e.to_string())?.path();
+            let path = entry.map_err(GuiError::from)?.path();
             if path
                 .extension()
                 .is_some_and(|e| e.eq_ignore_ascii_case(persistence::MACRO_EXTENSION))
@@ -132,7 +132,8 @@ impl MacroLibrary {
                 "{} macro(s) carregada(s); recusadas: {}",
                 self.catalog.len(),
                 refused.join("; ")
-            ))
+            )
+            .into())
         }
     }
     /// Grava na pasta (se configurada) e no catálogo da sessão. Mesmo ID:
@@ -141,22 +142,22 @@ impl MacroLibrary {
         &mut self,
         mut definition: MacroDefinition,
         preferences: &Preferences,
-    ) -> Result<String, String> {
+    ) -> GuiResult<String> {
         if let Some(existing) = self.catalog.get(definition.id()) {
             definition = definition
                 .with_version(existing.version().saturating_add(1))
-                .map_err(|e| e.to_string())?;
+                .map_err(GuiError::from)?;
         }
         let saved = if let Some(dir) = Self::folder(preferences) {
-            std::fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
+            std::fs::create_dir_all(&dir).map_err(GuiError::from)?;
             let path = dir.join(format!(
                 "{}.{}",
                 safe_stem(definition.id()),
                 persistence::MACRO_EXTENSION
             ));
-            let bytes = persistence::write_macro_package(&definition).map_err(|e| e.to_string())?;
+            let bytes = persistence::write_macro_package(&definition).map_err(GuiError::from)?;
             crate::project_file::write_atomic(&path, &mut bytes.as_slice())
-                .map_err(|e| e.to_string())?;
+                .map_err(GuiError::from)?;
             format!("gravada em {}", path.display())
         } else {
             "mantida só nesta sessão (configure a pasta de macros em Configurações)".into()
@@ -171,7 +172,7 @@ impl MacroLibrary {
         self.selected = Some(id);
         Ok(message)
     }
-    fn delete(&mut self, id: &MacroId, preferences: &Preferences) -> Result<String, String> {
+    fn delete(&mut self, id: &MacroId, preferences: &Preferences) -> GuiResult<String> {
         if !self.confirm_delete {
             return Err("marque \"Confirmar exclusão\" antes de excluir".into());
         }
@@ -182,7 +183,7 @@ impl MacroLibrary {
                 persistence::MACRO_EXTENSION
             ));
             if path.exists() {
-                std::fs::remove_file(&path).map_err(|e| e.to_string())?;
+                std::fs::remove_file(&path).map_err(GuiError::from)?;
             }
         }
         self.catalog.remove(id);
@@ -198,7 +199,7 @@ impl MacroLibrary {
         if self.seen_folder != preferences.macro_library {
             self.seen_folder = preferences.macro_library.clone();
             if let Err(error) = self.reload(preferences) {
-                self.message = error;
+                self.message = error.to_string();
             }
         }
         let mut open = self.open;
@@ -371,7 +372,7 @@ impl MacroLibrary {
         action: Action,
         session: &mut Session,
         preferences: &Preferences,
-    ) -> Result<String, String> {
+    ) -> GuiResult<String> {
         match action {
             Action::Reload => self
                 .reload(preferences)
@@ -393,7 +394,7 @@ impl MacroLibrary {
                         preferences.grid_mm,
                     )
                 }
-                .map_err(|e| e.to_string())?;
+                .map_err(GuiError::from)?;
                 let message = self.store(definition, preferences)?;
                 let summary = report.summary();
                 Ok(if summary.is_empty() {
@@ -411,7 +412,7 @@ impl MacroLibrary {
                 let definition = self.catalog.get(&id).cloned().ok_or("macro ausente")?;
                 let (_, report) = session
                     .insert_page_macro(&definition)
-                    .map_err(|e| e.to_string())?;
+                    .map_err(GuiError::from)?;
                 Ok(format!(
                     "Página criada pela macro \"{}\". {}",
                     definition.name().as_str(),
@@ -427,10 +428,9 @@ impl MacroLibrary {
                 if path.as_os_str().is_empty() {
                     return Err("informe o arquivo de destino".into());
                 }
-                let bytes =
-                    persistence::write_macro_package(definition).map_err(|e| e.to_string())?;
+                let bytes = persistence::write_macro_package(definition).map_err(GuiError::from)?;
                 crate::project_file::write_atomic(&path, &mut bytes.as_slice())
-                    .map_err(|e| e.to_string())?;
+                    .map_err(GuiError::from)?;
                 Ok(format!("Macro exportada para {}.", path.display()))
             }
             Action::Import => {

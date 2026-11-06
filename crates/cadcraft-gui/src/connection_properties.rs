@@ -157,7 +157,7 @@ impl CadApp {
             return false;
         };
         let key = (id, self.session.revision, self.session.selection_revision);
-        let mut inspector = std::mem::take(&mut self.connection_inspector);
+        let mut inspector = std::mem::take(&mut self.panels_state.connection_inspector);
         if inspector.key != Some(key) {
             inspector.key = Some(key);
             inspector.points = route.points().to_vec();
@@ -270,7 +270,7 @@ impl CadApp {
                 if ui.button(label).clicked(){command=Some(id);}
             }
         });
-        self.connection_inspector = inspector;
+        self.panels_state.connection_inspector = inspector;
         if let Some(edit) = edit {
             self.graphic_edit(GraphicEdit::Drawing(edit));
         }

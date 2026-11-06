@@ -7,6 +7,7 @@
 //! O DXF R12 é gravado numa pasta temporária; o conversor é chamado com
 //! argumentos separados (sem shell) e tempo limite; os `.dwg` gerados vão
 //! para o destino; as pastas temporárias são sempre removidas.
+use crate::error::{GuiError, GuiResult};
 use cad_craft::dxf_export::DxfFile;
 use std::ffi::OsString;
 use std::path::{Path, PathBuf};
@@ -51,11 +52,7 @@ pub fn oda_arguments(input: &Path, output: &Path, version: &str) -> Vec<OsString
 }
 
 /// Executa o programa e espera até `timeout`; ao estourar, encerra o processo.
-pub fn run_with_timeout(
-    program: &Path,
-    args: &[OsString],
-    timeout: Duration,
-) -> Result<(), String> {
+pub fn run_with_timeout(program: &Path, args: &[OsString], timeout: Duration) -> GuiResult<()> {
     let mut command = Command::new(program);
     command
         .args(args)
@@ -70,22 +67,27 @@ pub fn run_with_timeout(
     }
     let mut child = command
         .spawn()
-        .map_err(|e| format!("não foi possível iniciar o conversor: {e}"))?;
+        .map_err(|e| GuiError::context("não foi possível iniciar o conversor", e))?;
     let start = Instant::now();
     loop {
         match child.try_wait() {
             Ok(Some(status)) if status.success() => return Ok(()),
-            Ok(Some(status)) => return Err(format!("o conversor terminou com erro ({status})")),
+            Ok(Some(status)) => {
+                return Err(GuiError::Converter(format!(
+                    "o conversor terminou com erro ({status})"
+                )));
+            }
             Ok(None) if start.elapsed() >= timeout => {
                 let _ = child.kill();
                 let _ = child.wait();
                 return Err(format!(
                     "o conversor excedeu o tempo limite de {} s e foi encerrado",
                     timeout.as_secs()
-                ));
+                )
+                .into());
             }
             Ok(None) => std::thread::sleep(Duration::from_millis(25)),
-            Err(e) => return Err(format!("falha ao acompanhar o conversor: {e}")),
+            Err(e) => return Err(GuiError::context("falha ao acompanhar o conversor", e)),
         }
     }
 }
@@ -105,30 +107,31 @@ pub fn convert_to_dwg(
     destination: &Path,
     version: &str,
     timeout: Duration,
-) -> Result<usize, String> {
+) -> GuiResult<usize> {
     let stamp = std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
         .map_or(0, |d| d.as_nanos());
     let root = TempDir(std::env::temp_dir().join(format!("cad-craft-dwg-{stamp}")));
     let (input, output) = (root.0.join("dxf"), root.0.join("dwg"));
     for dir in [&input, &output] {
-        std::fs::create_dir_all(dir).map_err(|e| format!("pasta temporária: {e}"))?;
+        std::fs::create_dir_all(dir).map_err(|e| GuiError::context("pasta temporária", e))?;
     }
     for file in files {
         std::fs::write(input.join(&file.name), &file.bytes)
-            .map_err(|e| format!("não foi possível gravar {}: {e}", file.name))?;
+            .map_err(|e| GuiError::context(format!("não foi possível gravar {}", file.name), e))?;
     }
     run_with_timeout(program, &oda_arguments(&input, &output, version), timeout)?;
     let mut copied = 0;
-    for entry in std::fs::read_dir(&output).map_err(|e| e.to_string())? {
-        let path = entry.map_err(|e| e.to_string())?.path();
+    for entry in std::fs::read_dir(&output).map_err(GuiError::from)? {
+        let path = entry.map_err(GuiError::from)?.path();
         if path
             .extension()
             .is_some_and(|e| e.eq_ignore_ascii_case("dwg"))
             && let Some(name) = path.file_name()
         {
-            std::fs::copy(&path, destination.join(name))
-                .map_err(|e| format!("não foi possível copiar {}: {e}", path.display()))?;
+            std::fs::copy(&path, destination.join(name)).map_err(|e| {
+                GuiError::context(format!("não foi possível copiar {}", path.display()), e)
+            })?;
             copied += 1;
         }
     }

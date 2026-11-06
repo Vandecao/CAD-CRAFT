@@ -19,6 +19,9 @@ name = "cad-gui"
 path = "src/main.rs"
 
 [dependencies]
+# R5: approved platform file opening and typed GUI errors (MIT OR Apache-2.0).
+opener = "=0.8.5"
+thiserror = "=2.0.21"
 cad-craft = { path = "../cad-craft" }
 eframe = { version = "=0.33.3", default-features = false, features = ["glow", "default_fonts", "accesskit", "persistence", "x11", "wayland"] }
 serde = { version = "1", features = ["derive"] }

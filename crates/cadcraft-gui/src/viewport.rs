@@ -145,7 +145,7 @@ impl CadApp {
             }
             let tab = &mut self.session.tabs[tab_index];
             if response.hovered()
-                && self.dialog.is_none()
+                && self.dialogs_state.dialog.is_none()
                 && let Some(cursor) = response.hover_pos()
             {
                 let scroll = ui.ctx().input(|i| i.smooth_scroll_delta.y);
@@ -161,14 +161,16 @@ impl CadApp {
                     ui.ctx()
                         .input_mut(|i| i.smooth_scroll_delta = egui::Vec2::ZERO);
                 }
-                self.cursor_world = tab.camera.screen_to_world(cursor, rect);
+                self.chrome.cursor_world = tab.camera.screen_to_world(cursor, rect);
             } else {
-                self.cursor_world = None;
+                self.chrome.cursor_world = None;
             }
-            if response.drag_started_by(PointerButton::Middle) && self.dialog.is_none() {
+            if response.drag_started_by(PointerButton::Middle)
+                && self.dialogs_state.dialog.is_none()
+            {
                 tab.previous = Some(tab.camera);
             }
-            if response.dragged_by(PointerButton::Middle) && self.dialog.is_none() {
+            if response.dragged_by(PointerButton::Middle) && self.dialogs_state.dialog.is_none() {
                 tab.camera.pan(ui.ctx().input(|i| i.pointer.delta()));
                 ui.ctx().set_cursor_icon(egui::CursorIcon::Grabbing);
             } else if response.hovered()
@@ -217,7 +219,7 @@ impl CadApp {
                 );
             }
             if self.preferences.snap_enabled
-                && let Some(world) = self.cursor_world
+                && let Some(world) = self.chrome.cursor_world
             {
                 let snapped = snap(world, self.preferences.grid_mm, true);
                 if let Some(screen) = camera.world_to_screen(snapped, rect) {
@@ -264,6 +266,7 @@ impl CadApp {
         let ctx = ui.ctx().clone();
         ui.horizontal_wrapped(|ui| {
             let coordinates = self
+                .chrome
                 .cursor_world
                 .map(|p| format!("X: {:.2} mm  |  Y: {:.2} mm", p.x(), p.y()))
                 .unwrap_or_else(|| "X: — mm  |  Y: — mm".into());

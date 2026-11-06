@@ -150,7 +150,8 @@ fn describe_selection(app: &CadApp) -> String {
 
 impl CadApp {
     fn assistant_catalog(&self) -> Vec<CommandInfo> {
-        self.commands
+        self.chrome
+            .commands
             .iter()
             .map(|c| CommandInfo {
                 name: c.name.to_owned(),
@@ -371,7 +372,7 @@ impl CadApp {
 
     /// Opens the ribbon tab of a command and highlights it.
     pub(crate) fn assistant_show_command(&mut self, name: &str) {
-        if let Some(c) = self.commands.iter().find(|c| c.name == name) {
+        if let Some(c) = self.chrome.commands.iter().find(|c| c.name == name) {
             self.preferences.ribbon_tab = c.tab;
             self.preferences.ribbon_collapsed = false;
             self.assistant.highlight = Some(c.id);

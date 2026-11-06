@@ -44,7 +44,7 @@ impl Default for ReferenceInspector {
 }
 impl CadApp {
     pub(crate) fn open_reference_properties(&mut self) {
-        self.reference_inspector.details = true;
+        self.panels_state.reference_inspector.details = true;
         let p = self.preferences.panel_mut(PanelId::Properties);
         p.visible = true;
         p.collapsed = false;
@@ -72,7 +72,7 @@ impl CadApp {
             self.session.revision,
             self.session.selection_revision,
         );
-        let mut inspector = std::mem::take(&mut self.reference_inspector);
+        let mut inspector = std::mem::take(&mut self.panels_state.reference_inspector);
         if inspector.key.map(|k| k.0) != Some(selection) {
             inspector.details = matches!(selection, Selection::Electrical(_))
                 || matches!(selection,Selection::Representation(id) if self.session.project().is_some_and(|p|p.marker(id).is_some()));
@@ -110,12 +110,12 @@ impl CadApp {
             if ui.button("Identificação e referências").clicked() {
                 inspector.details = true;
             }
-            self.reference_inspector = inspector;
+            self.panels_state.reference_inspector = inspector;
             return false;
         }
         if ui.button("Geometria e aparência").clicked() {
             inspector.details = false;
-            self.reference_inspector = inspector;
+            self.panels_state.reference_inspector = inspector;
             return false;
         }
         let mut device_edit = None;
@@ -295,7 +295,7 @@ impl CadApp {
                 nav = nav.or(destination);
             }
         });
-        self.reference_inspector = inspector;
+        self.panels_state.reference_inspector = inspector;
         if let Some(edit) = device_edit {
             match edit {
                 Ok(edit) => self.graphic_edit(GraphicEdit::Device(edit)),

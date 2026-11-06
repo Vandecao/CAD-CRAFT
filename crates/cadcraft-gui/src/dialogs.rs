@@ -83,7 +83,7 @@ impl Dialog {
 }
 impl CadApp {
     pub(crate) fn show_dialog(&mut self, ctx: &Context) {
-        let Some(mut dialog) = self.dialog.take() else {
+        let Some(mut dialog) = self.dialogs_state.dialog.take() else {
             return;
         };
         let mut accept = false;
@@ -166,7 +166,7 @@ impl CadApp {
                         let page_size = page.and_then(|id| self.session.project()?.page(id)).map(Page::size);
                         match crate::frame_editor::read_external_frame(path, page_size, *dxf_unit_mm, *dxf_sheet) {
                             Ok(updated) => { **imported = updated; *preview_dirty = false; },
-                            Err(error) => { ui.colored_label(egui::Color32::RED, error); },
+                            Err(error) => { ui.colored_label(egui::Color32::RED, error.to_string()); },
                         };
                     }
                     if *preview_dirty { ui.weak("Atualize a prévia para confirmar estas opções."); }
@@ -184,7 +184,7 @@ impl CadApp {
             return;
         }
         if !accept {
-            self.dialog = Some(dialog);
+            self.dialogs_state.dialog = Some(dialog);
             return;
         }
         let result: Result<(), String> = match &dialog {
@@ -278,7 +278,7 @@ impl CadApp {
         };
         if let Err(error) = result {
             self.log(Level::Error, error);
-            self.dialog = Some(dialog);
+            self.dialogs_state.dialog = Some(dialog);
         } else if let Dialog::Confirm(action) = dialog {
             self.perform(action, ctx);
         } else {

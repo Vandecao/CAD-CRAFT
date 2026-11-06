@@ -1,3 +1,17 @@
+# R4/R5 concluídos; publicação autorizada (2026-11-06)
+
+R4: importadores/render/export organizados; protocolo DXF compartilhado conforme ADR-0031. R5: GUI por assunto, estado agrupado, GuiError e opener conforme ADR-0032. Formato 9, rótulos e baselines preservados. Relatórios: docs/internal/reports/R4_IMPORTADORES_EXPORTADORES.md e R5_GUI.md; inventário R4_R5_ARQUIVOS.md.
+
+Validação completa em 2026-11-05, repetida com exit 0 em 2026-11-06 antes da publicação: 706 testes Rust + 6 exemplos + 16 PowerShell, zero falhas/ignorados; Release 23.736.832 bytes compilado e executado. Revisão independente sem achados materiais. Amostras reais equivalentes a R3: 27 QET idênticos; EDZ 45 convertidos, uma recusa esperada e zero erros inesperados; FN1/ELMT/titleblock passaram. Nenhum dado real versionado.
+
+Roteiro nativo de R5 concluído pelo Codex em 2026-11-05/06: abrir/editar/salvar projeto, quatro editores, PDF aberto no visualizador padrão (nome especial), DXF e importação QET sintética. Assistente conferido sem autenticação: contexto/provedor corretos e envio bloqueado até login; OAuth/conversa real não repetidos. Captura de tela do helper indisponível; confirmação por acessibilidade, arquivos gerados e inventário de janelas. Inspeção adicional do Edge bloqueada por verificação de URL; não houve contorno. Não declarar homologação geral da Etapa 28.
+
+Autor autorizou commit -s e push origin main nos dois repositórios. Privado C:/Dev/CAD-CRAFT, origin Vandecao/CAD-CRAFT1; público C:/Dev/CAD-CRAFT-public, origin Vandecao/CAD-CRAFT, por cópia dos arquivos aprovados e commit independente. HEADs pré-publicação consultados em 2026-11-06: 7f5463a956aaa731c77105a4142719db76ba264a e 35d7074b7bc4a5ccae781359a02ba2cbd2d5f4d5. R4/R5 ainda fora desses HEADs na escrita deste registro. SHAs efetivos e confirmação remota serão registrados em .local/r4-r5/PUBLICATION.md e podem ser consultados em git log/ls-remote. Nenhum SHA futuro inventado.
+
+Próximo: executar publicação autorizada após conferência final e encerrar. R6 e Etapa 28 não iniciados; prompts correspondentes preservados fora do commit. Sem backup externo criado/verificado. App deixado na sessão QET sintética; projeto anterior salvo e recuperação de outra sessão preservada.
+
+---
+
 # R3 — modelo por assunto validado; publicação autorizada (2026-11-05)
 
 Especificação: docs/internal/spec/R3_MODELO_POR_ASSUNTO.md. Plano: docs/internal/plans/2026-11-05-r3.md. Relatórios: docs/internal/reports/R3_MODELO_POR_ASSUNTO.md e R3_COMPARACOES_F64.md.

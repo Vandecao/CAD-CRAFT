@@ -28,7 +28,7 @@ impl CadApp {
                 )
                 .clicked()
                 {
-                    self.backstage = None;
+                    self.dialogs_state.backstage = None;
                 }
                 ui.add_space(12.0);
                 egui::ScrollArea::vertical().show(ui, |ui| {
@@ -59,7 +59,7 @@ impl CadApp {
                         let response = ui.add_enabled(
                             available,
                             egui::Button::new(label)
-                                .selected(self.backstage == Some(label))
+                                .selected(self.dialogs_state.backstage == Some(label))
                                 .min_size(egui::vec2(170.0, 31.0)),
                         );
                         if response
@@ -80,25 +80,25 @@ impl CadApp {
                                 "Exportar DXF" => self.execute(CommandId::ExportDxf, ctx),
                                 "Exportar DWG" => self.execute(CommandId::ExportDwg, ctx),
                                 "Exportar lista" => self.execute(CommandId::ExportList, ctx),
-                                _ => self.backstage = Some(label),
+                                _ => self.dialogs_state.backstage = Some(label),
                             }
                         }
                     }
                 });
             });
         egui::CentralPanel::default().frame(egui::Frame::new().fill(theme::PANEL).inner_margin(20)).show(ctx,|ui|{
-            let page=self.backstage.unwrap_or("Informações");let session_kind=if self.session.demonstration{"Demonstração".to_owned()}else{match &self.session.file{Some(f)=>format!("Arquivo .cadcraft ({}){}",f.file_name(),if f.read_only{", somente leitura"}else{""}),None=>"Projeto em memória (ainda não salvo)".to_owned()}};ui.label(RichText::new(page).size(30.0));ui.add_space(18.0);
+            let page=self.dialogs_state.backstage.unwrap_or("Informações");let session_kind=if self.session.demonstration{"Demonstração".to_owned()}else{match &self.session.file{Some(f)=>format!("Arquivo .cadcraft ({}){}",f.file_name(),if f.read_only{", somente leitura"}else{""}),None=>"Projeto em memória (ainda não salvo)".to_owned()}};ui.label(RichText::new(page).size(30.0));ui.add_space(18.0);
             egui::ScrollArea::vertical().auto_shrink([false,false]).show(ui,|ui|{
                 match page {
                     "Informações"=>{
-                        ui.horizontal(|ui|{for section in ["Propriedades","Estatística","Estrutura","Status"]{ui.selectable_value(&mut self.backstage_section,section,section);}});ui.separator();
+                        ui.horizontal(|ui|{for section in ["Propriedades","Estatística","Estrutura","Status"]{ui.selectable_value(&mut self.dialogs_state.backstage_section,section,section);}});ui.separator();
                         if let Some(p)=self.session.project(){
-                            match self.backstage_section {
+                            match self.dialogs_state.backstage_section {
                                 "Estatística"=>{egui::Grid::new("project_stats").num_columns(2).striped(true).show(ui,|ui|{for(label,count)in[("Documentos",p.documents().count()),("Páginas",p.pages().count()),("Representações",p.representations().count()),("Componentes",p.components().count()),("Dispositivos",p.devices().count()),("Conexões lógicas",p.connections().count()),("Condutores físicos",p.conductors().count())]{ui.label(label);ui.label(count.to_string());ui.end_row();}});},
                                 "Estrutura"=>{for doc in p.documents(){egui::CollapsingHeader::new(doc.name().as_str()).default_open(true).show(ui,|ui|{for page in p.ordered_pages(doc.id()).unwrap_or_default(){ui.label(format!("{} · {}  ={}  +{}",page.number().as_str(),page.name().as_str(),crate::navigation::path_text(page.structure().functional_path()),crate::navigation::path_text(page.structure().location_path())));}});}},
                                 "Status"=>{ui.label(if self.session.dirty{"Há alterações não salvas."}else{"Sem alterações desde a abertura ou o último salvamento."});ui.label(if self.session.demonstration{"Projeto demonstrativo próprio."}else{"Sessão documental."});ui.label(match &self.session.file{Some(f)=>format!("Arquivo: {}{}",f.path.display(),if f.read_only{" (somente leitura)"}else{""}),None=>"Sem arquivo .cadcraft associado.".into()});ui.weak("Cópias de recuperação são automáticas enquanto houver alterações não salvas; não substituem backup externo.");},
                                 _=>{egui::Grid::new("project_information").num_columns(2).striped(true).spacing([25.0,10.0]).show(ui,|ui|{for(label,value)in[("Nome",p.name().as_str()),("Descrição",p.description()),("Identificação",p.identification().map(|s|s.as_str()).unwrap_or("—")),("Tipo de sessão",session_kind.as_str())]{ui.label(label);ui.label(value);ui.end_row();}for(k,v)in p.metadata(){ui.label(k.as_str());ui.label(v);ui.end_row();}});
-                                    if ui.button("Editar propriedades no inspetor").clicked(){self.session.select(crate::state::Selection::Project);self.preferences.panel_mut(crate::preferences::PanelId::Properties).visible=true;self.preferences.panel_mut(crate::preferences::PanelId::Properties).collapsed=false;self.backstage=None;}
+                                    if ui.button("Editar propriedades no inspetor").clicked(){self.session.select(crate::state::Selection::Project);self.preferences.panel_mut(crate::preferences::PanelId::Properties).visible=true;self.preferences.panel_mut(crate::preferences::PanelId::Properties).collapsed=false;self.dialogs_state.backstage=None;}
                                 }
                             }
                         }else{ui.label("Nenhum projeto aberto.");if ui.button("Abrir demonstração CAD-CRAFT").clicked(){self.execute(CommandId::Demo,ctx);}}
@@ -127,7 +127,7 @@ impl CadApp {
                         self.check_settings_ui(ui);
                         ui.horizontal(|ui|{ui.label("Espaçamento (mm)");ui.add(egui::DragValue::new(&mut self.preferences.grid_mm).range(0.1..=1000.0).speed(0.1));});
                         for id in crate::preferences::PanelId::ALL {ui.checkbox(&mut self.preferences.panel_mut(id).visible,id.label());}
-                        if ui.button("Restaurar layout padrão").clicked(){self.preferences.restore_layout();self.layout_generation+=1;}
+                        if ui.button("Restaurar layout padrão").clicked(){self.preferences.restore_layout();self.chrome.layout_generation+=1;}
                     },
                     "Extras"=>{ui.label("Operações disponíveis");for id in [CommandId::Validate,CommandId::RestoreLayout,CommandId::Demo]{if self.command_button(ui,id,false,false){self.execute(id,ctx);}}},
                     "Ajuda"=>{
@@ -203,20 +203,24 @@ impl CadApp {
         });
         ui.weak("Serialização estrutural experimental do Core. Sem formato .cadcraft, migrações, histórico ou backup. Limite de importação: 8 MiB.");
         ui.label("Caminho do arquivo JSON");
-        ui.add(egui::TextEdit::singleline(&mut self.snapshot_path).desired_width(f32::INFINITY));
+        ui.add(
+            egui::TextEdit::singleline(&mut self.dialogs_state.snapshot_path)
+                .desired_width(f32::INFINITY),
+        );
         ui.horizontal(|ui| {
             if import && ui.button("Ler arquivo").clicked() {
-                match read_snapshot(&self.snapshot_path) {
-                    Ok(json) => self.snapshot_text = json,
+                match read_snapshot(&self.dialogs_state.snapshot_path) {
+                    Ok(json) => self.dialogs_state.snapshot_text = json,
                     Err(e) => self.log(Level::Error, e),
                 }
             }
             if !import && ui.button("Gravar snapshot técnico").clicked() {
                 match self.session.snapshot() {
                     Ok(json) => {
-                        let path = self.snapshot_path.clone();
+                        let path = self.dialogs_state.snapshot_path.clone();
                         if std::path::Path::new(&path).exists() {
-                            self.dialog = Some(Dialog::OverwriteSnapshot { path, json });
+                            self.dialogs_state.dialog =
+                                Some(Dialog::OverwriteSnapshot { path, json });
                         } else if let Err(e) = self.write_snapshot(&path, &json, false) {
                             self.log(Level::Error, e);
                         } else {
@@ -230,7 +234,7 @@ impl CadApp {
                 }
             }
             if !import && ui.button("Copiar JSON").clicked() {
-                ui.ctx().copy_text(self.snapshot_text.clone());
+                ui.ctx().copy_text(self.dialogs_state.snapshot_text.clone());
             }
         });
         ui.label(if import {
@@ -240,7 +244,7 @@ impl CadApp {
         });
         egui::ScrollArea::both().max_height(330.0).show(ui, |ui| {
             ui.add(
-                egui::TextEdit::multiline(&mut self.snapshot_text)
+                egui::TextEdit::multiline(&mut self.dialogs_state.snapshot_text)
                     .code_editor()
                     .desired_width(f32::INFINITY)
                     .desired_rows(16)
@@ -249,9 +253,12 @@ impl CadApp {
             );
         });
         if import && ui.button("Importar como sessão").clicked() {
-            self.request(PendingAction::Import(self.snapshot_text.clone()), ui.ctx());
+            self.request(
+                PendingAction::Import(self.dialogs_state.snapshot_text.clone()),
+                ui.ctx(),
+            );
         }
-        if let Some(message) = self.messages.back() {
+        if let Some(message) = self.panels_state.messages.back() {
             ui.label(&message.text);
         }
     }

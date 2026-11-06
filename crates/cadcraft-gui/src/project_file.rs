@@ -6,6 +6,7 @@
 //! gravação atômica (temporário na mesma pasta + substituição), a trava
 //! `<arquivo>.lock`, a recuperação após encerramento abrupto, a lista de
 //! recentes e o seletor de arquivos (nativo via `rfd`, roteirizado em testes).
+use crate::error::{GuiError, GuiResult};
 use cad_craft::{
     domain::Project,
     persistence::{self, LoadedProject},
@@ -43,17 +44,17 @@ pub fn with_extension(path: PathBuf) -> PathBuf {
     }
 }
 
-pub fn load(path: &Path) -> Result<LoadedProject, String> {
-    let file = fs::File::open(path).map_err(|e| format!("{}: {e}", path.display()))?;
+pub fn load(path: &Path) -> GuiResult<LoadedProject> {
+    let file = fs::File::open(path).map_err(|e| GuiError::at_path(path, e))?;
     persistence::read_project(io::BufReader::new(file))
-        .map_err(|e| format!("{}: {e}", path.display()))
+        .map_err(|e| GuiError::context(path.display().to_string(), e))
 }
 
 /// Serializa e valida em memória antes de tocar o destino; o arquivo anterior
 /// só é substituído depois que o temporário completo foi sincronizado.
-pub fn save(project: &Project, path: &Path) -> Result<(), String> {
-    let bytes = persistence::write_project_to_vec(project).map_err(|e| e.to_string())?;
-    write_atomic(path, &mut bytes.as_slice()).map_err(|e| format!("{}: {e}", path.display()))
+pub fn save(project: &Project, path: &Path) -> GuiResult<()> {
+    let bytes = persistence::write_project_to_vec(project).map_err(GuiError::from)?;
+    write_atomic(path, &mut bytes.as_slice()).map_err(|e| GuiError::at_path(path, e))
 }
 
 pub fn write_atomic(path: &Path, source: &mut impl Read) -> io::Result<()> {
@@ -240,8 +241,8 @@ impl Recovery {
             self.dir.join(format!("{project_id}.json")),
         )
     }
-    pub fn store(&self, project: &Project, origin: Option<&Path>) -> Result<(), String> {
-        fs::create_dir_all(&self.dir).map_err(|e| e.to_string())?;
+    pub fn store(&self, project: &Project, origin: Option<&Path>) -> GuiResult<()> {
+        fs::create_dir_all(&self.dir).map_err(GuiError::from)?;
         let id = project.id().to_string();
         let (data, meta) = self.files(&id);
         save(project, &data)?;
@@ -251,8 +252,8 @@ impl Recovery {
             origin: origin.map(Path::to_path_buf),
             saved_at: now(),
         };
-        let json = serde_json::to_vec_pretty(&entry).map_err(|e| e.to_string())?;
-        write_atomic(&meta, &mut json.as_slice()).map_err(|e| e.to_string())
+        let json = serde_json::to_vec_pretty(&entry).map_err(GuiError::from)?;
+        write_atomic(&meta, &mut json.as_slice()).map_err(GuiError::from)
     }
     /// Entradas completas, mais recentes primeiro. Descrições sem dados são ignoradas.
     pub fn entries(&self) -> Vec<RecoveryEntry> {
@@ -269,7 +270,7 @@ impl Recovery {
         entries.sort_by(|a, b| b.saved_at.cmp(&a.saved_at).then(a.name.cmp(&b.name)));
         entries
     }
-    pub fn load(&self, entry: &RecoveryEntry) -> Result<Project, String> {
+    pub fn load(&self, entry: &RecoveryEntry) -> GuiResult<Project> {
         load(&self.files(&entry.project_id).0).map(|l| l.project)
     }
     pub fn discard(&self, project_id: &str) {

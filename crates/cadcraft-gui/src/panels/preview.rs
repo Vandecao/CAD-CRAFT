@@ -37,14 +37,20 @@ impl CadApp {
                 let width = ((ui.available_width() - 6.0 * (columns - 1) as f32) / columns as f32)
                     .max(40.0);
                 let row_height = 95.0;
-                let count = self.index.rows.len().div_ceil(columns);
+                let count = self.navigation.index.rows.len().div_ceil(columns);
                 // Only visible thumbnail rows are rendered.
                 egui::ScrollArea::vertical()
                     .id_salt("thumbnail_rows")
                     .show_rows(ui, row_height, count, |ui, range| {
                         for row in range {
                             ui.horizontal(|ui| {
-                                for page in self.index.rows.iter().skip(row * columns).take(columns)
+                                for page in self
+                                    .navigation
+                                    .index
+                                    .rows
+                                    .iter()
+                                    .skip(row * columns)
+                                    .take(columns)
                                 {
                                     ui.vertical(|ui| {
                                         let (rect, response) = ui.allocate_exact_size(

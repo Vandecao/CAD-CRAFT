@@ -32,6 +32,8 @@
 | [0028](../../adr/0028-eplan-edz.md) | Implementado/testado automaticamente na Etapa 26; homologação pendente | EDZ ZIP/7z em memória, peças e macros inline/fallback; ESymLib com definições pendente de amostra, conforme ajuste aprovado |
 | [0029](../../adr/0029-codigo-aberto-gpl.md) | Implementado no bloco R0 (2026-11-05); publicação pendente | GPL-3.0-or-later, SPDX e deny.toml; amostras de terceiros fora do Git (CADCRAFT_SAMPLES); saídas de referência como garantia da reorganização; AGENTS público e local; docs/internal e docs/adr |
 | [0030](../../adr/0030-assistente-ia.md) | Implementado na Etapa 27; teste com login real pendente; homologação na Etapa 28 | Assistente e ajuda: ChatGPT por OAuth (PKCE, 127.0.0.1), nada da conta no disco; crate cadcraft-assistant sem rede; protocolo de ações em texto validado; consultas só de leitura; propostas com cartão e Desfazer; defesas de escopo, sigilo e injection |
+| [0031](../../adr/0031-protocolo-dxf-compartilhado.md) | Aceito no R4 | Protocolo DXF std-only compartilhado no modelo, políticas de saída preservadas |
+| [0032](../../adr/0032-estado-e-erros-gui.md) | Aceito no R5 | Estado por assunto, erros tipados na GUI e abertura com opener |
 
 Decisões futuras devem registrar contexto, decisão e consequências; não substituir
 silenciosamente contratos definidos pelo usuário.
@@ -56,3 +58,7 @@ Prompt aprovado com decisões recomendadas: guias de entrada em inglês, glossá
 ## R3 — organização do modelo (2026-11-05)
 
 Pastas por assunto em inglês, reexports planos mantidos e acesso interno preservado com ancestrais explícitos. Snapshot/integrity continuam ao lado de Project; frame, symbol e macros divididos por subassunto. Tolerância absoluta 1e-6 centraliza o valor existente de molduras; igualdade de identidade, ângulos canônicos e ortogonalidade não é relaxada. Sem mudança de contrato/Serde, portanto sem novo ADR comportamental. Autor autorizou versionar R2+R3 e publicar em privado e público, mantendo históricos separados. Relatório: ../reports/R3_MODELO_POR_ASSUNTO.md.
+
+## R5 — organização da GUI (2026-11-05)
+
+ADR-0032: editores por estado/entrada/desenho, catálogo por aba com ordem original, estado auxiliar agrupado e GuiError nas operações. opener/thiserror aprovados; String somente em apresentação e interfaces injetadas compatíveis. Pacotes nativos já serializados em cadcraft-format desde R1. Codex autorizado a executar o roteiro manual de R5. Publicação conjunta R4/R5 autorizada em históricos separados; R6 não iniciado.

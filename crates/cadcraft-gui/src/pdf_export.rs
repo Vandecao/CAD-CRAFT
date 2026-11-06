@@ -8,6 +8,7 @@
 //! nada de verdade).
 use crate::app::{CadApp, Level};
 use crate::dwg;
+use crate::error::{GuiError, GuiResult};
 use cad_craft::domain::*;
 use cad_craft::dxf_export;
 use cad_craft::pdf::{self, PaperFit, PdfError, PdfOptions, PdfScope};
@@ -64,20 +65,9 @@ pub trait SystemShell: Send {
 pub struct NativeShell;
 impl SystemShell for NativeShell {
     fn open(&mut self, path: &Path) -> Result<(), String> {
-        let mut command = if cfg!(windows) {
-            let mut c = std::process::Command::new("cmd");
-            c.args(["/C", "start", ""]).arg(path);
-            c
-        } else if cfg!(target_os = "macos") {
-            let mut c = std::process::Command::new("open");
-            c.arg(path);
-            c
-        } else {
-            let mut c = std::process::Command::new("xdg-open");
-            c.arg(path);
-            c
-        };
-        command.spawn().map(|_| ()).map_err(|e| e.to_string())
+        opener::open(path)
+            .map_err(GuiError::from)
+            .map_err(String::from)
     }
     fn print(&mut self, path: &Path) -> Result<(), String> {
         let mut command = if cfg!(windows) {
@@ -119,7 +109,7 @@ pub enum PaperChoice {
 enum Message {
     Progress(usize, usize),
     /// Resumo do relatório ou erro.
-    Done(Result<String, String>),
+    Done(GuiResult<String>),
 }
 
 struct Job {
@@ -248,8 +238,9 @@ impl PdfWindow {
                 }
             }
             Err(e) => {
-                self.result = Some(Err(e.clone()));
-                (Level::Error, e)
+                let text = e.to_string();
+                self.result = Some(Err(text.clone()));
+                (Level::Error, text)
             }
         };
         Some(log)
@@ -257,12 +248,12 @@ impl PdfWindow {
 }
 
 /// Trabalho da thread: recebe o callback de progresso e devolve o resumo.
-type Work = Box<dyn FnOnce(&mut dyn FnMut(usize, usize) -> bool) -> Result<String, String> + Send>;
+type Work = Box<dyn FnOnce(&mut dyn FnMut(usize, usize) -> bool) -> GuiResult<String> + Send>;
 
-fn error_text(e: PdfError) -> String {
+fn error_text(e: PdfError) -> GuiError {
     match e {
-        PdfError::Cancelled => "Exportação cancelada.".to_owned(),
-        other => other.to_string(),
+        PdfError::Cancelled => GuiError::Message("Exportação cancelada.".to_owned()),
+        other => GuiError::from(other),
     }
 }
 
@@ -290,8 +281,9 @@ fn spawn(work: Work, path: PathBuf, mode: PdfMode) -> Job {
 fn pdf_work(project: Project, options: PdfOptions, target: PathBuf) -> Work {
     Box::new(move |progress| {
         let out = pdf::export_pdf(&project, &options, progress).map_err(error_text)?;
-        std::fs::write(&target, &out.bytes)
-            .map_err(|e| format!("não foi possível gravar {}: {e}", target.display()))?;
+        std::fs::write(&target, &out.bytes).map_err(|e| {
+            GuiError::context(format!("não foi possível gravar {}", target.display()), e)
+        })?;
         Ok(out.report.summary())
     })
 }
@@ -301,8 +293,9 @@ fn dxf_work(project: Project, scope: PdfScope, folder: PathBuf) -> Work {
         let (files, report) =
             dxf_export::export_dxf_pages(&project, &scope, progress).map_err(error_text)?;
         for file in &files {
-            std::fs::write(folder.join(&file.name), &file.bytes)
-                .map_err(|e| format!("não foi possível gravar {}: {e}", file.name))?;
+            std::fs::write(folder.join(&file.name), &file.bytes).map_err(|e| {
+                GuiError::context(format!("não foi possível gravar {}", file.name), e)
+            })?;
         }
         Ok(format!("{} arquivo(s). {}", files.len(), report.summary()))
     })

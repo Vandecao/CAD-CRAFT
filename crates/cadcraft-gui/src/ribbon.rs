@@ -51,11 +51,11 @@ impl CadApp {
                     ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
                         let response = ui.add_sized(
                             [180.0, 23.0],
-                            egui::TextEdit::singleline(&mut self.command_query)
+                            egui::TextEdit::singleline(&mut self.chrome.command_query)
                                 .id(egui::Id::new("command_search"))
                                 .hint_text("Procurar comando"),
                         );
-                        if !self.command_query.is_empty() {
+                        if !self.chrome.command_query.is_empty() {
                             response.on_hover_text(
                                 "Busca por nome, palavras relacionadas, guia e grupo",
                             );
@@ -63,7 +63,7 @@ impl CadApp {
                     });
                 });
             });
-        if !self.command_query.is_empty() {
+        if !self.chrome.command_query.is_empty() {
             let mut action = None;
             egui::Window::new("Resultados de comandos")
                 .id(egui::Id::new("command_results"))
@@ -74,9 +74,10 @@ impl CadApp {
                     ScrollArea::vertical().max_height(320.0).show(ui, |ui| {
                         let mut found = false;
                         for c in self
+                            .chrome
                             .commands
                             .iter()
-                            .filter(|c| c.matches(&self.command_query))
+                            .filter(|c| c.matches(&self.chrome.command_query))
                         {
                             found = true;
                             let label = format!("{}   /   {} · {}", c.name, c.tab.label(), c.group);
@@ -99,11 +100,11 @@ impl CadApp {
                         }
                     });
                     if ui.button("Fechar busca").clicked() {
-                        self.command_query.clear();
+                        self.chrome.command_query.clear();
                     }
                 });
             if let Some(id) = action {
-                self.command_query.clear();
+                self.chrome.command_query.clear();
                 self.execute(id, ctx);
             }
         }
@@ -123,7 +124,7 @@ impl CadApp {
                         .add(egui::Button::new("Arquivo").fill(theme::SELECTION))
                         .clicked()
                     {
-                        self.backstage = Some("Informações");
+                        self.dialogs_state.backstage = Some("Informações");
                     }
                     let tabs_width = (ui.available_width()
                         - if self.preferences.ribbon_collapsed {
@@ -198,6 +199,7 @@ impl CadApp {
                             ui.horizontal_top(|ui| {
                                 let mut groups: Vec<&str> = Vec::new();
                                 for c in self
+                                    .chrome
                                     .commands
                                     .iter()
                                     .filter(|c| c.tab == self.preferences.ribbon_tab)
@@ -221,6 +223,7 @@ impl CadApp {
                                 }
                                 for group in groups {
                                     let commands: Vec<_> = self
+                                        .chrome
                                         .commands
                                         .iter()
                                         .filter(|c| {
@@ -305,7 +308,7 @@ impl CadApp {
                         .small()
                         .color(theme::ACCENT),
                     );
-                    if let Some(message) = self.messages.back() {
+                    if let Some(message) = self.panels_state.messages.back() {
                         ui.add(
                             egui::Label::new(
                                 RichText::new(&message.text).small().color(theme::MUTED),
@@ -330,7 +333,7 @@ impl CadApp {
                             }
                             if ui.button("Restaurar layout padrão").clicked() {
                                 self.preferences.restore_layout();
-                                self.layout_generation += 1;
+                                self.chrome.layout_generation += 1;
                                 ui.close();
                             }
                         });
