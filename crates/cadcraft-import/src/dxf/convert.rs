@@ -567,6 +567,7 @@ pub(super) fn convert(parsed: Parsed, options: &DxfImportOptions) -> ImportResul
             ZoneLayout {
                 columns: ZoneAxis::none(),
                 rows: ZoneAxis::none(),
+                generated_marks: false,
             },
         ),
     };

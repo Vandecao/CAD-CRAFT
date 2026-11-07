@@ -167,6 +167,7 @@ impl FrameTemplate {
             ZoneLayout {
                 columns: ZoneAxis::none(),
                 rows: ZoneAxis::none(),
+                generated_marks: true,
             },
             vec![FrameElement::Rectangle {
                 rect: usable,

@@ -115,6 +115,16 @@ pub(crate) fn paint_frame(
             None,
         );
     }
+    for (a, b) in frame.zone_marks() {
+        segment(
+            painter,
+            camera,
+            viewport,
+            a,
+            b,
+            stroke(camera, cad_craft::domain::ZONE_MARK_WIDTH),
+        );
+    }
     paint_zone_labels(painter, frame, camera, viewport);
 }
 

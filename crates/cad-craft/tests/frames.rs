@@ -60,6 +60,7 @@ fn custom() -> FrameTemplate {
                 labels_start: true,
                 labels_end: false,
             },
+            generated_marks: false,
         },
         vec![FrameElement::Special {
             origin: p(20.0, 5.0),
@@ -135,6 +136,7 @@ fn invalid_frames_are_refused() {
             labels_end: false,
         },
         rows: ZoneAxis::none(),
+        generated_marks: false,
     };
     assert!(FrameTemplate::new("x", sheet, usable, zones(vec![200.0, 150.0]), vec![]).is_err());
     assert!(FrameTemplate::new("x", sheet, usable, zones(vec![0.0]), vec![]).is_err());

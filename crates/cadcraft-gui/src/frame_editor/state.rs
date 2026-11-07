@@ -193,16 +193,74 @@ impl AxisForm {
             labels_end: axis.labels_end,
         }
     }
-    pub(in crate::frame_editor) fn build(&self) -> Result<ZoneAxis, String> {
-        let sizes = if self.custom.trim().is_empty() {
-            vec![self.size; self.count]
+    /// Zone sizes: the individual list when given, otherwise uniform.
+    pub(in crate::frame_editor) fn sizes(&self) -> Result<Vec<f64>, String> {
+        if self.custom.trim().is_empty() {
+            Ok(vec![self.size; self.count])
         } else {
             self.custom
                 .split(';')
                 .map(|s| s.trim().replace(',', ".").parse::<f64>())
                 .collect::<Result<Vec<_>, _>>()
-                .map_err(|_| "tamanhos individuais: números separados por ;".to_owned())?
+                .map_err(|_| "tamanhos individuais: números separados por ;".to_owned())
+        }
+    }
+    /// Fills the usable length with `count` zones: sizes rounded down to
+    /// 0.1 mm, the last zone taking the remainder (shown as individual sizes).
+    pub(in crate::frame_editor) fn distribute(&mut self, available: f64) {
+        if self.count == 0 || !available.is_finite() || available <= 0.0 {
+            self.custom.clear();
+            return;
+        }
+        let size = (available / self.count as f64 * 10.0).floor() / 10.0;
+        let last = available - size * (self.count - 1) as f64;
+        self.size = size;
+        self.custom = if (last - size).abs() < 1e-6 {
+            String::new()
+        } else {
+            let mut parts = vec![mm(size); self.count - 1];
+            parts.push(mm(last));
+            parts.join("; ")
         };
+    }
+    /// "8 × 31,5 mm = 252,0 mm de 252,0 mm" and whether the zones fit.
+    pub(in crate::frame_editor) fn summary(&self, available: f64) -> (String, bool) {
+        let Ok(sizes) = self.sizes() else {
+            return ("tamanhos individuais inválidos".into(), false);
+        };
+        let total: f64 = sizes.iter().sum();
+        let fits = total <= available + 1e-6;
+        let count = if self.custom.trim().is_empty() {
+            format!("{} × {} mm", sizes.len(), mm(self.size))
+        } else {
+            format!("{} zonas", sizes.len())
+        };
+        (
+            format!("{count} = {} mm de {} mm", mm(total), mm(available)),
+            fits,
+        )
+    }
+    /// Error with the numbers when the zones do not fit, e.g. "As 8 linhas
+    /// somam 320,0 mm, mas a área útil tem 252,0 mm."
+    pub(in crate::frame_editor) fn overflow(
+        &self,
+        available: f64,
+        noun: &str,
+        side: &str,
+    ) -> Option<String> {
+        let sizes = self.sizes().ok()?;
+        let total: f64 = sizes.iter().sum();
+        (total > available + 1e-6).then(|| {
+            format!(
+                "As {} {noun} somam {} mm, mas a área útil tem {} mm de {side}. Use \"Distribuir na área útil\" ou reduza a quantidade.",
+                sizes.len(),
+                mm(total),
+                mm(available)
+            )
+        })
+    }
+    pub(in crate::frame_editor) fn build(&self) -> Result<ZoneAxis, String> {
+        let sizes = self.sizes()?;
         Ok(ZoneAxis {
             sizes,
             style: if self.letters {
@@ -214,6 +272,11 @@ impl AxisForm {
             labels_end: self.labels_end,
         })
     }
+}
+
+/// Millimetres with one decimal and a decimal comma.
+pub(in crate::frame_editor) fn mm(value: f64) -> String {
+    format!("{value:.1}").replace('.', ",")
 }
 
 #[derive(Default)]

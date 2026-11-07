@@ -269,6 +269,7 @@ pub(crate) fn import_template(
         ZoneLayout {
             columns: ZoneAxis::none(),
             rows: ZoneAxis::none(),
+            generated_marks: false,
         },
         false,
     )

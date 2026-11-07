@@ -119,6 +119,10 @@ impl Builder<'_> {
                 }),
             }
         }
+        // Divisions follow the zones, like the labels (frames in format 10).
+        for (a, b) in frame.zone_marks() {
+            self.stroke(vec![a, b], false, ZONE_MARK_WIDTH, DisplayColor::Ink);
+        }
         for (label, origin) in frame_zone_labels(frame) {
             self.text(
                 origin,

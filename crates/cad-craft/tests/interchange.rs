@@ -173,6 +173,7 @@ fn dxf_round_trip_preserves_supported_geometry_and_fields() {
         ZoneLayout {
             columns: ZoneAxis::none(),
             rows: ZoneAxis::none(),
+            generated_marks: false,
         },
         vec![
             FrameElement::Line {

@@ -7,8 +7,8 @@ handles dialogs, file locks, atomic replacement, recovery and library folders.
 
 ## Native project: .cadcraft
 
-The current writer uses **format 9, min_reader 9**. Version 0 is the old technical
-JSON snapshot. Versions 1–9 use a ZIP with the uncompressed mimetype entry first,
+The current writer uses **format 10, min_reader 10**. Version 0 is the old technical
+JSON snapshot. Versions 1–10 use a ZIP with the uncompressed mimetype entry first,
 manifest.json (format, min_reader, writer) and project.json. The MIME type is
 application/x-cad-craft-project+zip. Image bytes introduced in version 3 are stored
 under assets/; references remain in the project data.
@@ -40,6 +40,7 @@ rewriting existing values. The fixtures below are under
 | 7 | Numbering scheme and labels, defaulted for older entities | etapa20-v7.cadcraft |
 | 8 | Optional report definition on pages | etapa23-v8.cadcraft |
 | 9 | Optional check scheme; legacy connector mating records without owned connections are completed during model loading | etapa24-v9.cadcraft |
+| 10 | Zone divisions generated from the zones (`ZoneLayout::generated_marks`); fixed division lines of older frames that coincide with zone ends are converted on load (ADR-0033) | etapa30-v10.cadcraft |
 
 A loaded result exposes source_format, migrated(), is_legacy_snapshot() and
 read_only. Legacy snapshots need Save As to become native containers. An older
@@ -54,8 +55,7 @@ GUI preferences and assistant credentials are not project-format content.
 
 ## Native reusable libraries
 
-All four library formats currently use their own **format 1** manifest in a ZIP,
-with mimetype first. They are not project version 9 files. Readers apply the
+The library formats use their own manifest version in a ZIP, with mimetype first: `.cadsym`, `.cadmacro` and `.cadpart` are **format 1**; `.cadframe` is **format 2** since Etapa 30 (version 1 frames have their fixed division lines converted on load, as in project format 10). They are not project-format files. Readers apply the
 container safety checks and validate decoded data. See the corresponding
 read_*_package / write_*_package APIs in cad_craft::persistence.
 

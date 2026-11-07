@@ -45,8 +45,8 @@ homologação geral de plataforma/hardware.
 | R3 | Modelo por assunto, arquivos menores, tolerance.rs e inventário de comparações | Implementado | 694 Rust + 6 exemplos + 16 PowerShell, Release | Não se aplica; teste no app no R5 | Commit/push R2+R3 autorizados para privado e público; recibo .local/r3/PUBLICATION.md |
 | 27 | Fase E — assistente de IA e ajuda, cadcraft-assistant sem rede; OAuth na GUI | Implementada | 689 Rust + 16 PowerShell registrados na Etapa 27 | Teste com login registrado no HANDOFF; homologação geral na 28 | Commit local 06a6cbf, HEAD observado em 2026-11-05 |
 | 28 | Fase F — desempenho, robustez, telas e homologação geral | Implementada e homologada (Codex + Claude Code); 6 defeitos corrigidos | Sim, 743 Rust + 6 exemplos + 16 PowerShell; Release | Aceita pelo autor em 2026-11-07 | Commit + push após o OK de 2026-11-07 |
-| 29 | Manter conectado ao ChatGPT (cofre do Windows, opção desmarcada por padrão) | Implementada (Claude Code) | Sim, 751 Rust + 6 exemplos + 16 PowerShell; Release | Fim da 31 | Fora do HEAD; commit + push após OK |
-| 30 | Colunas e linhas da moldura: redistribuição, mensagens claras, divisões geradas, formato 10 | Planejada (prompt aprovado) | — | Fim da 31 | — |
+| 29 | Manter conectado ao ChatGPT (cofre do Windows, opção desmarcada por padrão) | Implementada (Claude Code) | Sim, 751 Rust + 6 exemplos + 16 PowerShell; Release | Fim da 31 | Commit c4beefc (privado) / ea0c90e (público) |
+| 30 | Colunas e linhas da moldura: redistribuição, mensagens claras, divisões geradas, formato 10 | Implementada (Claude Code) | Sim, 762 Rust + 6 exemplos + 16 PowerShell; Release | Fim da 31 | Commit + push autorizados pelo autor |
 | 31 | Área de trabalho como no EPLAN: fundo uniforme, folha segue a moldura, grade que some, linhas-guia do cursor | Planejada (prompt aprovado) | — | Teste no app das 29–31 | — |
 
 ### Plano Mestre aprovado (2026-11-03)

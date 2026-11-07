@@ -384,26 +384,28 @@ fn legacy_snapshot_with_bom_and_whitespace_is_migrated() {
 
 #[test]
 fn newer_formats_open_read_only_or_are_refused() {
+    // A future writer, one format ahead of this reader.
+    let future = persistence::FORMAT + 1;
     let json = project_json(&sample());
     let readable = container(&[
         ("mimetype", persistence::MIMETYPE.as_bytes()),
-        ("manifest.json", &manifest(10, 9)),
+        ("manifest.json", &manifest(future, persistence::FORMAT)),
         ("project.json", &json),
         ("assets/futuro.bin", b"ignorado"),
     ]);
     let loaded = persistence::read_project_from_slice(&readable).unwrap();
     assert!(loaded.read_only);
-    assert_eq!(loaded.source_format, 10);
+    assert_eq!(loaded.source_format, future);
     let refused = container(&[
         ("mimetype", persistence::MIMETYPE.as_bytes()),
-        ("manifest.json", &manifest(10, 10)),
+        ("manifest.json", &manifest(future, future)),
         ("project.json", &json),
     ]);
     match persistence::read_project_from_slice(&refused) {
         Err(PersistenceError::UnsupportedFormat {
-            min_reader: 10,
-            supported: 9,
-        }) => {}
+            min_reader,
+            supported,
+        }) if min_reader == future && supported == persistence::FORMAT => {}
         other => panic!("{other:?}"),
     }
     let incoherent = container(&[

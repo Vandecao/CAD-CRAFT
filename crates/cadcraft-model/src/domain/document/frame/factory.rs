@@ -53,11 +53,8 @@ fn factory(name: &str, sheet: Size2D, columns: usize) -> FrameTemplate {
         line((left, title), (right, title), 0.5),
         line((left, bottom + 15.0), (right, bottom + 15.0), 0.25),
     ];
+    // Column divisions are generated from the zones (marks.rs).
     let step = width / columns as f64;
-    for i in 1..columns {
-        let x = left + step * i as f64;
-        e.push(line((x, band), (x, top), 0.25));
-    }
     let cell = width / 4.0;
     for i in 1..4 {
         let x = left + cell * i as f64;
@@ -104,6 +101,7 @@ fn factory(name: &str, sheet: Size2D, columns: usize) -> FrameTemplate {
     let zones = ZoneLayout {
         columns: ZoneAxis::uniform(columns, step, ZoneLabelStyle::Numbers { start: 1 }),
         rows: ZoneAxis::none(),
+        generated_marks: true,
     };
     FrameTemplate::new(name, sheet, usable, zones, e)
         .expect("valid factory frame")

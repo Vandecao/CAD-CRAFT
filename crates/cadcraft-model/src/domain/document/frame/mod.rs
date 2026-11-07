@@ -113,12 +113,12 @@ impl ZoneAxis {
             })
             .collect()
     }
-    fn validate(&self, available: f64) -> Result<()> {
-        if self.sizes.len() > MAX_ZONES
-            || self.sizes.iter().any(|s| !s.is_finite() || *s <= 0.0)
-            || self.total() > available + EPS
-        {
-            return Err(invalid("zonas da moldura inválidas ou fora da área útil"));
+    fn validate(&self, available: f64, too_long: &'static str) -> Result<()> {
+        if self.sizes.len() > MAX_ZONES || self.sizes.iter().any(|s| !s.is_finite() || *s <= 0.0) {
+            return Err(invalid("zonas da moldura inválidas"));
+        }
+        if self.total() > available + EPS {
+            return Err(invalid(too_long));
         }
         Ok(())
     }
@@ -132,6 +132,11 @@ pub struct ZoneLayout {
     pub columns: ZoneAxis,
     /// Report rows or their count before pagination.
     pub rows: ZoneAxis,
+    /// Division marks are drawn from the zones (see FrameTemplate::zone_marks)
+    /// instead of fixed lines. Frames read from format 9 or older start
+    /// without it; reading converts their fixed division lines.
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub generated_marks: bool,
 }
 
 /// Text alignment point relative to its origin.
@@ -546,8 +551,14 @@ impl FrameTemplate {
         {
             return Err(invalid("folha ou área útil da moldura inválida"));
         }
-        self.zones.columns.validate(u.size().width())?;
-        self.zones.rows.validate(u.size().height())?;
+        self.zones.columns.validate(
+            u.size().width(),
+            "as colunas da moldura somam mais que a largura da área útil",
+        )?;
+        self.zones.rows.validate(
+            u.size().height(),
+            "as linhas da moldura somam mais que a altura da área útil",
+        )?;
         for e in &self.elements {
             e.validate()?;
         }
@@ -666,4 +677,6 @@ mod tests {
 
 mod editing;
 mod factory;
+mod marks;
 pub use editing::FrameDraft;
+pub use marks::ZONE_MARK_WIDTH;

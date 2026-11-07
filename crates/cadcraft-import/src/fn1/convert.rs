@@ -385,6 +385,8 @@ pub(super) fn convert(
             center.map(|c| c.0),
             false,
         ),
+        // EPLAN frames bring their own division lines.
+        generated_marks: false,
     };
     report::summarize(&mut b.report, &labels);
     let name = root

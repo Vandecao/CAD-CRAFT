@@ -1,3 +1,11 @@
+## Etapa 30 — zonas da moldura implementada e validada (2026-11-07)
+
+- Divisões de colunas e linhas geradas pelas zonas; formato .cadcraft 10 e .cadframe 2 convertem as linhas fixas antigas (ADR-0033); editor redistribui ao mudar a quantidade, mostra a soma e dá a mensagem com os números. Relatório `docs/internal/reports/ETAPA_30_ZONAS_MOLDURA.md`.
+- Saídas de referência regravadas: fixtures v2–v5 mudaram só a ordem dos itens (teste de equivalência); todos os .cadcraft mudaram por serem formato 10; fixture nova etapa30-v10.
+- Validação: 762 Rust + 6 exemplos + 16 PowerShell, exit 0; Release 23.917.568 bytes. Versionamento autorizado pelo autor ("terminando a etapa 30, versione e siga com a etapa 31"). Próximo: Etapa 31 e teste no app das 29–31.
+
+---
+
 ## Etapa 29 — manter conectado implementada e validada (2026-11-07)
 
 - Caixa "Manter conectado neste computador" (desmarcada por padrão); refresh token e client_id no Gerenciador de Credenciais do Windows pela crate keyring 3.6.3; retomada em segundo plano ao abrir; Sair/desmarcar apagam. Relatório `docs/internal/reports/ETAPA_29_MANTER_CONECTADO.md`, adendo no ADR-0030.

@@ -296,9 +296,19 @@ pub(in crate::frame_editor) fn build_frame_draft(
         Size2D::new(f.usable[2], f.usable[3]).map_err(e)?,
     )
     .map_err(e)?;
+    for (axis, available, noun, side) in [
+        (&f.axes[0], f.usable[2], "colunas", "largura"),
+        (&f.axes[1], f.usable[3], "linhas", "altura"),
+    ] {
+        if let Some(message) = axis.overflow(available, noun, side) {
+            return Err(message);
+        }
+    }
     draft.zones = ZoneLayout {
         columns: f.axes[0].build()?,
         rows: f.axes[1].build()?,
+        // Frames edited here always draw their divisions from the zones.
+        generated_marks: true,
     };
     Ok(draft)
 }

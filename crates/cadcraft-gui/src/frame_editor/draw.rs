@@ -386,12 +386,19 @@ impl CadApp {
         ] {
             ui.separator();
             ui.strong(title);
+            let available = form.usable[2 + axis];
             let a = &mut form.axes[axis];
             egui::Grid::new(("frame_axis", axis))
                 .num_columns(2)
                 .show(ui, |ui| {
                     ui.label("Quantidade");
-                    ui.add(egui::DragValue::new(&mut a.count).range(0..=200));
+                    // A new quantity fills the usable area again.
+                    if ui
+                        .add(egui::DragValue::new(&mut a.count).range(0..=200))
+                        .changed()
+                    {
+                        a.distribute(available);
+                    }
                     ui.end_row();
                     ui.label("Tamanho uniforme");
                     ui.add(egui::DragValue::new(&mut a.size).speed(0.5).suffix(" mm"));
@@ -411,6 +418,21 @@ impl CadApp {
                 });
             ui.checkbox(&mut a.labels_start, start_side);
             ui.checkbox(&mut a.labels_end, end_side);
+            let (text, fits) = a.summary(available);
+            ui.horizontal(|ui| {
+                ui.label(egui::RichText::new(text).small().color(if fits {
+                    theme::MUTED
+                } else {
+                    theme::WARNING
+                }));
+                if ui
+                    .small_button("Distribuir na área útil")
+                    .on_hover_text("Divide a área útil em partes iguais pela quantidade atual")
+                    .clicked()
+                {
+                    a.distribute(available);
+                }
+            });
         }
         ui.add_space(6.0);
         if ui.button("Aplicar moldura").clicked() {

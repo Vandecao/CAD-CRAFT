@@ -38,6 +38,7 @@ R6 (2026-11-06): decisões de manutenção executadas conforme prompt aprovado: 
 | [0030](../../adr/0030-assistente-ia.md) | Implementado na Etapa 27; teste com login real pendente; homologação na Etapa 28 | Assistente e ajuda: ChatGPT por OAuth (PKCE, 127.0.0.1), nada da conta no disco; crate cadcraft-assistant sem rede; protocolo de ações em texto validado; consultas só de leitura; propostas com cartão e Desfazer; defesas de escopo, sigilo e injection |
 | [0031](../../adr/0031-protocolo-dxf-compartilhado.md) | Aceito no R4 | Protocolo DXF std-only compartilhado no modelo, políticas de saída preservadas |
 | [0032](../../adr/0032-estado-e-erros-gui.md) | Aceito no R5 | Estado por assunto, erros tipados na GUI e abertura com opener |
+| [0033](../../adr/0033-divisoes-de-zona-geradas.md) | Aceito na Etapa 30 | Divisões de zona geradas pelas zonas; formato .cadcraft 10 e .cadframe 2 com conversão das linhas fixas; editor redistribui e mostra a soma |
 
 Decisões futuras devem registrar contexto, decisão e consequências; não substituir
 silenciosamente contratos definidos pelo usuário.

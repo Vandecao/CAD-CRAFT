@@ -212,8 +212,18 @@ impl Importer<'_> {
             sheet.rowsize,
             template.map(|t| format!(" {t}")).unwrap_or_default()
         );
-        let frame = FrameTemplate::new(name, size, usable, ZoneLayout { columns, rows }, elements)
-            .map_err(domain)?;
+        let frame = FrameTemplate::new(
+            name,
+            size,
+            usable,
+            ZoneLayout {
+                columns,
+                rows,
+                generated_marks: false,
+            },
+            elements,
+        )
+        .map_err(domain)?;
         Ok(FramePackage { frame, assets })
     }
 

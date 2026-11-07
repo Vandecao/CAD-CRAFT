@@ -23,9 +23,9 @@ use std::io::{self, Read, Seek, SeekFrom, Write};
 use zip::{CompressionMethod, ZipArchive, ZipWriter, write::SimpleFileOptions};
 
 /// Format version written by this release.
-pub const FORMAT: u32 = 9;
+pub const FORMAT: u32 = 10;
 /// Oldest reader format that can read files written by this release.
-pub const MIN_READER: u32 = 9;
+pub const MIN_READER: u32 = 10;
 /// Newest format version accepted by this reader.
 pub const SUPPORTED_FORMAT: u32 = FORMAT;
 /// Content type of the native project ZIP container.
@@ -414,8 +414,9 @@ fn read_entry<R: Read + Seek>(
 pub const FRAME_MIMETYPE: &str = "application/x-cad-craft-frame+zip";
 /// Frame package filename extension without a leading dot.
 pub const FRAME_EXTENSION: &str = "cadframe";
-/// Current frame package format version.
-pub const FRAME_FORMAT: u32 = 1;
+/// Current frame package format version. Version 2 draws zone divisions
+/// from the zones; reading version 1 converts its fixed division lines.
+pub const FRAME_FORMAT: u32 = 2;
 const FRAME: &str = "frame.json";
 
 #[derive(Serialize, Deserialize)]
@@ -461,10 +462,13 @@ pub fn read_frame_package(bytes: &[u8]) -> Result<FramePackage> {
         return Err(PersistenceError::NotAProject);
     }
     let mut archive = open_checked(io::Cursor::new(bytes))?;
-    read_manifest(&mut archive, FRAME_MIMETYPE, FRAME_FORMAT)?;
+    let manifest = read_manifest(&mut archive, FRAME_MIMETYPE, FRAME_FORMAT)?;
     let content = read_entry(&mut archive, FRAME, MAX_UNPACKED_BYTES)?;
-    let file: FrameFile =
+    let mut file: FrameFile =
         serde_json::from_slice(&content).map_err(|e| PersistenceError::Json(e.to_string()))?;
+    if manifest.format < 2 {
+        file.frame.adopt_generated_zone_marks();
+    }
     let mut assets = Vec::with_capacity(file.assets.len());
     for mut asset in file.assets {
         let bytes = read_entry(&mut archive, &asset_entry(&asset), MAX_IMAGE_BYTES as u64)?;
@@ -486,7 +490,7 @@ pub fn read_frame_package(bytes: &[u8]) -> Result<FramePackage> {
 /// Applies chained `vN → vN+1` migrations to project JSON.
 /// v0 (legacy snapshot) → v1 preserves project content; only the
 /// container changes. Add a transition here for each new version.
-fn migrate(value: Value, from: u32) -> Result<Value> {
+fn migrate(mut value: Value, from: u32) -> Result<Value> {
     let mut version = from;
     while version < FORMAT {
         version = match version {
@@ -519,10 +523,32 @@ fn migrate(value: Value, from: u32) -> Result<Value> {
             // v8 → v9: checking schemes are optional; couplings
             // without `owned` acquire their owned connections during loading.
             8 => 9,
+            // v9 → v10: zone divisions are drawn from the zones; fixed
+            // division lines that coincide with them are converted.
+            9 => {
+                adopt_generated_zone_marks(&mut value)?;
+                10
+            }
             _ => unreachable!("cada formato anterior possui migração"),
         };
     }
     Ok(value)
+}
+
+/// Converts the fixed division lines of every project frame (v9 → v10).
+fn adopt_generated_zone_marks(value: &mut Value) -> Result<()> {
+    let Some(frames) = value.get_mut("frames").and_then(Value::as_array_mut) else {
+        return Ok(());
+    };
+    for slot in frames {
+        let mut frame: FrameTemplate = serde_json::from_value(slot.clone())
+            .map_err(|e| PersistenceError::Json(e.to_string()))?;
+        if frame.adopt_generated_zone_marks() {
+            *slot =
+                serde_json::to_value(&frame).map_err(|e| PersistenceError::Json(e.to_string()))?;
+        }
+    }
+    Ok(())
 }
 
 fn decode_project(value: Value) -> Result<Project> {
