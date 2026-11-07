@@ -47,5 +47,5 @@ mod strings;
 pub mod symbol_editor;
 pub(crate) mod symbol_files;
 pub mod symbol_view;
-mod theme;
+pub mod theme;
 mod viewport;

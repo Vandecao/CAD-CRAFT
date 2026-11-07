@@ -103,6 +103,7 @@ pub enum CommandId {
     PreviousView,
     ToggleGrid,
     ToggleSnap,
+    ToggleCursorGuides,
     DeviceNavigator,
     StructureNavigator,
     ConnectionNavigator,

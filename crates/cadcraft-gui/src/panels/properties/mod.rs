@@ -551,7 +551,16 @@ fn frame_rows(
                             .selectable_label(current == Some(f.id()), f.name().as_str())
                             .clicked()
                         {
-                            edits.push(FrameEdit::SetDefaultFrame(Some(f.id())));
+                            // Pages without their own frame follow the new default
+                            // size, in the same undoable step.
+                            let mut batch = vec![FrameEdit::SetDefaultFrame(Some(f.id()))];
+                            batch.extend(
+                                project
+                                    .pages()
+                                    .filter(|p| p.frame().is_none())
+                                    .map(|p| FrameEdit::FitPageToFrame { page: p.id() }),
+                            );
+                            edits.push(FrameEdit::Batch(batch));
                         }
                     }
                 });
@@ -586,8 +595,19 @@ fn frame_rows(
                 .truncate()
                 .selected_text(name(own).unwrap_or_else(|| default.clone()))
                 .show_ui(ui, |ui| {
+                    // Choosing a frame also gives the page its size (one Ctrl+Z).
+                    let with_size = |set: FrameEdit, fits: bool| {
+                        if fits {
+                            FrameEdit::Batch(vec![set, FrameEdit::FitPageToFrame { page }])
+                        } else {
+                            set
+                        }
+                    };
                     if ui.selectable_label(own.is_none(), &default).clicked() && own.is_some() {
-                        edits.push(FrameEdit::SetPageFrame { page, frame: None });
+                        edits.push(with_size(
+                            FrameEdit::SetPageFrame { page, frame: None },
+                            project.default_frame().is_some(),
+                        ));
                     }
                     for f in project.frames() {
                         if ui
@@ -595,10 +615,13 @@ fn frame_rows(
                             .clicked()
                             && own != Some(f.id())
                         {
-                            edits.push(FrameEdit::SetPageFrame {
-                                page,
-                                frame: Some(f.id()),
-                            });
+                            edits.push(with_size(
+                                FrameEdit::SetPageFrame {
+                                    page,
+                                    frame: Some(f.id()),
+                                },
+                                true,
+                            ));
                         }
                     }
                 });
@@ -608,13 +631,26 @@ fn frame_rows(
                     || (f.sheet().height() - p.size().height()).abs() > 0.5)
             {
                 ui.label("");
-                ui.add(
-                    egui::Label::new(
-                        egui::RichText::new("Moldura com tamanho diferente da folha")
-                            .color(ui.visuals().warn_fg_color),
-                    )
-                    .wrap(),
-                );
+                ui.vertical(|ui| {
+                    ui.add(
+                        egui::Label::new(
+                            egui::RichText::new("Moldura com tamanho diferente da folha")
+                                .color(ui.visuals().warn_fg_color),
+                        )
+                        .wrap(),
+                    );
+                    if ui
+                        .button("Ajustar folha à moldura")
+                        .on_hover_text(format!(
+                            "A folha passa a ter {} × {} mm, o tamanho da moldura (Ctrl+Z desfaz)",
+                            f.sheet().width(),
+                            f.sheet().height()
+                        ))
+                        .clicked()
+                    {
+                        edits.push(FrameEdit::FitPageToFrame { page });
+                    }
+                });
                 ui.end_row();
             }
         }

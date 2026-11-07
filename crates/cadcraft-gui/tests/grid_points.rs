@@ -40,10 +40,9 @@ fn pan_and_cursor_zoom_keep_grid_anchored_in_document_space() {
 fn extreme_zoom_and_large_viewports_have_a_finite_bounded_point_budget() {
     let viewport = Rect::from_min_size(Pos2::new(-100.0, 13.0), Vec2::new(16384.0, 8192.0));
     for center in [[0.0, 0.0], [-1e12, 1e12]] {
-        for scale in [0.0001, 0.001, 0.1, 1.0, 10000.0] {
+        for scale in [0.0001, 0.001, 0.1, 1.0, 10000.0, 100.0] {
             let points = grid_points(&Camera::new(center, scale).unwrap(), viewport, 0.1);
-            assert!(points.len() <= 12000);
-            assert!(!points.is_empty());
+            assert!(points.len() <= 60_000);
             assert!(
                 points
                     .iter()
@@ -56,23 +55,30 @@ fn extreme_zoom_and_large_viewports_have_a_finite_bounded_point_budget() {
             assert_eq!(unique.len(), points.len());
         }
     }
+    // Dense enough to draw (10 px) in a normal viewport: dots are drawn.
+    let normal = Rect::from_min_size(Pos2::ZERO, Vec2::new(1200.0, 800.0));
+    assert!(!grid_points(&Camera::new([0.0, 0.0], 100.0).unwrap(), normal, 0.1).is_empty());
 }
 #[test]
-fn adaptive_render_density_does_not_change_snap_resolution() {
-    let camera = Camera::new([0.0, 0.0], 0.0001).unwrap();
-    let points = grid_points(&camera, view(), 2.5);
+fn far_zoom_hides_the_grid_without_changing_snap_resolution() {
+    // As in EPLAN: below MIN_GRID_PX the grid is hidden, never coarsened.
+    let far = Camera::new([0.0, 0.0], 0.0001).unwrap();
+    assert!(grid_points(&far, view(), 2.5).is_empty());
+    let threshold = cad_gui::camera::MIN_GRID_PX / 2.5;
+    let just_below = Camera::new([0.0, 0.0], threshold * 0.99).unwrap();
+    assert!(grid_points(&just_below, view(), 2.5).is_empty());
+    let at = Camera::new([0.0, 0.0], threshold * 1.01).unwrap();
+    let points = grid_points(&at, view(), 2.5);
     assert!(!points.is_empty());
-    assert!(points.len() < 100);
+    // Visible dots keep the real spacing (2.5 mm), not a multiple.
+    for p in points {
+        let world = at.screen_to_world(p, view()).unwrap();
+        assert!((world.x() / 2.5 - (world.x() / 2.5).round()).abs() < 1e-4);
+    }
     assert_eq!(
         snap(Point2D::new(3.7, -2.8).unwrap(), 2.5, true),
         Point2D::new(2.5, -2.5).unwrap()
     );
-    // At this zoom the visual step is 32768 * 2.5 mm = 8.192 logical points.
-    // Assert in screen space: inverse f32 screen quantization is amplified by 10000.
-    for p in points {
-        let offset = (p.x - 140.0) / 8.192;
-        assert!((offset - offset.round()).abs() < 0.0001);
-    }
 }
 #[test]
 fn no_visible_intersection_or_invalid_input_produces_no_points() {

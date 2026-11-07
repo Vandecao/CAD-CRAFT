@@ -177,11 +177,19 @@ pub fn snap(p: Point2D, spacing: f64, enabled: bool) -> Point2D {
     .unwrap_or(p)
 }
 
-/// Visible document intersections. The visual step may grow by powers of two;
-/// the caller's logical spacing (and therefore snap) is never changed.
+/// Grid dots closer than this on screen are not drawn: the grid hides when
+/// zoomed far out, as in EPLAN, instead of spreading coarser dots.
+pub const MIN_GRID_PX: f64 = 6.0;
+
+/// Visible document intersections at the real spacing, or none when they
+/// would be closer than [`MIN_GRID_PX`] or exceed the point budget. Snap
+/// keeps the logical spacing either way.
 pub fn grid_points(camera: &Camera, viewport: Rect, spacing: f64) -> Vec<Pos2> {
-    const MAX_POINTS: usize = 12_000;
+    const MAX_POINTS: f64 = 60_000.0;
     if !viewport.is_finite() || !viewport.is_positive() || !spacing.is_finite() || spacing <= 0.0 {
+        return vec![];
+    }
+    if spacing * camera.scale() < MIN_GRID_PX {
         return vec![];
     }
     let (Some(low), Some(high)) = (
@@ -190,49 +198,35 @@ pub fn grid_points(camera: &Camera, viewport: Rect, spacing: f64) -> Vec<Pos2> {
     ) else {
         return vec![];
     };
-    let mut step = spacing
-        * (8.0 / (spacing * camera.scale()))
-            .max(1.0)
-            .log2()
-            .ceil()
-            .exp2();
-    // Bound both allocation and iteration, including unreasonable input extents.
-    for _ in 0..128 {
-        if !step.is_finite() || step <= 0.0 {
-            return vec![];
-        }
-        let first = [(low.x() / step).ceil(), (low.y() / step).ceil()];
-        let last = [(high.x() / step).floor(), (high.y() / step).floor()];
-        let count = [
-            (last[0] - first[0] + 1.0).max(0.0),
-            (last[1] - first[1] + 1.0).max(0.0),
-        ];
-        if count.contains(&0.0) {
-            return vec![];
-        }
-        if count[0] * count[1] <= MAX_POINTS as f64
-            && first
-                .iter()
-                .chain(last.iter())
-                .all(|n| n.is_finite() && n.abs() < (1_u64 << 52) as f64)
-        {
-            let mut points = Vec::with_capacity((count[0] * count[1]) as usize);
-            for y in 0..count[1] as usize {
-                for x in 0..count[0] as usize {
-                    if let Ok(world) =
-                        Point2D::new((first[0] + x as f64) * step, (first[1] + y as f64) * step)
-                        && let Some(screen) = camera.world_to_screen(world, viewport)
-                        && viewport.contains(screen)
-                    {
-                        points.push(screen);
-                    }
-                }
-            }
-            return points;
-        }
-        step *= 2.0;
+    let first = [(low.x() / spacing).ceil(), (low.y() / spacing).ceil()];
+    let last = [(high.x() / spacing).floor(), (high.y() / spacing).floor()];
+    let count = [
+        (last[0] - first[0] + 1.0).max(0.0),
+        (last[1] - first[1] + 1.0).max(0.0),
+    ];
+    if count.contains(&0.0)
+        || count[0] * count[1] > MAX_POINTS
+        || !first
+            .iter()
+            .chain(last.iter())
+            .all(|n| n.is_finite() && n.abs() < (1_u64 << 52) as f64)
+    {
+        return vec![];
     }
-    vec![]
+    let mut points = Vec::with_capacity((count[0] * count[1]) as usize);
+    for y in 0..count[1] as usize {
+        for x in 0..count[0] as usize {
+            if let Ok(world) = Point2D::new(
+                (first[0] + x as f64) * spacing,
+                (first[1] + y as f64) * spacing,
+            ) && let Some(screen) = camera.world_to_screen(world, viewport)
+                && viewport.contains(screen)
+            {
+                points.push(screen);
+            }
+        }
+    }
+    points
 }
 
 /// At most 2 * 1024 lines, aligned to integer multiples of the actual grid.

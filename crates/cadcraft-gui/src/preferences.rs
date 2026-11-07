@@ -102,6 +102,8 @@ pub struct Preferences {
     pub messages_height: f32,
     pub grid_mm: f64,
     pub grid_visible: bool,
+    /// Thin lines that follow the cursor across the work area.
+    pub cursor_guides: bool,
     pub snap_enabled: bool,
     pub junction_outline: bool,
     pub thumbnails_grid: bool,
@@ -137,6 +139,7 @@ impl Default for Preferences {
             messages_height: 95.0,
             grid_mm: 4.0,
             grid_visible: true,
+            cursor_guides: true,
             snap_enabled: false,
             junction_outline: false,
             thumbnails_grid: true,

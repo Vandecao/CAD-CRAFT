@@ -222,6 +222,7 @@ fn removing_a_column_redistributes_and_redraws_the_divisions() {
 fn eight_rows_fill_the_usable_height_and_apply() {
     let mut ui = Ui::a4();
     ui.set_quantity(1, "8");
+    ui.scroll_panel();
     assert!(
         ui.labels()
             .iter()

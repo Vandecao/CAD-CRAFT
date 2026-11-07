@@ -93,6 +93,17 @@ pub(super) const TOGGLE_GRID: CommandSpec = (
     "grid",
 );
 
+pub(super) const TOGGLE_CURSOR_GUIDES: CommandSpec = (
+    C::ToggleCursorGuides,
+    "Linhas-guia do cursor",
+    "Linhas finas que acompanham o cursor na área de trabalho",
+    T::View,
+    "Grade",
+    R::Always,
+    I::Fit,
+    "cursor cruz mira guia linhas eixo",
+);
+
 pub(super) const TOGGLE_SNAP: CommandSpec = (
     C::ToggleSnap,
     "Ajustar à grade",

@@ -127,7 +127,14 @@ impl CadApp {
         self.last_viewport = Some(rect);
         let response = ui.allocate_rect(rect, Sense::click_and_drag());
         let painter = ui.painter_at(rect);
-        painter.rect_filled(rect, 0, theme::CANVAS);
+        // With a page open the whole work area has one colour; the frame is
+        // the visual limit (as in EPLAN). The welcome screen keeps the canvas.
+        let background = if self.session.active.is_some() {
+            theme::WORK_AREA
+        } else {
+            theme::CANVAS
+        };
+        painter.rect_filled(rect, 0, background);
         if let Some(page_id) = self.session.active {
             let Some(tab_index) = self.session.tabs.iter().position(|t| t.page == page_id) else {
                 return;
@@ -222,6 +229,22 @@ impl CadApp {
                     FontId::proportional(12.0),
                     theme::ACCENT,
                 );
+            }
+            // Cursor guides (as in EPLAN): thin lines across the work area
+            // through the cursor, on the snapped point when snap is on.
+            if self.preferences.cursor_guides
+                && let Some(world) = self.chrome.cursor_world
+            {
+                let at = if self.preferences.snap_enabled {
+                    snap(world, self.preferences.grid_mm, true)
+                } else {
+                    world
+                };
+                if let Some(screen) = camera.world_to_screen(at, rect) {
+                    let guide = Stroke::new(1.0_f32, theme::CURSOR_GUIDE);
+                    painter.hline(rect.x_range(), screen.y, guide);
+                    painter.vline(screen.x, rect.y_range(), guide);
+                }
             }
             if self.preferences.snap_enabled
                 && let Some(world) = self.chrome.cursor_world
@@ -329,6 +352,19 @@ impl CadApp {
             {
                 self.execute(CommandId::ToggleGrid, &ctx);
             }
+            if icons::button(
+                ui,
+                Icon::Fit,
+                "",
+                "Mostrar/ocultar linhas-guia do cursor",
+                true,
+                self.preferences.cursor_guides,
+                false,
+            )
+            .clicked()
+            {
+                self.execute(CommandId::ToggleCursorGuides, &ctx);
+            }
             egui::ComboBox::from_id_salt("grid_spacing")
                 .selected_text(format!("{:.1} mm", self.preferences.grid_mm))
                 .width(70.0)
@@ -402,35 +438,18 @@ fn draw_editor_page(
     let upper = Point2D::new(page.size().width(), page.size().height()).expect("validated size");
     let sheet = Rect2D::new(origin, page.size()).expect("valid page");
     if let Some(visible) = camera.clipped_rect(sheet, viewport) {
-        painter.rect_filled(visible, 0, theme::PAPER);
-        draw_bounds(
-            painter,
-            camera,
-            sheet,
-            viewport,
-            Stroke::new(1.0_f32, theme::INK),
-        );
         let frame = project.page_frame(page_id);
-        let margin = 10.0_f64
-            .min(page.size().width() * 0.1)
-            .min(page.size().height() * 0.1);
         if let Some(frame) = frame {
-            // The frame supplies the sheet margin and header.
+            // The frame is the limit of the sheet; no separate paper.
             crate::frame_view::paint_frame(painter, project, page_id, frame, camera, viewport);
-        } else if let Ok(inner) = Rect2D::new(
-            Point2D::new(margin, margin).expect("finite margin"),
-            Size2D::new(
-                page.size().width() - 2.0 * margin,
-                page.size().height() - 2.0 * margin,
-            )
-            .expect("nonnegative margin"),
-        ) {
+        } else {
+            // Without a frame, only a thin outline shows the sheet.
             draw_bounds(
                 painter,
                 camera,
-                inner,
+                sheet,
                 viewport,
-                Stroke::new(0.6_f32, theme::GRID),
+                Stroke::new(0.8_f32, theme::GRID),
             );
         }
         if let Some(top_left) =
@@ -742,7 +761,7 @@ mod tests {
     use super::*;
     use eframe::egui::Pos2;
     #[test]
-    fn huge_paper_covering_viewport_is_rendered_even_when_corners_are_offscreen() {
+    fn huge_page_beyond_the_viewport_draws_no_paper_and_no_offscreen_outline() {
         let mut project = Project::new("Extreme").unwrap();
         let doc = project
             .insert_document(Document::new(project.id(), "D").unwrap())
@@ -783,6 +802,17 @@ mod tests {
                 });
             },
         );
-        assert!(output.shapes.iter().any(|s|matches!(&s.shape,egui::Shape::Rect(r) if r.fill==theme::PAPER&&r.rect.contains(rect.center()))));
+        // The work area is one colour (painted by the viewport): the page
+        // adds no paper rectangle, and its outline is off screen here.
+        assert!(
+            !output
+                .shapes
+                .iter()
+                .any(|s| matches!(&s.shape, egui::Shape::Rect(r) if r.fill == theme::PAPER))
+        );
+        assert!(output.shapes.iter().all(|s| match &s.shape {
+            egui::Shape::LineSegment { points, .. } => points.iter().all(|p| p.is_finite()),
+            _ => true,
+        }));
     }
 }

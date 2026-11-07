@@ -199,6 +199,17 @@ fn grid_toggle_and_dpi_preserve_snap_and_world_spacing() {
         for _ in 0..12 {
             frame(&mut app, &ctx, 1600.0, 900.0, vec![]);
         }
+        // Zoom in so the 2.5 mm dots are at least MIN_GRID_PX apart at every
+        // DPI (farther out the grid hides, as in EPLAN).
+        let view = app.last_viewport.unwrap();
+        let scale = app.session.tabs[0].camera.scale();
+        let needed = cad_gui::camera::MIN_GRID_PX * 2.0 / (2.5 * scale);
+        if needed > 1.0 {
+            app.session.tabs[0]
+                .camera
+                .zoom_at(needed, view.center(), view);
+        }
+        frame(&mut app, &ctx, 1600.0, 900.0, vec![]);
         let before = app.last_viewport;
         let camera = app.session.tabs[0].camera;
         let output = frame(&mut app, &ctx, 1600.0, 900.0, vec![]);

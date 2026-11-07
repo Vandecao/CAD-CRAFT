@@ -361,13 +361,23 @@ fn properties_panel_assigns_page_frame_and_edits_project_metadata() {
         .unwrap()
         .id();
     assert_eq!(ui.project().page(page).unwrap().frame(), Some(a4));
+    // The page adopts the frame size, so there is no size warning.
+    assert_eq!(
+        ui.project().page(page).unwrap().size(),
+        PaperFormat::A4.size(false)
+    );
     assert!(
-        ui.panel_texts()
+        !ui.panel_texts()
             .iter()
             .any(|t| t == "Moldura com tamanho diferente da folha")
     );
+    // One Ctrl+Z restores both the frame and the size.
     ui.key(Key::Z, Modifiers::CTRL);
     assert_eq!(ui.project().page(page).unwrap().frame(), None);
+    assert_eq!(
+        ui.project().page(page).unwrap().size(),
+        PaperFormat::A3.size(true)
+    );
 
     // The selected project's author field supplies the title block's special text.
     ui.app.session.select(Selection::Project);

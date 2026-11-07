@@ -383,6 +383,9 @@ impl CadApp {
             }
             C::ToggleGrid => self.preferences.grid_visible = !self.preferences.grid_visible,
             C::ToggleSnap => self.preferences.snap_enabled = !self.preferences.snap_enabled,
+            C::ToggleCursorGuides => {
+                self.preferences.cursor_guides = !self.preferences.cursor_guides;
+            }
             C::FitPage | C::FitContent | C::ZoomIn | C::ZoomOut | C::Zoom100 | C::PreviousView => {
                 self.camera_command(id)
             }

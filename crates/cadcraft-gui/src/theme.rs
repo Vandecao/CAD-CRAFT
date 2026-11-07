@@ -7,6 +7,10 @@ pub const PANEL: Color32 = Color32::from_rgb(43, 45, 48);
 pub const RIBBON: Color32 = Color32::from_rgb(52, 54, 57);
 pub const CANVAS: Color32 = Color32::from_rgb(225, 228, 231);
 pub const PAPER: Color32 = Color32::WHITE;
+/// Work area behind an open page: one uniform colour, as in EPLAN.
+pub const WORK_AREA: Color32 = PAPER;
+/// Thin lines that follow the cursor across the work area.
+pub const CURSOR_GUIDE: Color32 = Color32::from_rgb(150, 158, 166);
 pub const INK: Color32 = Color32::from_rgb(38, 48, 57);
 pub const GRID: Color32 = Color32::from_rgb(202, 209, 216);
 pub const GRID_DOT: Color32 = Color32::from_rgb(139, 149, 160);

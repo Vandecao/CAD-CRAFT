@@ -1,3 +1,11 @@
+## Etapa 31 — área de trabalho implementada e validada (2026-11-07)
+
+- Fundo branco uniforme; com moldura, só a moldura; sem moldura, contorno fino; X/Y continuam fora da moldura (negativos). A folha segue a moldura: escolher moldura adota o tamanho num passo de Desfazer; botão "Ajustar folha à moldura" (FrameEdit::FitPageToFrame, delta PageSize). Grade no espaçamento real em toda a área, some abaixo de 6 px. Linhas-guia do cursor (Visualização › Grade e barra de status), ligadas por padrão. Relatório `docs/internal/reports/ETAPA_31_AREA_TRABALHO.md`.
+- Validação: 776 Rust + 16 PowerShell, exit 0; Release 23.927.808 bytes.
+- Git: fora do HEAD (privado cad3ca2); commit + push só com o OK do autor. Teste no app das 29–31 feito e aprovado (detalhes no relatório). Versionamento autorizado pelo autor ("Pode versionar").
+
+---
+
 ## Etapa 30 — zonas da moldura implementada e validada (2026-11-07)
 
 - Divisões de colunas e linhas geradas pelas zonas; formato .cadcraft 10 e .cadframe 2 convertem as linhas fixas antigas (ADR-0033); editor redistribui ao mudar a quantidade, mostra a soma e dá a mensagem com os números. Relatório `docs/internal/reports/ETAPA_30_ZONAS_MOLDURA.md`.

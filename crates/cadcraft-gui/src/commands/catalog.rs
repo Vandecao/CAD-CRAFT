@@ -94,6 +94,7 @@ pub(super) const OPERATIONAL: &[CommandSpec] = &[
     view::PREVIOUS_VIEW,
     view::TOGGLE_GRID,
     view::TOGGLE_SNAP,
+    view::TOGGLE_CURSOR_GUIDES,
     view::PREVIEW,
     view::INSERTION,
     view::RESTORE_LAYOUT,

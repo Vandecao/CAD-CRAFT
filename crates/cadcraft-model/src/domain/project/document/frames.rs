@@ -27,6 +27,12 @@ pub enum FrameEdit {
         /// Frame template used by this sheet or operation.
         frame: Option<FrameTemplateId>,
     },
+    /// Make the page the size of its effective frame (page frame, otherwise
+    /// the project default). Refused when the page has no frame.
+    FitPageToFrame {
+        /// Page identifier used by this operation or filter.
+        page: PageId,
+    },
     /// Set reference format.
     SetReferenceFormat(ReferenceFormat),
     /// `None` removes the key.
@@ -81,6 +87,15 @@ pub enum FrameDelta {
         /// Recorded state after the operation.
         after: Option<FrameTemplateId>,
     },
+    /// Recorded page sheet size before and after the operation.
+    PageSize {
+        /// Page identifier used by this operation or filter.
+        page: PageId,
+        /// Recorded state before the operation.
+        before: Size2D,
+        /// Recorded state after the operation.
+        after: Size2D,
+    },
     /// Recorded reference format state before and after the operation.
     ReferenceFormat {
         /// Recorded state before the operation.
@@ -129,6 +144,7 @@ impl FrameDelta {
                 before == after
             }
             Self::ReferenceFormat { before, after } => before == after,
+            Self::PageSize { before, after, .. } => before == after,
             Self::ProjectMetadata { before, after, .. }
             | Self::PageMetadata { before, after, .. } => before == after,
             Self::Asset { before, after, .. } => before == after,
@@ -380,6 +396,21 @@ impl Project {
                     after: frame,
                 }
             }
+            FrameEdit::FitPageToFrame { page } => {
+                let before = self
+                    .page(page)
+                    .ok_or(DomainError::MissingEntity(EntityRef::Page(page)))?
+                    .size();
+                let after = self
+                    .page_frame(page)
+                    .ok_or_else(|| frame_error("página sem moldura"))?
+                    .sheet();
+                FrameDelta::PageSize {
+                    page,
+                    before,
+                    after,
+                }
+            }
             FrameEdit::SetReferenceFormat(format) => FrameDelta::ReferenceFormat {
                 before: self.reference_format,
                 after: format,
@@ -450,6 +481,18 @@ impl Project {
                     return Err(mismatch());
                 }
                 p.frame = *target;
+            }
+            FrameDelta::PageSize {
+                page,
+                before,
+                after,
+            } => {
+                let (expected, target) = pick(forward, before, after);
+                let p = self.page_mut(*page)?;
+                if p.size != *expected {
+                    return Err(mismatch());
+                }
+                p.size = *target;
             }
             FrameDelta::ReferenceFormat { before, after } => {
                 let (expected, target) = pick(forward, before, after);
