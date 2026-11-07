@@ -162,6 +162,14 @@ impl Conversation {
                 results.push_str(&prompt::data_block(&tool, &value));
                 results.push('\n');
             }
+            if round + 2 == MAX_ROUNDS {
+                // Without this the model may spend the last round on another
+                // query and the user gets no answer.
+                results.push_str(
+                    "Esta é a última rodada: responda agora ao usuário com o que já tem, \
+                     sem novos blocos de consulta.\n",
+                );
+            }
             input.push(Message {
                 role: Role::Assistant,
                 content: answer.clone(),

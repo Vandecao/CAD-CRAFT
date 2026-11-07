@@ -1,5 +1,22 @@
 # Problemas conhecidos
 
+## Etapa 28 — homologação pelo Claude Code (2026-11-07)
+
+GUI-L01 confirmado no app: 0,00% de um núcleo em 3 janelas de 10 s (Release corrigido, projeto aberto, assistente conectado). Defeitos D1–D5 corrigidos (ver relatório de homologação). Observações abertas, de baixa prioridade:
+- diálogo "Novo documento" sem foco automático no nome;
+- molduras com o mesmo nome indistinguíveis na lista da página;
+- erro do EDZ com macro ausente repetido após confirmar; "Confirmar importação" habilitado só com pacote com erro;
+- mensagem pouco clara ao clicar fora de uma porta com a ferramenta de conexão;
+- `dwg_converter_timeout_and_failure_are_reported` falha sob carga (prazo de 500 ms); passa isolado.
+- campos da peça vazios logo após importar o CSV, até escolhê-la de novo;
+- função sem pontos: mensagem "quantidade de portas e pontos incompatível" não diz que faltam pontos;
+- lista de funções não representadas mostra o tipo em inglês ("Coil");
+- "Engenharia física" abre estreita em janela de 1370 px e corta "Criar borne".
+
+## Etapa 28 — estado atual (2026-11-06)
+
+GUI-L01 resolvido em teste automático e medição Release (<5% de um núcleo em tela inicial/projeto grande); confirmar na homologação. GUI-016 corrigido e testado com multiline/Undo/Redo. Regressões de escala e scroll corrigidas com testes reais. Fuzz e crash recovery aprovados. Sem homologação geral ainda: roteiro ETAPA_28_HOMOLOGACAO.md em execução pelo Codex, com conferência do autor pendente. P1 de Enter propagado à confirmação identificado no app e corrigido com três regressões novas; revalidação integral (761) e reteste nativo aprovados. Login do autor e conferência visual/manual restante pendentes; captura e geometria de coordenadas do helper indisponíveis. [Revisão de pendências e marcos](../reports/ETAPA_28_PENDENCIAS.md) classifica os demais limites, dependências ambientais e prazos de revisão. As descrições históricas abaixo não substituem este estado atual.
+
 ## R6 — limpeza final (2026-11-06)
 
 Nenhum novo problema funcional identificado. Validação completa, rustdoc sem avisos e Release aprovados; rótulos e cancelamento conferidos por AccessKit no app nativo. Capturas de tela do helper limitadas e estado acessível ocasionalmente atrasado; não se declara homologação visual geral. GUI-L01 e limitações anteriores permanecem. Etapa 28 não iniciada. Evidências em ../reports/R6_LIMPEZA.md.
@@ -23,7 +40,7 @@ Sem novo problema funcional identificado. Os limites existentes (incluindo GUI-L
 | ID | Estado | Evidência / limite | Continuidade |
 |---|---|---|---|
 | IA-L01 | Resolvido | Login e respostas reais testados no app em 2026-11-05 (relatório da Etapa 27) | — |
-| GUI-L01 | Pendente | O app parado usa CPU alta (~45% de um núcleo já no R1 minimizado; ~75% maximizado), provavelmente redesenho contínuo | Investigar o que pede repaint a cada quadro; corrigir num bloco próprio |
+| GUI-L01 | Resolvido automaticamente; confirmar em F-01 | Title repetido causava repaint infinito; cache + despertar de autosave. Release final abaixo de 5% em seis amostras | Etapa 28, relatório técnico e roteiro F-01 |
 | IA-L02 | Limite deliberado | Nada da conta é salvo: cada abertura do app pede login e faz um registro dinâmico novo na conta | Opção "manter conectado" no cofre do Windows, se o autor pedir |
 | IA-L03 | Limite | Propostas cobrem numeração, número de fio, documento e página; inserir símbolos, ligar fios ou corrigir regras VER específicas ainda não | Ampliar o catálogo de propostas por etapa |
 | IA-L04 | Limite | Escopo e sigilo dependem também do modelo; a defesa principal é estrutural (sem acesso a código, arquivos ou rede; ações validadas) | Conjunto de perguntas de teste no teste do app |
@@ -169,7 +186,7 @@ Sem novo problema funcional identificado. Os limites existentes (incluindo GUI-L
 | CLP-004 | Limite deliberado | Área de transferência só da sessão (sem sistema, sem outro projeto) | Futuro |
 | CLP-005 | Feito | Teste funcional no executável das Etapas 14–16 em 2026-11-03 (relatório da Etapa 16) | Próximo ao fim da Etapa 19 |
 | CLP-006 | Corrigido com regressão | Ctrl+C/X/V não funcionavam no executável: no Windows chegam como eventos Copy/Cut/Paste | `clipboard_events_from_the_os_drive_copy_cut_and_paste` |
-| CLP-007 | Aberto | Atalhos ignorados enquanto um elemento de painel tem foco (ex.: após duplo clique na árvore); clicar na folha resolve | Avaliar foco ao abrir página |
+| CLP-007 | Corrigido com regressões | Atalhos continuam disponíveis com foco na árvore; campos TextEdit permanecem protegidos. Paste real na página ativa + Undo exato e testes antigos aprovados | Confirmar em B-03 na homologação |
 | CLP-008 | Limite | Símbolo com alvo `Device` (modelo antigo) é colado como cópia do mesmo dispositivo | Migrar para função ou estender a regra |
 | GUI-016 | Aberto | Descrição multilinha de moldura EPLAN mostra "□" no campo de linha única | Campo multilinha |
 | FILE-005b | Aberto | Cópia de recuperação ainda oferecida após descartar ao fechar | Revisar Etapa 12 |

@@ -325,7 +325,11 @@ impl CadApp {
             ui.add(egui::TextEdit::singleline(&mut form.name).desired_width(140.0));
             ui.end_row();
             ui.label("Descrição");
-            ui.add(egui::TextEdit::singleline(&mut form.description).desired_width(140.0));
+            ui.add(
+                egui::TextEdit::multiline(&mut form.description)
+                    .desired_width(140.0)
+                    .desired_rows(3),
+            );
             ui.end_row();
             ui.label("Formato");
             let current = Size2D::new(form.sheet[0], form.sheet[1])

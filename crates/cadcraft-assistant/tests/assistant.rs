@@ -410,3 +410,71 @@ fn cancel_and_empty_questions_stop_without_calling_twice() {
     );
     assert!(provider.seen.is_empty());
 }
+
+#[test]
+fn device_search_can_list_the_devices_of_one_page() {
+    // The app test asked "which devices are on this sheet": the model had no
+    // way to list them without a designation and ran out of rounds.
+    let p = project();
+    let cat = catalog();
+    let page = p.pages().next().unwrap().number().as_str().to_owned();
+    let all = tools::run(
+        Some(&p),
+        &cat,
+        "buscar_dispositivo",
+        json!({"pagina": page}).as_object().unwrap(),
+    )
+    .unwrap();
+    let listed = all["dispositivos"].as_array().unwrap();
+    assert!(!listed.is_empty(), "{all}");
+    for d in listed {
+        assert!(
+            d["paginas"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .any(|l| l.as_str().unwrap().starts_with(&page)),
+            "{d}"
+        );
+    }
+    assert!(
+        tools::run(
+            Some(&p),
+            &cat,
+            "buscar_dispositivo",
+            json!({}).as_object().unwrap()
+        )
+        .is_err(),
+        "sem texto nem página continua sendo erro"
+    );
+}
+
+#[test]
+fn the_round_before_the_last_tells_the_model_to_answer_now() {
+    let p = project();
+    let cat = catalog();
+    let snapshot = Snapshot {
+        project: Some(&p),
+        active_page: None,
+        selection: String::new(),
+        catalog: &cat,
+    };
+    let q = block(json!({"consulta": "resumo_projeto"}));
+    let mut provider = Script::new(&[&q, &q, "Resposta final."]);
+    let turn = Conversation::default()
+        .ask(
+            &mut provider,
+            &snapshot,
+            "Resuma",
+            &mut |_| {},
+            &AtomicBool::new(false),
+        )
+        .unwrap();
+    assert_eq!(turn.text, "Resposta final.");
+    assert!(!provider.seen[1].contains("última rodada"));
+    assert!(
+        provider.seen[2].contains("última rodada"),
+        "{}",
+        provider.seen[2]
+    );
+}

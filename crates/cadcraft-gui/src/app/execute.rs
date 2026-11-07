@@ -18,6 +18,9 @@ impl CadApp {
             self.log(Level::Warning, reason);
             return;
         }
+        // A command button may have been activated by Enter. Do not let that
+        // same event also submit a dialog created later in this frame.
+        ctx.input_mut(|input| input.consume_key(egui::Modifiers::NONE, egui::Key::Enter));
         use CommandId as C;
         match id {
             C::GenerateReport => self.reports.open(crate::reports_ui::ReportMode::Generate),

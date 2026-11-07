@@ -183,6 +183,10 @@ impl CadApp {
             let camera = tab.camera;
             self.interact_editor(ui, &response, page_id, camera, rect);
             if let Some(project) = self.session.project() {
+                let references =
+                    self.navigation
+                        .sheet_references
+                        .get(project, self.session.revision, page_id);
                 draw_editor_page(
                     &painter,
                     project,
@@ -193,6 +197,7 @@ impl CadApp {
                     self.preferences
                         .grid_visible
                         .then_some(self.preferences.grid_mm),
+                    &references,
                 );
             }
             self.paint_selection_window(&painter, camera, rect);
@@ -360,6 +365,7 @@ impl CadApp {
     }
 }
 
+#[allow(clippy::too_many_arguments)] // Render inputs match the editable-page renderer below.
 pub(crate) fn draw_page(
     painter: &egui::Painter,
     project: &Project,
@@ -368,13 +374,17 @@ pub(crate) fn draw_page(
     viewport: Rect,
     selection: Selection,
     grid: Option<f64>,
+    references: &[SheetReference],
 ) {
     let mut editor = crate::interaction::Interaction::default();
     if let Selection::Representation(id) = selection {
         editor.selection.replace([id]);
     }
-    draw_editor_page(painter, project, page_id, camera, viewport, &editor, grid);
+    draw_editor_page(
+        painter, project, page_id, camera, viewport, &editor, grid, references,
+    );
 }
+#[allow(clippy::too_many_arguments)] // Page geometry, interaction and derived annotations are independent inputs.
 fn draw_editor_page(
     painter: &egui::Painter,
     project: &Project,
@@ -383,6 +393,7 @@ fn draw_editor_page(
     viewport: Rect,
     editor: &crate::interaction::Interaction,
     grid: Option<f64>,
+    references: &[SheetReference],
 ) {
     let Some(page) = project.page(page_id) else {
         return;
@@ -619,7 +630,7 @@ fn draw_editor_page(
             }
         }
     }
-    crate::frame_view::paint_cross_references(painter, project, page_id, camera, viewport);
+    crate::frame_view::paint_cross_references(painter, references, camera, viewport);
     crate::connection_view::paint_overlay(painter, project, page_id, camera, viewport, editor);
 }
 
@@ -767,6 +778,7 @@ mod tests {
                         rect,
                         Selection::None,
                         None,
+                        &[],
                     )
                 });
             },

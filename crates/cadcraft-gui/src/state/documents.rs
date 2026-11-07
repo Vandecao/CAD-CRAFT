@@ -110,6 +110,14 @@ impl Session {
         self.tabs.iter_mut().find(|t| t.page == id)
     }
     pub fn apply(&mut self, edit: Edit) -> Result<()> {
+        // A transform on the representation's own page goes through the
+        // graphic path below, which reroutes attached wires; only a move to
+        // another page uses the device edit (refused when wires reference it).
+        let same_page = matches!(&edit, Edit::RepresentationTransform(id, page, _)
+            if self
+                .project()
+                .and_then(|p| p.representation(*id))
+                .is_some_and(|r| r.page_id() == *page));
         let edit = match edit {
             Edit::PageName(page, name) => {
                 return self
@@ -135,7 +143,7 @@ impl Session {
                     }))
                     .map(|_| ());
             }
-            Edit::RepresentationTransform(representation, page, transform) => {
+            Edit::RepresentationTransform(representation, page, transform) if !same_page => {
                 return self
                     .dispatch_graphic(GraphicEdit::Device(DeviceEdit::MoveRepresentation {
                         representation,

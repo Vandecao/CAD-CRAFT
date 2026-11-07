@@ -59,9 +59,16 @@ impl CadApp {
                                         );
                                         let painter = ui.painter_at(rect);
                                         painter.rect_filled(rect, 1, theme::CANVAS);
-                                        if let Ok(bounds) = project.document_bounds(page.id) {
+                                        if ui.is_rect_visible(rect)
+                                            && let Ok(bounds) = project.document_bounds(page.id)
+                                        {
                                             let mut camera = Camera::default();
                                             camera.fit(bounds.sheet, rect.shrink(4.0));
+                                            let references = self.navigation.sheet_references.get(
+                                                project,
+                                                self.session.revision,
+                                                page.id,
+                                            );
                                             draw_page(
                                                 &painter,
                                                 project,
@@ -70,6 +77,7 @@ impl CadApp {
                                                 rect,
                                                 Selection::None,
                                                 None,
+                                                &references,
                                             );
                                         }
                                         if self.session.selected_page() == Some(page.id) {

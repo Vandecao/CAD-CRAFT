@@ -354,12 +354,11 @@ fn texts_of(
 
 pub(crate) fn paint_cross_references(
     painter: &egui::Painter,
-    project: &Project,
-    page: PageId,
+    references: &[SheetReference],
     camera: Camera,
     viewport: Rect,
 ) {
-    for reference in project.sheet_references(page) {
+    for reference in references {
         paint_text(
             painter,
             camera,

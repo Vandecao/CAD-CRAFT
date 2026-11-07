@@ -12,6 +12,8 @@ pwsh -NoProfile -File scripts/validate.ps1
 
 The script runs, in order and stopping at the first failure: `cargo fmt --check`, `cargo check --workspace --all-targets --locked`, `cargo test --workspace --locked`, `cargo test -p cad-craft --examples --locked`, `cargo clippy --workspace --all-targets --locked -- -D warnings`, the PowerShell tests and `git diff --check` (working tree and index). The CI runs the same checks plus `cargo deny check`.
 
+For the opt-in large synthetic workload, frame timings and deterministic resilience checks, see [Performance checks](docs/PERFORMANCE.md). Keep performance fixture environment variables unset during normal validation.
+
 Rules for tests:
 
 - Do not remove or weaken tests to make a change pass.

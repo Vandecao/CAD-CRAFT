@@ -114,6 +114,9 @@ impl CadApp {
             // Do not reuse the previous frame's collapsed height as a clip rectangle.
             .exact_height(if self.preferences.ribbon_collapsed {
                 31.0
+            } else if ctx.content_rect().height() < 480.0 {
+                // Preserve paper space on short logical viewports; commands scroll below.
+                120.0
             } else {
                 137.0
             })
@@ -192,7 +195,7 @@ impl CadApp {
                 });
                 if !self.preferences.ribbon_collapsed {
                     let mut selected = None;
-                    ScrollArea::horizontal()
+                    ScrollArea::both()
                         .id_salt(("ribbon_content", self.preferences.ribbon_tab))
                         .auto_shrink([false, true])
                         .show(ui, |ui| {

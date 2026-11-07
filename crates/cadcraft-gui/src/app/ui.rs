@@ -60,6 +60,21 @@ impl CadApp {
         }
         self.shortcuts(ctx);
         self.autosave();
+        if self.session.dirty
+            && self.session.project().is_some()
+            && self.files.recovery.is_some()
+            && !self.chrome.exit_confirmed
+        {
+            // Idle windows sleep until input or the next recovery checkpoint.
+            // Background tasks request their own shorter wakeups while active.
+            let remaining = self
+                .files
+                .last_autosave
+                .map_or(std::time::Duration::ZERO, |last| {
+                    self.files.autosave_interval.saturating_sub(last.elapsed())
+                });
+            ctx.request_repaint_after(remaining);
+        }
         let title = if let Some(p) = self.session.project() {
             format!(
                 "CAD-CRAFT — {}{}{}{}",
@@ -83,7 +98,12 @@ impl CadApp {
         } else {
             "CAD-CRAFT — Nenhum projeto aberto".into()
         };
-        ctx.send_viewport_cmd(ViewportCommand::Title(title));
+        // Every native viewport command requests another egui frame. Repeating
+        // even an identical title would therefore keep an idle window awake.
+        if self.chrome.last_title.as_ref() != Some(&title) {
+            ctx.send_viewport_cmd(ViewportCommand::Title(title.clone()));
+            self.chrome.last_title = Some(title);
+        }
         self.top_bar(ctx);
         if self.dialogs_state.backstage.is_some() {
             self.show_backstage(ctx);
@@ -204,6 +224,11 @@ impl CadApp {
             ctx.send_viewport_cmd(ViewportCommand::Fullscreen(self.chrome.fullscreen));
         }
         if ctx.input_mut(|i| i.consume_key(egui::Modifiers::NONE, Key::Escape)) {
+            // The assistant panel promises "Esc interrompe" while it answers.
+            if self.assistant.open && self.assistant.busy() {
+                self.assistant.stop();
+                return;
+            }
             if self.frame_editor.is_open()
                 && self.dialogs_state.dialog.is_none()
                 && self.frame_editor.cancel()
@@ -230,9 +255,15 @@ impl CadApp {
             }
             return;
         }
+        // A tree or button can hold keyboard focus without editing text. Keep
+        // global commands available there while leaving text clipboard input alone.
+        let text_input_focused = ctx
+            .memory(|memory| memory.focused())
+            .and_then(|id| egui::TextEdit::load_state(ctx, id))
+            .is_some();
         if self.dialogs_state.dialog.is_some()
             || self.dialogs_state.backstage.is_some()
-            || ctx.wants_keyboard_input()
+            || text_input_focused
         {
             return;
         }

@@ -14,8 +14,8 @@ impl PhysicalEditor {
     ) {
         ui.strong("Acoplamento entre metades");
         ui.weak(
-            "Documental: o mapa é explícito e validado, mas não cria conexões nem \
-             continuidade elétrica (decisão pendente DEC-11-01).",
+            "O mapa é explícito e validado; cada par acoplado dá continuidade elétrica \
+             entre os pontos associados aos dois contatos (DEC-11-01, ADR-0026).",
         );
         if let Some(mating) = self
             .cache

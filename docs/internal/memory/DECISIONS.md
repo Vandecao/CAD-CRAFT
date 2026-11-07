@@ -1,5 +1,7 @@
 # Decisões arquiteturais
 
+Etapa 28 (2026-11-06): scheduling GUI orientado a eventos, título nativo somente ao mudar e autosave pelo prazo restante. Fixture grande gerada por operações/decodificação validadas, benchmarks opt-in e limites CI separados de metas. Sem novo formato, dependência ou ADR arquitetural. Parte D permanece Claude Code + conferência do autor, conforme prompt aprovado; validação automática não é homologação. Ver relatório ETAPA_28_DESEMPENHO_ROBUSTEZ.md.
+
 R6 (2026-11-06): decisões de manutenção executadas conforme prompt aprovado: comentários de código em inglês, constantes privadas apenas para frases repetidas pt-BR, lints de workspace e missing_docs restrito a model/format. Exceções de testes/exemplos justificadas individualmente no relatório ../reports/R6_LIMPEZA.md. Sem mudança arquitetural ou novo ADR; ADR-0031/0032 permanecem. Versionamento R6 aguarda OK por etapa.
 
 | ADR | Estado | Assunto |

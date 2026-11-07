@@ -298,3 +298,32 @@ fn network_highlight_is_derived_and_invalidated_after_topology_edit() {
     .unwrap();
     assert!(s.graphics.highlighted_routes.is_empty());
 }
+#[test]
+fn inspector_transform_of_connected_symbol_reroutes_like_ribbon_rotation() {
+    // "Aplicar transformação" on a wired symbol must reroute like the ribbon
+    // rotation instead of taking the cross-page move, which refuses wires.
+    let (mut s, a, b) = fixture();
+    let id = create(&mut s, &a, &b);
+    let before = s.snapshot().unwrap();
+    let page = s.active.unwrap();
+    let rep = a.representation_id();
+    let current = s
+        .project()
+        .unwrap()
+        .representation(rep)
+        .unwrap()
+        .transform();
+    let rotated = Transform2D::new(current.translation(), 90., false, false).unwrap();
+    s.apply(cad_gui::editing::Edit::RepresentationTransform(
+        rep, page, rotated,
+    ))
+    .unwrap();
+    let p = s.project().unwrap();
+    assert_eq!(p.representation(rep).unwrap().transform(), rotated);
+    assert_eq!(p.connections().count(), 1);
+    let route = p.connection_route(id).unwrap();
+    assert_eq!(route.points().first(), Some(&p.port_position(&a).unwrap()));
+    p.validate().unwrap();
+    s.dispatch_graphic(GraphicEdit::Undo).unwrap();
+    assert_eq!(s.snapshot().unwrap(), before);
+}

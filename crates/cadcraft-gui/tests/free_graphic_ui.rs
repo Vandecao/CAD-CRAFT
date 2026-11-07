@@ -306,6 +306,62 @@ fn clipboard_events_from_the_os_drive_copy_cut_and_paste() {
     assert!(ui.app.session.clipboard.as_ref().unwrap().is_cut());
 }
 
+#[test]
+fn os_paste_after_page_tree_focus_places_copied_graphic_on_active_page() {
+    let mut ui = Ui::new();
+    ui.app.execute(CommandId::InsertFreeText, &ui.ctx.clone());
+    ui.click(100., 100.);
+    ui.select_tool();
+    let original = ui.free()[0].id();
+    ui.app.session.select_graphics([original]);
+    ui.frame(vec![Event::Copy]);
+    assert!(ui.app.session.clipboard.is_some());
+    let tree = egui::Id::new("page_tree");
+    ui.ctx.memory_mut(|memory| memory.request_focus(tree));
+    ui.frame(vec![]);
+    assert_eq!(ui.ctx.memory(|memory| memory.focused()), Some(tree));
+    let before = ui.app.session.snapshot().unwrap();
+    ui.frame(vec![Event::Paste("CAD-CRAFT".into())]);
+    assert_eq!(
+        ui.app.session.graphics.tool,
+        cad_gui::interaction::Tool::Paste
+    );
+    assert_eq!(ui.app.session.snapshot().unwrap(), before);
+    ui.click(200., 120.);
+    ui.key(Key::Escape, Modifiers::NONE);
+    let graphics = ui.free();
+    assert_eq!(graphics.len(), 2);
+    assert!(graphics.iter().all(|graphic| graphic.page_id() == ui.page));
+    assert!(graphics.iter().any(|graphic| graphic.id() != original));
+    ui.key(Key::Z, Modifiers::CTRL);
+    assert_eq!(ui.app.session.snapshot().unwrap(), before);
+}
+
+#[test]
+fn os_clipboard_events_with_text_focus_preserve_graphic_selection_and_project() {
+    let mut ui = Ui::new();
+    ui.app.execute(CommandId::InsertFreeText, &ui.ctx.clone());
+    ui.click(100., 100.);
+    ui.select_tool();
+    let graphic = ui.free()[0].id();
+    ui.app.session.select_graphics([graphic]);
+    ui.frame(vec![Event::Copy]);
+    let before = ui.app.session.snapshot().unwrap();
+    let search = egui::Id::new("command_search");
+    ui.ctx.memory_mut(|memory| memory.request_focus(search));
+    ui.frame(vec![]);
+    assert_eq!(ui.ctx.memory(|memory| memory.focused()), Some(search));
+    for event in [Event::Copy, Event::Cut, Event::Paste("CAD-CRAFT".into())] {
+        ui.frame(vec![event]);
+        assert_eq!(ui.app.session.snapshot().unwrap(), before);
+        assert_eq!(
+            ui.app.session.graphics.tool,
+            cad_gui::interaction::Tool::Select
+        );
+        assert_eq!(ui.app.session.graphics.selection.primary(), Some(graphic));
+    }
+}
+
 /// Create a free ellipse through real clicks; editing preserves its style.
 #[test]
 fn ellipse_tool_and_style_survive_edits() {

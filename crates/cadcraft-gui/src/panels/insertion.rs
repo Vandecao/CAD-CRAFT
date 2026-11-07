@@ -103,11 +103,20 @@ impl CadApp {
     pub(crate) fn show_insertion(&mut self, ui: &mut Ui) {
         // The assistant tab shares the panel with the insertion centre; both tabs occupy the header row without extra height.
         let open = &mut self.assistant.open;
+        let narrow = ui.available_width() < 180.0;
         if !super::header_with(ui, &mut self.preferences, PanelId::Insertion, |ui| {
             ui.spacing_mut().item_spacing.x = 2.0;
+            ui.spacing_mut().button_padding.x = 2.0;
             let tab = |text: &str| egui::RichText::new(text).size(11.0);
-            ui.selectable_value(open, false, tab("Centro de inserção"));
-            ui.selectable_value(open, true, tab("✦ Assistente"));
+            let mut tabs = |ui: &mut Ui| {
+                ui.selectable_value(open, false, tab("Centro de inserção"));
+                ui.selectable_value(open, true, tab("✦ Assistente"));
+            };
+            if narrow {
+                ui.horizontal_wrapped(tabs);
+            } else {
+                tabs(ui);
+            }
         }) {
             return;
         }
@@ -115,6 +124,22 @@ impl CadApp {
             self.show_assistant(ui);
             return;
         }
+        let panel_bottom = ui.max_rect().bottom();
+        if ui.available_height() < 200.0 {
+            // Keep search, navigation and results reachable when the header consumes
+            // most of a short panel, instead of placing its inner scroll area below it.
+            let width = ui.available_width();
+            egui::ScrollArea::both()
+                .id_salt("compact_insertion_body")
+                .show(ui, |ui| {
+                    ui.set_max_width(width);
+                    self.show_insertion_body(ui, true, panel_bottom);
+                });
+        } else {
+            self.show_insertion_body(ui, false, panel_bottom);
+        }
+    }
+    fn show_insertion_body(&mut self, ui: &mut Ui, compact: bool, panel_bottom: f32) {
         if matches!(
             self.session.graphics.tool,
             crate::interaction::Tool::InsertText | crate::interaction::Tool::InsertGraphic(_)
@@ -208,7 +233,7 @@ impl CadApp {
         if category == "Símbolos" {
             egui::ScrollArea::vertical()
                 .id_salt("symbol_results")
-                .auto_shrink([false, false])
+                .auto_shrink([false, compact])
                 .show(ui, |ui| {
                     egui::ComboBox::from_id_salt("insertion_navigation")
                         .selected_text("Símbolos")
@@ -226,7 +251,7 @@ impl CadApp {
         let mut selected = None;
         let mut favorite = None;
         egui::ScrollArea::vertical()
-            .auto_shrink([false, false])
+            .auto_shrink([false, compact])
             .show(ui, |ui| {
                 for name in CATEGORIES {
                     if ui.selectable_label(name == category, name).clicked() {
@@ -242,7 +267,8 @@ impl CadApp {
                     ));
                     return;
                 }
-                let mut count = 0;
+                let mut rows = Vec::new();
+                let query = self.panels_state.insertion.query.to_lowercase();
                 if let Some(project) = self.session.project() {
                     for device in project.devices() {
                         let target = RepresentationTarget::Device(device.id());
@@ -257,22 +283,32 @@ impl CadApp {
                             _ => true,
                         };
                         if !in_category
-                            || !text
-                                .to_lowercase()
-                                .contains(&self.panels_state.insertion.query.to_lowercase())
+                            || !text.to_lowercase().contains(&query)
                         {
                             continue;
                         }
-                        count += 1;
-                        ui.horizontal(|ui| {
-                            if ui
-                                .selectable_label(
-                                    self.session.selection == Selection::Electrical(target),
-                                    &text,
-                                )
+                        rows.push((device.id(), target, text));
+                    }
+                }
+                if rows.is_empty() {
+                    ui.label("Nenhum registro disponível para esta categoria e pesquisa.");
+                } else {
+                    // The pin icon is 24 points high; row virtualization must
+                    // reserve that complete height, including at narrow widths.
+                    let height = ui.spacing().interact_size.y.max(24.0);
+                    egui::ScrollArea::vertical().id_salt("insertion_device_rows")
+                        .max_height((panel_bottom - ui.next_widget_position().y).max(24.0))
+                        .auto_shrink([false, compact])
+                        .show_rows(ui, height, rows.len(), |ui, range| {
+                        for (id, target, text) in &rows[range] {
+                            ui.push_id(id, |ui| { ui.horizontal(|ui| {
+                                    let text_width = (ui.available_width() - 24.0 - ui.spacing().item_spacing.x - 1.0).max(1.0);
+                            if ui.add_sized([text_width, height], egui::Button::selectable(
+                                    self.session.selection == Selection::Electrical(*target), text,
+                                ).truncate()).on_hover_text(text)
                                 .clicked()
                             {
-                                selected = Some(target);
+                                selected = Some(*target);
                             }
                             if icons::button(
                                 ui,
@@ -280,18 +316,16 @@ impl CadApp {
                                 "",
                                 "Adicionar/remover dos favoritos desta sessão",
                                 true,
-                                self.panels_state.insertion.favorites.contains(&target),
+                                self.panels_state.insertion.favorites.contains(target),
                                 false,
                             )
                             .clicked()
                             {
-                                favorite = Some(target);
+                                favorite = Some(*target);
                             }
-                        });
-                    }
-                }
-                if count == 0 {
-                    ui.label("Nenhum registro disponível para esta categoria e pesquisa.");
+                            }); });
+                        }
+                    });
                 }
                 if category == "Últimos utilizados" {
                     ui.small("Histórico das consultas feitas neste centro.");

@@ -42,8 +42,8 @@ pub const QUERY_TOOLS: &[QueryTool] = &[
     },
     QueryTool {
         name: "buscar_dispositivo",
-        args: "{\"texto\": \"designação ou parte dela\"}",
-        description: "Dispositivos pela designação: classificação, funções e páginas onde aparecem.",
+        args: "{\"texto\": \"designação ou parte dela (opcional com página)\", \"pagina\": \"número (opcional)\"}",
+        description: "Dispositivos pela designação e/ou pela página: classificação, funções e páginas onde aparecem.",
     },
     QueryTool {
         name: "buscar_fio",
@@ -207,12 +207,26 @@ fn run_on_project(
         }
         "buscar_dispositivo" => {
             let q = arg(args, "texto").trim_start_matches('-').to_lowercase();
-            if q.is_empty() {
-                return Err("informe o texto".into());
+            let page = arg(args, "pagina");
+            if q.is_empty() && page.is_empty() {
+                return Err("informe o texto ou a página".into());
             }
+            let page_id = if page.is_empty() {
+                None
+            } else {
+                Some(page_by_number(project, page).ok_or("página não encontrada")?)
+            };
             let found: Vec<Value> = project
                 .devices()
                 .filter(|d| d.designation().to_string().to_lowercase().contains(&q))
+                .filter(|d| {
+                    page_id.is_none_or(|page| {
+                        project.representations().any(|r| {
+                            r.page_id() == page
+                                && project.device_for_target(r.target()) == Some(d.id())
+                        })
+                    })
+                })
                 .take(MAX_ITEMS)
                 .map(|d| {
                     let functions: Vec<String> = project

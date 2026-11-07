@@ -40,6 +40,7 @@ mod reference_properties;
 pub(crate) mod references;
 pub(crate) mod reports_ui;
 mod ribbon;
+mod sheet_reference_cache;
 mod snapshots;
 pub mod state;
 mod strings;

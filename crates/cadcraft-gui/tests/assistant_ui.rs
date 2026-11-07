@@ -320,3 +320,43 @@ fn bold_markup_is_drawn_without_asterisks() {
     assert_eq!(texts[0], "Use Conexões > Numerar e Ctrl+Z.");
     assert_eq!(texts[1], "a ** b", "marcador sem par fica como texto");
 }
+
+/// Provider that waits until the request is cancelled.
+struct Slow;
+impl Provider for Slow {
+    fn respond(
+        &mut self,
+        _: &Request<'_>,
+        _: &mut dyn FnMut(&str),
+        cancel: &AtomicBool,
+    ) -> Result<String, String> {
+        for _ in 0..2000 {
+            if cancel.load(std::sync::atomic::Ordering::Relaxed) {
+                return Err("interrompido".into());
+            }
+            std::thread::sleep(std::time::Duration::from_millis(5));
+        }
+        Ok("tarde demais".into())
+    }
+}
+
+#[test]
+fn escape_interrupts_a_running_answer_as_the_panel_hint_says() {
+    let (mut app, ctx) = app_with_project();
+    app.assistant.test_provider = Some(Box::new(|| Box::new(Slow)));
+    app.assistant.open = true;
+    app.assistant.input = "pergunta longa".into();
+    click(&mut app, &ctx, "Enviar");
+    assert!(app.assistant.busy(), "a resposta está em andamento");
+    let key = |pressed| Event::Key {
+        key: egui::Key::Escape,
+        physical_key: None,
+        pressed,
+        repeat: false,
+        modifiers: Modifiers::NONE,
+    };
+    frame(&mut app, &ctx, vec![key(true)]);
+    frame(&mut app, &ctx, vec![key(false)]);
+    wait(&mut app, &ctx);
+    assert!(shows(&mut app, &ctx, "interrompido"));
+}

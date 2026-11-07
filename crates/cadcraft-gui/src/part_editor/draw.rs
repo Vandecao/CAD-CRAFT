@@ -17,12 +17,15 @@ impl PartEditor {
         }
         let mut open = self.open;
         let mut action = None;
+        let fit =
+            (ctx.content_rect().size() - egui::vec2(40.0, 80.0)).max(egui::vec2(200.0, 100.0));
         egui::Window::new(crate::strings::PARTS_AND_DEVICES)
             .open(&mut open)
-            .default_size([780.0, 640.0])
+            .default_size(egui::vec2(780.0, 640.0).min(fit))
+            .max_size(fit)
             .resizable(true)
             .show(ctx, |ui| {
-                egui::ScrollArea::vertical().show(ui, |ui| {
+                egui::ScrollArea::both().show(ui, |ui| {
                     if !self.message.is_empty() {
                         ui.label(&self.message);
                     }

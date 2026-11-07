@@ -1,3 +1,54 @@
+## Etapa 28 — homologação concluída e aceita pelo autor (2026-11-07)
+
+O autor transferiu a homologação ao Claude Code e autorizou o uso do computador. Resultados item a item em `docs/internal/reports/ETAPA_28_HOMOLOGACAO.md`, seção "Execução do Claude Code".
+
+- Fases A a F exercitadas no Release com cópias sintéticas; login do ChatGPT feito pelo autor.
+- Cinco defeitos corrigidos, cada um com teste novo (vermelho antes, verde depois); D1–D4 retestados no Release:
+  - D1: girar símbolo com fios pelo painel de propriedades era recusado (desde a Etapa 9);
+  - D2: assistente sem consulta de dispositivos por página;
+  - D3: assistente podia gastar a última rodada sem responder;
+  - D4: Esc não interrompia a resposta do assistente;
+  - D5: janela de conectores dizia que o acoplamento não dá continuidade (DEC-11-01 já decidida).
+- Aceita pelo autor em 2026-11-07 ("Aceito, pode versionar"). Não exercitados no app e aceitos assim: C-02 (impressão), C-04 (DWG/ODA), cancelamento de lote EDZ, matriz visual de escalas. Plano Mestre (13–28) concluído.
+- Ambiente: uma janela do app Claude sempre por cima (canto superior direito) recebia cliques; a janela do CAD-CRAFT foi posta em 1370 × 1160 px à esquerda.
+- Validação: `scripts/validate.ps1` em 2026-11-07, exit 0: 743 Rust + 6 exemplos + 16 PowerShell = 765, zero falhas; clippy sem avisos. Release 23.733.760 bytes (SHA-256 começando por 259aacc195dcede4), com D1–D5; validação repetida após D5 com o mesmo resultado.
+- Git: versionamento autorizado em 2026-11-07; o commit da etapa vem depois de 5ead987 (privado) e 51b19b0 (público).
+
+## Etapa 28 — homologação parcial pelo Codex (2026-11-06)
+
+O autor escolheu explicitamente Codex para executar o roteiro no app. Foi encontrado e corrigido um P1: Enter que ativava um comando também confirmava o diálogo recém-criado, inclusive descarte de alterações. Três regressões novas, 28 testes relacionados e revisão independente aprovados. Reteste nativo confirmou abertura sem validação prematura, cancelamento preservando o documento e descarte só após segundo Enter.
+
+Validação integral pós-correção: 739 Rust + 6 exemplos + 16 PowerShell = 761, zero falhas/ignorados; rustdoc e Release aprovados. Primeiro validate falhou no prazo existente de 500 ms do conversor DWG durante compilação concorrente; sem mudar testes, repetição isolada 4/4 e novo validate integral passaram. Logs em .local/e28/validate-post-dialog-serial.log e rustdoc-post-dialog.log. Release 23.721.984 bytes, SHA-256 A84F7CCEBE46DB38455B87F302D2ED45A1B83154A5367E9D768345E887DEECE8. Frames draw/zoom/pan 4,209/4,698/4,339 ms. CPU por núcleo: tela inicial 0,779/0,625/0%; projeto grande 1,404/1,875/0,156%, seis amostras de 10 s abaixo de 5%.
+
+Roteiro nativo: projeto vazio Homologacao 28 / Comando / Folha A3 salvo e reaberto; PDF de uma página da demonstração exportado; QET sintético analisado/convertido com perdas relatadas e QET inválido recusado preservando sessão. Saída DXF não confirmada nesta rodada. Recuperação preexistente Macros preservada. Capturas falham (FrameArrived/window capture timed out), coordenadas sem geometria; teclado/AccessKit não comprovam aspecto visual nem desenho no canvas. Demais itens e conferência do autor continuam pendentes, discriminados em ETAPA_28_HOMOLOGACAO.md.
+
+Último estado do app: Release aberto, fixture própria performance-project.cadcraft limpa, folha 2, painel Assistente com ChatGPT (OpenAI), contexto correto, entrada/Enviar bloqueados até login. Login no navegador é do autor e não foi iniciado nesta rodada. Próximo: continuar itens nativos restantes possíveis por teclado, obter login do autor para E01–E04 e conferência visual dos itens limitados pelo helper. Não declarar homologação geral nem Plano Mestre concluído.
+
+Git consultado em 2026-11-06: privado main/HEAD e main remoto 5ead9879522fb2549741a7f97d16345f06b31c61; público main/HEAD e main remoto 51b19b01e134db94c0cec14368c5df02348f29cf. Público limpo, índice privado vazio; Etapa 28 fora desses HEADs, sem staging/commit/push/cópia pública. Versionamento exige OK próprio da etapa. Cargo clean pedido pelo autor já executado; não repetir limpeza, manter debug info e incremental desativados somente no processo nas compilações Debug. As entradas históricas abaixo com Claude como executor e resultados anteriores estão superadas por este registro.
+
+# Etapa 28 — implementação A–C validada; homologação geral pendente (2026-11-06)
+
+Usuário autorizou implementar a Etapa 28. R6 já publicado: privado main em 5ead9879522fb2549741a7f97d16345f06b31c61, público main em 51b19b01e134db94c0cec14368c5df02348f29cf (HEADs observados em 2026-11-06). As entradas históricas abaixo com R6 pendente estão superadas. Alterações da Etapa 28 ainda fora do HEAD; sem staging/commit/push/cópia pública ou alteração de refs.
+
+Implementado: correção GUI-L01 (Title apenas ao mudar; deadline real de autosave), cache de referências, virtualização de dispositivos, janelas/rolagens em escalas altas, cabeçalho inserção, descrição multilinha com Undo/Redo e atalhos com foco na árvore (CLP-007); novos testes de fuzz, recuperação por processo morto, matriz de telas e desempenho sintético. Sem mudança de formato 9/dependências/saídas de referência. Relatórios: ../reports/ETAPA_28_DESEMPENHO_ROBUSTEZ.md, ETAPA_28_ARQUIVOS.md e ETAPA_28_PENDENCIAS.md.
+
+Validação integral aprovada: 736 Rust + 6 exemplos + 16 PowerShell = 758, zero falhas/ignorados; baselines preservados, rustdoc sem avisos e Release compilado. Core grande2/2 e GUI opt-in1/1 separados; 200 páginas/5.000 dispositivos/20.000 conexões. Save0,741s/open1,928s/display6,199ms/number0,840s/PDF1,529s dentro das metas. Relatórios16,458s medidos, sem meta na spec. CPU final sempre <5% por núcleo na tela inicial e projeto grande, versus71,52% antes. Hash/tempos e limites no relatório.
+
+Parte D em execução pelo Codex, conforme escolha posterior expressa do autor; login do ChatGPT e conferência final pelo autor. Roteiro ../reports/ETAPA_28_HOMOLOGACAO.md preparado com fases A–F e itens pendentes. Não declarar homologação geral nem Plano Mestre integralmente concluído antes do aceite. Próximo: Codex continuar o roteiro no Release corrigido, autor conferir, corrigir/classificar defeitos. Commit/push da Etapa 28 exige OK próprio; a autorização do R6 não se estende. Backup externo não criado/verificado.
+
+---
+
+# Etapa 28 em execução — retomada técnica (2026-11-06)
+
+R6 já publicado: privado main 5ead9879522fb2549741a7f97d16345f06b31c61; público main 51b19b01e134db94c0cec14368c5df02348f29cf. Usuário autorizou implementar Etapa 28, sem OK de commit/push desta etapa. Fonte: prompt aprovado ETAPA_28_FECHAMENTO_HOMOLOGACAO.md; plano 2026-11-06-etapa28.md.
+
+GUI-L01 corrigido por cache de título + despertar de autosave. Testes de robustez, processo morto, matriz de telas, multiline e regressões antigas passaram em alvos focados. Carga Core grande atende metas; GUI completa revelou ~68ms e recebeu virtualização de dispositivos + cache de referências por projeto/revisão/página, com testes e revisão independente sem achados relevantes. Fonte de produção congelada; validação integrada ainda em execução, não declarar conclusão antes dos resultados. Logs e estado em .local/e28/execution.json, validate.log e relatórios em preparo.
+
+A pedido do usuário, cargo clean removeu 98,5GiB do target (92,05GiB livres efetivos); código/.local preservados. Próximas compilações Debug usam CARGO_PROFILE_DEV_DEBUG=0, CARGO_PROFILE_TEST_DEBUG=0, CARGO_INCREMENTAL=0 só no processo. Falta concluir validate/rustdoc, reconstruir Release, medir GUI final e CPU nativa, finalizar relatórios/inventário/memória. Nenhum staging/commit/push ou cópia pública da Etapa28.
+
+Parte D aprovada para Claude Code + autor; CLI instalado tem somente MCP ai-memory e plugin rust-analyzer, sem controle de app. Pergunta assíncrona pendente para escolher Codex no roteiro ou reservar ao Claude. Não presumir aprovação por silêncio. Roteiro ETAPA_28_HOMOLOGACAO.md preparado com itens pendentes; não homologar Plano Mestre por testes automáticos.
+
+---
 # R6 concluído tecnicamente; pronto para revisão (2026-11-06)
 
 **Versionamento autorizado em 2026-11-06:** o autor deu OK expresso para commit + push de R6 nos dois repositórios. Este documento registra o estado anterior à publicação; os HEADs acima são os pais observados, não os commits futuros. Resultado e SHAs reais serão registrados em `.local/r6/PUBLICATION.md` nos dois checkouts e podem ser confirmados com Git. Etapa 28 continua fora da entrega.

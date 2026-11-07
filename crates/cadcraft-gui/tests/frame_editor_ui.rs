@@ -13,6 +13,51 @@ use eframe::egui::{
 };
 use std::path::Path;
 
+#[test]
+fn frame_description_accepts_and_preserves_line_breaks() {
+    let (project, _) = base_project();
+    let mut ui = Ui::new(project);
+    ui.app.execute(CommandId::FrameNew, &ui.ctx.clone());
+    let out = ui.settle(3);
+    let right = ui.app.frame_editor.viewport.unwrap().right();
+    let field = nodes(&out)
+        .into_iter()
+        .find(|(_, at, role)| *role == Role::MultilineTextInput && at.x > right)
+        .expect("frame description must expose a multiline editor")
+        .1;
+    ui.press_at(field);
+    ui.key(Key::A, Modifiers::COMMAND);
+    let out = ui.frame(vec![Event::Text("Primeira linha\nSegunda linha".into())]);
+    assert!(
+        nodes(&out)
+            .iter()
+            .any(|(value, _, role)| *role == Role::MultilineTextInput
+                && value == "Primeira linha\nSegunda linha")
+    );
+    ui.frame(vec![
+        Event::PointerMoved(Pos2::new(right + 120., 500.)),
+        Event::MouseWheel {
+            unit: egui::MouseWheelUnit::Point,
+            delta: vec2(0., -1000.),
+            modifiers: Modifiers::NONE,
+        },
+    ]);
+    ui.settle(30);
+    ui.press("Aplicar moldura");
+    let id = ui.app.frame_editor.frame.unwrap();
+    assert_eq!(
+        ui.frame_now(id).description(),
+        "Primeira linha\nSegunda linha"
+    );
+    ui.key(Key::Z, Modifiers::CTRL);
+    assert_eq!(ui.frame_now(id).description(), "");
+    ui.key(Key::Y, Modifiers::CTRL);
+    assert_eq!(
+        ui.frame_now(id).description(),
+        "Primeira linha\nSegunda linha"
+    );
+}
+
 fn p(x: f64, y: f64) -> Point2D {
     Point2D::new(x, y).unwrap()
 }

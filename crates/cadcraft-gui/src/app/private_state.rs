@@ -6,12 +6,14 @@ use super::*;
 pub(crate) struct NavigationState {
     pub(crate) index: PageIndex,
     pub(crate) index_revision: u64,
+    pub(crate) sheet_references: crate::sheet_reference_cache::SheetReferenceCache,
 }
 impl Default for NavigationState {
     fn default() -> Self {
         Self {
             index: PageIndex::default(),
             index_revision: u64::MAX,
+            sheet_references: Default::default(),
         }
     }
 }
@@ -78,6 +80,8 @@ pub(crate) struct ChromeState {
     pub(crate) fullscreen: bool,
     pub(crate) exit_confirmed: bool,
     pub(crate) theme_ready: bool,
+    /// Send native title commands only when the displayed title changes.
+    pub(in crate::app) last_title: Option<String>,
     pub(in crate::app) last_system_theme: Option<egui::Theme>,
     /// Last loaded symbol-library directory; reload when it changes.
     pub(in crate::app) symbol_library_seen: Option<String>,
@@ -93,6 +97,7 @@ impl Default for ChromeState {
             fullscreen: false,
             exit_confirmed: false,
             theme_ready: false,
+            last_title: None,
             last_system_theme: None,
             symbol_library_seen: None,
         }

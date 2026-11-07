@@ -1,5 +1,7 @@
 # Plano Mestre — CAD-CRAFT até o final (aprovado em 2026-11-03)
 
+**Estado em 2026-11-06:** etapas de implementação 1–27 e reorganização R0–R6 publicadas; Etapa 28 A–C implementada e validada. Homologação geral (D) preparada e ainda pendente de execução pelo Claude Code e conferência expressa do autor. O Plano Mestre permanece aberto para o aceite; não se declara conclusão geral por testes automáticos.
+
 Meta final (usuário): ECAD utilizável em projetos reais + interoperabilidade
 com EPLAN 2027 + assistente de IA. Etapas 1–12 concluídas (12 = `.cadcraft` e
 inserção com dispositivo, commit `6612e82`).

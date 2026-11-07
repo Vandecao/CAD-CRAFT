@@ -421,8 +421,20 @@ fn connector_contacts_are_renumbered_and_mated_from_the_gui() {
         p.mating_for_connector(socket).map(|m| m.first()),
         Some(plug)
     );
-    assert_eq!(p.networks(), networks, "mating creates no continuity");
+    // These contacts have no connection points, so no network changes.
+    assert_eq!(p.networks(), networks);
     assert!(labels(&output).iter().any(|l| l == "X1:2 ↔ X2:30"));
+    // The panel states the decided rule (DEC-11-01), not a pending one.
+    assert!(
+        labels(&output)
+            .iter()
+            .any(|l| l.contains("dá continuidade elétrica"))
+    );
+    let stale: Vec<_> = labels(&output)
+        .into_iter()
+        .filter(|l| l.contains("decisão pendente"))
+        .collect();
+    assert!(stale.is_empty(), "{stale:?}");
     // Deleting a mated connector is refused and changes nothing.
     let snapshot = ui.app.session.snapshot().unwrap();
     let output = ui.click(find(&output, "Excluir conector e contatos"));
