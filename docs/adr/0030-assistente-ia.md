@@ -53,3 +53,14 @@ Provedores (pesquisa de 2026-11-05):
 - Os testes automáticos não usam rede: provedor falso no laço e na interface, e vetor PKCE da RFC 7636.
 - O formato de chamada de ferramentas nativo da OpenAI pode substituir o protocolo em texto no futuro, sem mudar as regras de validação.
 - A qualidade das respostas depende do modelo escolhido pelo usuário na lista de modelos da conta.
+
+## Adendo — Etapa 29: manter conectado (2026-11-07)
+
+O autor pediu a opção de não precisar entrar a cada abertura. A regra "nada da conta salvo" passa a valer **por padrão**, com uma exceção escolhida pelo usuário:
+
+- Caixa "Manter conectado neste computador", **desmarcada por padrão**; a escolha fica nas preferências (só o booleano).
+- Marcada, o app guarda **somente** o refresh token e o `client_id` emitido, num item do **cofre de credenciais do sistema** (Gerenciador de Credenciais do Windows; Keychain no macOS), serviço `CAD-CRAFT`, conta `chatgpt`, pela crate `keyring` 3.6.3 (MIT/Apache-2.0, sem os backends de Linux). Nunca senha, e-mail, access token, conversa ou dados do projeto; nada em arquivo do app.
+- Ao abrir, a sessão é renovada em segundo plano (`grant_type=refresh_token`). O refresh token é rotativo (30 dias); cada token novo substitui o antigo no cofre, depois do login, da retomada e de cada resposta.
+- Renovação recusada (expirada, revogada): o item é apagado e o login volta a ser pedido. Erro de rede: o item fica e o painel oferece "Tentar de novo".
+- "Sair" e desmarcar a caixa apagam o item. Fora do Windows e do macOS a caixa fica desabilitada.
+- O acesso ao cofre passa pelo trait `SessionVault` (`cadcraft-gui/src/assistant/vault.rs`); os testes usam um cofre em memória, e o app criado por `CadApp::default()` nunca toca o cofre real.

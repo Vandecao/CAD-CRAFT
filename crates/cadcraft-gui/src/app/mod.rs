@@ -94,6 +94,9 @@ impl CadApp {
         {
             app.files.recent = serde_json::from_str(&json).unwrap_or_default();
         }
+        // "Manter conectado": resume the kept ChatGPT session in the background.
+        app.assistant.vault = std::sync::Arc::new(crate::assistant::vault::OsVault);
+        app.assistant_restore();
         app.enable_recovery(crate::project_file::Recovery::new(
             crate::project_file::Recovery::default_dir(),
         ));

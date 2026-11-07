@@ -2,14 +2,16 @@
 // Copyright (C) 2026 Vanderlei Braga e colaboradores do CAD-CRAFT
 //! "Assistente" tab next to the insertion centre: help and AI assistant.
 //!
-//! Sign-in is OAuth only ("Sign in with ChatGPT", [`oauth`]); nothing about
-//! the account is stored. Questions run in a background thread on a copy of
+//! Sign-in is OAuth only ("Sign in with ChatGPT", [`oauth`]). By default
+//! nothing about the account is stored; with "Manter conectado" the refresh
+//! token and client id go to the system credential vault ([`vault`]). Questions run in a background thread on a copy of
 //! the project ([`cad_craft::assistant::conversation`]); the answer brings
 //! text, navigation and command buttons and proposal cards. A proposal
 //! changes the project only when the user clicks "Aplicar", through the same
 //! undoable session operations as the menus (one Ctrl+Z each).
 pub mod chatgpt;
 pub mod oauth;
+pub mod vault;
 
 use crate::app::{CadApp, Level};
 use crate::commands::CommandId;
@@ -26,6 +28,50 @@ use std::sync::{Arc, Mutex};
 
 /// Factory of the provider used by tests instead of ChatGPT.
 pub type ProviderFactory = Box<dyn Fn() -> Box<dyn Provider + Send>>;
+
+/// Why restoring a kept session failed.
+#[derive(Clone, Debug, PartialEq)]
+pub enum RestoreError {
+    /// Expired or revoked: the kept session is deleted.
+    Rejected(String),
+    /// Network or server trouble: the kept session stays for a retry.
+    Transient(String),
+}
+
+/// Renews a kept session and lists the account models (tests replace it).
+pub type Restorer = Arc<
+    dyn Fn(&vault::Saved) -> Result<(oauth::Tokens, Vec<(String, String)>), RestoreError>
+        + Send
+        + Sync,
+>;
+
+/// Real restore: refresh token grant, then the model list.
+fn restore_with_chatgpt(
+    saved: &vault::Saved,
+) -> Result<(oauth::Tokens, Vec<(String, String)>), RestoreError> {
+    let classify = |e: String| {
+        if e.starts_with("falha de rede") {
+            RestoreError::Transient(e)
+        } else {
+            RestoreError::Rejected(e)
+        }
+    };
+    let kept = oauth::Tokens {
+        client_id: saved.client_id.clone(),
+        access_token: String::new(),
+        refresh_token: Some(saved.refresh_token.clone()),
+        expires_at: std::time::Instant::now(),
+    };
+    let tokens = oauth::refresh(&kept).map_err(classify)?;
+    let shared = Mutex::new(Some(tokens));
+    let models = chatgpt::list_models(&shared).map_err(classify)?;
+    let tokens = shared
+        .into_inner()
+        .ok()
+        .flatten()
+        .ok_or_else(|| RestoreError::Rejected("sessão indisponível".into()))?;
+    Ok((tokens, models))
+}
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum ProposalState {
@@ -53,6 +99,7 @@ enum Message {
     Delta(String),
     Answer(Result<Turn, String>),
     SignedIn(Result<Vec<(String, String)>, String>),
+    Restored(Result<(oauth::Tokens, Vec<(String, String)>), RestoreError>),
 }
 
 struct Job {
@@ -78,6 +125,14 @@ pub struct AssistantPanel {
     job: Option<Job>,
     /// Tests replace ChatGPT with a scripted provider.
     pub test_provider: Option<ProviderFactory>,
+    /// Where "Manter conectado" keeps the session.
+    pub vault: Arc<dyn vault::SessionVault>,
+    /// Tests replace the network restore.
+    pub test_restorer: Option<Restorer>,
+    /// Refresh token last written to the vault (to save rotations only once).
+    saved_refresh: Option<String>,
+    /// A restore failed for a transient reason; offer "Tentar de novo".
+    pub restore_failed: bool,
 }
 
 impl Default for AssistantPanel {
@@ -96,6 +151,15 @@ impl Default for AssistantPanel {
             conversation: Arc::new(Mutex::new(Conversation::default())),
             job: None,
             test_provider: None,
+            // The real app installs the system vault in CadApp::new; a default
+            // (test) app never touches it.
+            vault: Arc::new(vault::MemoryVault {
+                available: false,
+                ..Default::default()
+            }),
+            test_restorer: None,
+            saved_refresh: None,
+            restore_failed: false,
         }
     }
 }
@@ -108,7 +172,7 @@ impl AssistantPanel {
     pub fn ready(&self) -> bool {
         self.signed_in || self.test_provider.is_some()
     }
-    /// Drops the tokens from memory.
+    /// Drops the tokens from memory and deletes any kept session.
     pub fn sign_out(&mut self) {
         if let Ok(mut t) = self.tokens.lock() {
             *t = None;
@@ -116,7 +180,52 @@ impl AssistantPanel {
         self.signed_in = false;
         self.models.clear();
         self.model.clear();
-        self.status = "Sessão encerrada; nenhum dado da conta foi salvo.".into();
+        self.restore_failed = false;
+        self.status = match self.forget_kept_session() {
+            Ok(()) => "Sessão encerrada; nada da conta ficou salvo neste computador.".into(),
+            Err(e) => format!("Sessão encerrada, mas o cofre não pôde ser limpo: {e}"),
+        };
+    }
+    /// Replaces the in-memory tokens (tests simulate a rotation with it).
+    #[doc(hidden)]
+    pub fn set_tokens(&mut self, tokens: Option<oauth::Tokens>) {
+        if let Ok(mut t) = self.tokens.lock() {
+            *t = tokens;
+        }
+    }
+    /// Deletes the kept session from the vault.
+    pub fn forget_kept_session(&mut self) -> Result<(), String> {
+        self.saved_refresh = None;
+        self.vault.clear()
+    }
+    /// Writes the current refresh token to the vault when it changed
+    /// (after sign-in and after each rotation). Returns an error to show.
+    pub fn keep_session(&mut self) -> Result<(), String> {
+        let saved = {
+            let guard = self
+                .tokens
+                .lock()
+                .map_err(|_| crate::strings::SESSION_UNAVAILABLE)?;
+            let Some(tokens) = guard.as_ref() else {
+                return Ok(());
+            };
+            let Some(refresh) = tokens.refresh_token.clone() else {
+                return Err(
+                    "o login não trouxe um token de renovação; a sessão não pode ser mantida"
+                        .into(),
+                );
+            };
+            vault::Saved {
+                client_id: tokens.client_id.clone(),
+                refresh_token: refresh,
+            }
+        };
+        if self.saved_refresh.as_deref() == Some(saved.refresh_token.as_str()) {
+            return Ok(());
+        }
+        self.vault.save(&saved)?;
+        self.saved_refresh = Some(saved.refresh_token);
+        Ok(())
     }
     pub fn stop(&mut self) {
         if let Some(job) = &self.job {
@@ -210,6 +319,64 @@ impl CadApp {
         self.assistant.job = Some(Job { receiver, cancel });
     }
 
+    /// "Manter conectado": renews the session kept in the vault, in the
+    /// background, without opening the browser. Does nothing when the option
+    /// is off, nothing is kept, or a sign-in is already running.
+    pub fn assistant_restore(&mut self) {
+        if !self.preferences.assistant_keep_signed_in
+            || self.assistant.busy()
+            || self.assistant.signed_in
+            || !self.assistant.vault.available()
+        {
+            return;
+        }
+        let saved = match self.assistant.vault.load() {
+            Ok(Some(saved)) => saved,
+            Ok(None) => return,
+            Err(e) => {
+                self.assistant.status = e;
+                return;
+            }
+        };
+        let restorer: Restorer = self
+            .assistant
+            .test_restorer
+            .clone()
+            .unwrap_or_else(|| Arc::new(restore_with_chatgpt));
+        let (sender, receiver) = mpsc::channel();
+        let cancel = Arc::new(AtomicBool::new(false));
+        std::thread::spawn(move || {
+            let _ = sender.send(Message::Restored(restorer(&saved)));
+        });
+        self.assistant.restore_failed = false;
+        self.assistant.status = "Retomando a sessão mantida…".into();
+        self.assistant.job = Some(Job { receiver, cancel });
+    }
+
+    /// Turns "Manter conectado" on or off. Off deletes the kept session.
+    pub fn assistant_set_keep_signed_in(&mut self, keep: bool) {
+        self.preferences.assistant_keep_signed_in = keep;
+        let result = if keep {
+            self.assistant.keep_session()
+        } else {
+            self.assistant.restore_failed = false;
+            self.assistant.forget_kept_session()
+        };
+        if let Err(e) = result {
+            self.assistant.status = e;
+        }
+    }
+
+    /// Saves a rotated refresh token when the session is kept.
+    fn sync_kept_session(&mut self) {
+        if self.preferences.assistant_keep_signed_in
+            && self.assistant.signed_in
+            && let Err(e) = self.assistant.keep_session()
+        {
+            self.assistant.status = e;
+        }
+    }
+
     /// Sends the question in the input box.
     pub(crate) fn assistant_ask(&mut self) {
         let question = self.assistant.input.trim().to_owned();
@@ -288,6 +455,7 @@ impl CadApp {
                         },
                         Err(e) => Entry::Error(e),
                     });
+                    self.sync_kept_session();
                     return;
                 }
                 Ok(Message::SignedIn(result)) => {
@@ -302,12 +470,54 @@ impl CadApp {
                             self.assistant.models = models;
                             self.assistant.status =
                                 "Conectado por OAuth · nenhuma senha salva".into();
+                            if self.preferences.assistant_keep_signed_in {
+                                self.sync_kept_session();
+                                if self.assistant.saved_refresh.is_some() {
+                                    self.assistant.status =
+                                        "Conectado por OAuth · sessão mantida neste computador"
+                                            .into();
+                                }
+                            }
                         }
                         Err(e) => {
                             if let Ok(mut t) = self.assistant.tokens.lock() {
                                 *t = None;
                             }
                             self.assistant.status = e;
+                        }
+                    }
+                    return;
+                }
+                Ok(Message::Restored(result)) => {
+                    self.assistant.job = None;
+                    match result {
+                        Ok((tokens, models)) => {
+                            if let Ok(mut t) = self.assistant.tokens.lock() {
+                                *t = Some(tokens);
+                            }
+                            self.assistant.signed_in = true;
+                            self.assistant.model = models
+                                .first()
+                                .map(|(slug, _)| slug.clone())
+                                .unwrap_or_default();
+                            self.assistant.models = models;
+                            self.assistant.status =
+                                "Conectado (sessão mantida neste computador)".into();
+                            self.sync_kept_session();
+                        }
+                        Err(RestoreError::Rejected(e)) => {
+                            let cleared = self.assistant.forget_kept_session();
+                            self.assistant.status = match cleared {
+                                Ok(()) => format!(
+                                    "A sessão mantida expirou ou foi revogada ({e}); entre de novo."
+                                ),
+                                Err(c) => format!("A sessão mantida expirou ({e}); {c}"),
+                            };
+                        }
+                        Err(RestoreError::Transient(e)) => {
+                            self.assistant.restore_failed = true;
+                            self.assistant.status =
+                                format!("Não foi possível retomar a sessão mantida: {e}");
                         }
                     }
                     return;
@@ -460,7 +670,33 @@ impl CadApp {
                 if busy && ui.button(crate::strings::CANCEL).clicked() {
                     self.assistant.stop();
                 }
+                if !busy && self.assistant.restore_failed && ui.button("Tentar de novo").clicked() {
+                    self.assistant_restore();
+                }
             });
+        }
+        if self.assistant.test_provider.is_none() {
+            let available = self.assistant.vault.available();
+            let mut keep = self.preferences.assistant_keep_signed_in;
+            let hint = if available {
+                "Guarda só o token de renovação e o identificador do cliente no cofre de \
+                 credenciais do sistema (Gerenciador de Credenciais do Windows), para entrar \
+                 sozinho na próxima abertura. Nenhuma senha, e-mail ou conversa. \"Sair\" ou \
+                 desmarcar apaga."
+            } else {
+                "Cofre de credenciais indisponível neste sistema."
+            };
+            if ui
+                .add_enabled(
+                    available,
+                    egui::Checkbox::new(&mut keep, "Manter conectado neste computador"),
+                )
+                .on_hover_text(hint)
+                .on_disabled_hover_text(hint)
+                .changed()
+            {
+                self.assistant_set_keep_signed_in(keep);
+            }
         }
         if !self.assistant.status.is_empty() {
             ui.label(RichText::new(&self.assistant.status).small());

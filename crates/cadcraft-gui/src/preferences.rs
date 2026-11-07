@@ -120,6 +120,8 @@ pub struct Preferences {
     pub elmt_mm_per_px: f64,
     /// Opaque installation identifier required by Sign in with ChatGPT (urn:uuid). It does not identify the user.
     pub assistant_host_id: String,
+    /// "Manter conectado": only this choice is stored here; the session itself lives in the system credential vault.
+    pub assistant_keep_signed_in: bool,
 }
 impl Default for Preferences {
     fn default() -> Self {
@@ -145,6 +147,7 @@ impl Default for Preferences {
             dwg_converter: String::new(),
             elmt_mm_per_px: cad_craft::interchange::elmt::DEFAULT_MM_PER_PX,
             assistant_host_id: String::new(),
+            assistant_keep_signed_in: false,
         }
     }
 }

@@ -1,3 +1,11 @@
+## Etapa 29 — manter conectado implementada e validada (2026-11-07)
+
+- Caixa "Manter conectado neste computador" (desmarcada por padrão); refresh token e client_id no Gerenciador de Credenciais do Windows pela crate keyring 3.6.3; retomada em segundo plano ao abrir; Sair/desmarcar apagam. Relatório `docs/internal/reports/ETAPA_29_MANTER_CONECTADO.md`, adendo no ADR-0030.
+- Validação: 751 Rust + 6 exemplos + 16 PowerShell, exit 0; Release 23.820.800 bytes. Teste no app no fim da Etapa 31.
+- Git: fora do HEAD (privado 9d1cbdf); commit + push só com o OK do autor. Próximo: Etapa 30.
+
+---
+
 ## Etapa 28 — homologação concluída e aceita pelo autor (2026-11-07)
 
 O autor transferiu a homologação ao Claude Code e autorizou o uso do computador. Resultados item a item em `docs/internal/reports/ETAPA_28_HOMOLOGACAO.md`, seção "Execução do Claude Code".

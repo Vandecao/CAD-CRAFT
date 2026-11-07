@@ -41,7 +41,7 @@ Sem novo problema funcional identificado. Os limites existentes (incluindo GUI-L
 |---|---|---|---|
 | IA-L01 | Resolvido | Login e respostas reais testados no app em 2026-11-05 (relatório da Etapa 27) | — |
 | GUI-L01 | Resolvido automaticamente; confirmar em F-01 | Title repetido causava repaint infinito; cache + despertar de autosave. Release final abaixo de 5% em seis amostras | Etapa 28, relatório técnico e roteiro F-01 |
-| IA-L02 | Limite deliberado | Nada da conta é salvo: cada abertura do app pede login e faz um registro dinâmico novo na conta | Opção "manter conectado" no cofre do Windows, se o autor pedir |
+| IA-L02 | Opção disponível (Etapa 29) | Por padrão nada da conta é salvo e cada abertura pede login. Com "Manter conectado" (desmarcada por padrão), o refresh token e o `client_id` ficam no Gerenciador de Credenciais do Windows e a abertura renova a sessão sozinha; fora do Windows e do macOS a opção fica indisponível | Se o app fechar no meio de uma renovação, o token antigo pode já ter sido trocado e o próximo início pede login |
 | IA-L03 | Limite | Propostas cobrem numeração, número de fio, documento e página; inserir símbolos, ligar fios ou corrigir regras VER específicas ainda não | Ampliar o catálogo de propostas por etapa |
 | IA-L04 | Limite | Escopo e sigilo dependem também do modelo; a defesa principal é estrutural (sem acesso a código, arquivos ou rede; ações validadas) | Conjunto de perguntas de teste no teste do app |
 | IA-L05 | Observação | Protocolo de ações em texto porque a documentação do fluxo não descreve o formato de chamada de ferramentas | Migrar para o formato nativo quando documentado |

@@ -59,7 +59,7 @@ Tudo entra no modelo neutro `Project` e tudo sai dele. Cada importação relata 
 - Relatórios em página (índice, dispositivos, materiais, ligações, bornes, cabos) e listas CSV/XLSX.
 - Verificações de consistência com navegação até cada problema.
 - Desfazer e refazer transacional em todas as edições.
-- Ajuda e assistente de IA integrados (opcional): entre com a sua conta ChatGPT (OAuth no navegador; nenhuma senha ou chave de API é pedida ou salva). Ele responde só sobre o projeto aberto e o uso do CAD-CRAFT, localiza comandos e itens e propõe alterações que você revisa e aplica (com Desfazer). Dados do projeto só vão para a OpenAI quando você faz uma pergunta.
+- Ajuda e assistente de IA integrados (opcional): entre com a sua conta ChatGPT (OAuth no navegador; nenhuma senha ou chave de API é pedida ou salva). Ele responde só sobre o projeto aberto e o uso do CAD-CRAFT, localiza comandos e itens e propõe alterações que você revisa e aplica (com Desfazer). Dados do projeto só vão para a OpenAI quando você faz uma pergunta. Opcionalmente, "Manter conectado" guarda só o token de renovação da sessão no Gerenciador de Credenciais do Windows, para a próxima abertura entrar sozinha; "Sair" apaga.
 
 ## Compilar e rodar
 

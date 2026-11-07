@@ -1,3 +1,17 @@
+## Etapa 29 — manter conectado implementada e validada (2026-11-07)
+
+- Caixa "Manter conectado neste computador" (desmarcada por padrão); refresh token e client_id no Gerenciador de Credenciais do Windows pela crate keyring 3.6.3; retomada em segundo plano ao abrir; Sair/desmarcar apagam. Relatório `docs/internal/reports/ETAPA_29_MANTER_CONECTADO.md`, adendo no ADR-0030.
+- Validação: 751 Rust + 6 exemplos + 16 PowerShell, exit 0; Release 23.820.800 bytes. Teste no app no fim da Etapa 31.
+- Git: fora do HEAD (privado 9d1cbdf); commit + push só com o OK do autor. Próximo: Etapa 30.
+
+---
+
+## Etapas 29–31 planejadas e aprovadas (2026-11-07)
+
+Plano `docs/internal/plans/PLANO_ETAPAS_29_31.md` aprovado pelo autor ("aprovo o plano como no eplan"). Prompts aprovados: `docs/internal/spec/ETAPA_29_MANTER_CONECTADO.md`, `ETAPA_30_ZONAS_MOLDURA.md`, `ETAPA_31_AREA_TRABALHO.md`. Ordem 29 → 30 → 31; teste no app ao fim da 31 (com o login do autor). Dependência nova aprovada: `keyring`. Vídeos de referência do EPLAN e do QElectroTech vistos com ffmpeg (instalado pelo winget com autorização).
+
+---
+
 ## Etapa 28 — homologação concluída e aceita pelo autor (2026-11-07)
 
 O autor transferiu a homologação ao Claude Code e autorizou o uso do computador. Resultados item a item em `docs/internal/reports/ETAPA_28_HOMOLOGACAO.md`, seção "Execução do Claude Code".
