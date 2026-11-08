@@ -37,12 +37,15 @@ enum Transaction {
     Placement(Box<PlacementDelta>),
     ExistingFunction(Box<ExistingFunctionDelta>),
     PartAssignment(Box<PartAssignmentDelta>),
+    /// Terminal symbol placed on a strip.
+    StripTerminal(Box<StripTerminalDelta>),
     PartRemoval(Box<PartRemovalDelta>),
     PartUpdate(Box<PartUpdateDelta>),
     PartUpdates(Vec<PartUpdateDelta>),
     FunctionPoint(Box<FunctionPointDelta>),
     Document(Box<DocumentDelta>),
     Frame(Box<FrameDelta>),
+    SingleLine(Box<SingleLineDelta>),
 }
 impl Transaction {
     fn len(&self) -> usize {
@@ -64,11 +67,13 @@ impl Transaction {
             Self::Placement(d) => d.len(),
             Self::ExistingFunction(d) => d.len(),
             Self::PartAssignment(d) => d.len(),
+            Self::StripTerminal(d) => d.len(),
             Self::PartRemoval(_) | Self::PartUpdate(_) => 1,
             Self::PartUpdates(deltas) => deltas.len(),
             Self::FunctionPoint(d) => d.len(),
             Self::Document(d) => d.len(),
             Self::Frame(_) => 1,
+            Self::SingleLine(_) => 1,
             Self::Visual { .. } | Self::Insertion { .. } => 1,
         }
     }
@@ -242,6 +247,16 @@ impl History {
         self.record(Transaction::Placement(Box::new(delta)));
         Ok(id)
     }
+    pub(crate) fn strip_terminal(
+        &mut self,
+        p: &mut Project,
+        placement: StripTerminalPlacement,
+    ) -> Result<RepresentationId> {
+        let delta = p.place_strip_terminal(placement)?;
+        let id = delta.representation_id();
+        self.record(Transaction::StripTerminal(Box::new(delta)));
+        Ok(id)
+    }
     pub(crate) fn place_existing_function(
         &mut self,
         p: &mut Project,
@@ -309,6 +324,11 @@ impl History {
             return Ok(false);
         }
         self.record(Transaction::Frame(Box::new(delta)));
+        Ok(true)
+    }
+    pub(crate) fn single_line(&mut self, p: &mut Project, edit: SingleLineEdit) -> Result<bool> {
+        let delta = p.edit_single_line(edit)?;
+        self.record(Transaction::SingleLine(Box::new(delta)));
         Ok(true)
     }
     pub fn can_undo(&self) -> bool {
@@ -566,12 +586,14 @@ impl History {
                 p.restore_existing_function_placement(delta, forward)
             }
             Transaction::PartAssignment(delta) => p.restore_part_assignment(delta, forward),
+            Transaction::StripTerminal(delta) => p.restore_strip_terminal(delta, forward),
             Transaction::PartRemoval(delta) => p.restore_part_removal(delta, forward),
             Transaction::PartUpdate(delta) => p.restore_part_update(delta, forward),
             Transaction::PartUpdates(deltas) => p.restore_part_updates(deltas, forward),
             Transaction::FunctionPoint(delta) => p.restore_function_point(delta, forward),
             Transaction::Document(delta) => p.restore_document_edit(delta, forward),
             Transaction::Frame(delta) => p.restore_frame_edit(delta, forward),
+            Transaction::SingleLine(delta) => p.restore_single_line(delta, forward),
         }
     }
 }

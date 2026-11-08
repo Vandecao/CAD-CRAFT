@@ -59,6 +59,8 @@ pub(super) struct ProjectData {
     #[serde(default)]
     marker_groups: Vec<MarkerGroup>,
     #[serde(default)]
+    single_lines: Vec<SingleLineLink>,
+    #[serde(default)]
     frames: Vec<FrameTemplate>,
     #[serde(default)]
     default_frame: Option<FrameTemplateId>,
@@ -151,6 +153,7 @@ impl TryFrom<ProjectData> for Project {
             default_frame: data.default_frame,
             reference_format: data.reference_format,
             assets: BTreeMap::new(),
+            single_lines: BTreeMap::new(),
             document_index: DocumentIndex::default(),
             graph: ConnectivityGraph::default(),
         };
@@ -223,6 +226,11 @@ impl TryFrom<ProjectData> for Project {
                 .is_some()
             {
                 return Err(drawing_error());
+            }
+        }
+        for link in data.single_lines {
+            if project.single_lines.insert(link.id(), link).is_some() {
+                return Err(DomainError::InvalidRelation("conexão unifilar duplicada"));
             }
         }
         for marker in data.markers {

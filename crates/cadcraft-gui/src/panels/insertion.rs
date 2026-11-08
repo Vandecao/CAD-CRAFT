@@ -28,6 +28,8 @@ enum Association {
     NewDevice,
     ExistingDevice,
     ExistingFunction,
+    /// Next terminal of a terminal strip (terminal symbols).
+    StripTerminal,
     Entity,
 }
 #[derive(Default)]
@@ -47,6 +49,10 @@ struct SymbolBrowserState {
     points_source: Option<(DeviceId, SymbolDefinitionId, u64)>,
     /// Whether the user typed over the suggested labels.
     points_edited: bool,
+    /// Strip name for terminal symbols (X1).
+    strip: String,
+    /// Symbol whose category last chose the association automatically.
+    association_for: Option<SymbolDefinitionId>,
     target: Option<RepresentationTarget>,
     angle: f64,
     mirror_x: bool,
@@ -414,8 +420,37 @@ impl CadApp {
         } else {
             browser.prefix.trim().to_owned()
         };
+        // Terminal symbols go to a strip by default; other symbols leave the
+        // strip choice when selected.
+        if let Some(d) = &selected_definition
+            && browser.association_for.as_ref() != Some(d.id())
+        {
+            browser.association_for = Some(d.id().clone());
+            // A prefix typed for the previous symbol does not carry over.
+            browser.prefix.clear();
+            let terminal = d.category() == "Bornes";
+            if terminal {
+                browser.association = Association::StripTerminal;
+            } else if browser.association == Association::StripTerminal {
+                browser.association = Association::NewDevice;
+            }
+        }
+        let strip = if browser.strip.trim().is_empty() {
+            "X1".to_owned()
+        } else {
+            browser.strip.trim().to_owned()
+        };
         if let Some(d) = &selected_definition {
             let summary = match browser.association {
+                Association::StripTerminal => DesignationPart::new(&strip)
+                    .ok()
+                    .and_then(|s| {
+                        Some(format!(
+                            "borne {strip}:{}",
+                            self.session.project()?.next_strip_terminal(&s)
+                        ))
+                    })
+                    .unwrap_or_else(|| "régua inválida".to_owned()),
                 Association::NewDevice => self
                     .session
                     .project()
@@ -448,6 +483,7 @@ impl CadApp {
                     Association::NewDevice => "Novo dispositivo",
                     Association::ExistingDevice => "Função em dispositivo existente",
                     Association::ExistingFunction => "Função não representada existente",
+                    Association::StripTerminal => "Borne de régua",
                     Association::Entity => "Entidade existente ou sem associação",
                 })
                 .show_ui(ui, |ui| {
@@ -463,6 +499,8 @@ impl CadApp {
                     );
                     ui.selectable_value(&mut browser.association, Association::ExistingFunction,
                         "Função não representada existente");
+                    ui.selectable_value(&mut browser.association, Association::StripTerminal,
+                        "Borne de régua");
                     ui.selectable_value(
                         &mut browser.association,
                         Association::Entity,
@@ -551,6 +589,26 @@ impl CadApp {
                                 "Aviso: rótulos diferentes; portas serão ligadas aos pontos por ordem.");
                         }
                     }
+                }
+                Association::StripTerminal => {
+                    ui.horizontal_wrapped(|ui| {
+                        ui.label("Régua");
+                        ui.add(
+                            egui::TextEdit::singleline(&mut browser.strip)
+                                .hint_text("X1")
+                                .desired_width(60.0),
+                        );
+                        // Existing strips, one click to choose.
+                        if let Some(p) = self.session.project() {
+                            for s in p.terminal_strips() {
+                                let name = s.designation().as_str();
+                                if ui.small_button(name).clicked() {
+                                    browser.strip = name.to_owned();
+                                }
+                            }
+                        }
+                    });
+                    ui.small("Cada clique insere o próximo borne da régua (X1:1, X1:2…).");
                 }
                 Association::Entity => {}
             }
@@ -714,6 +772,11 @@ impl CadApp {
                             "escolha a função não representada",
                         )),
                     },
+                    Association::StripTerminal => self.session.begin_device_insertion(
+                        id,
+                        DevicePlan::StripTerminal(strip.clone()),
+                        t,
+                    ),
                     Association::Entity => {
                         self.session.begin_symbol_insertion(id, browser.target, t)
                     }

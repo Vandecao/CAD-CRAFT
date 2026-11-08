@@ -10,6 +10,7 @@ pub(in crate::domain::project) mod physical_integrity;
 pub(in crate::domain::project) mod physical_lists;
 pub(in crate::domain::project) mod physical_queries;
 pub(in crate::domain::project) mod physical_wiring;
+pub(in crate::domain::project) mod strip_terminals;
 pub use connectors::ContactStatus;
 pub use part_matching::{PartFunctionMatch, PartFunctionPreview};
 pub use parts::{BomRow, PartAssignmentDelta, PartRemovalDelta, PartUpdateDelta};
@@ -18,3 +19,4 @@ pub use physical_lists::{
     CableListRow, ConductorListRow, ConnectorContactRow, ConnectorListRow, CoreListRow,
     PhysicalLists, StripListRow, TerminalListRow, WiringAssignmentRow,
 };
+pub use strip_terminals::{StripTerminalDelta, StripTerminalPlacement};

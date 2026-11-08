@@ -7,11 +7,16 @@ handles dialogs, file locks, atomic replacement, recovery and library folders.
 
 ## Native project: .cadcraft
 
-The current writer uses **format 10, min_reader 10**. Version 0 is the old technical
-JSON snapshot. Versions 1–10 use a ZIP with the uncompressed mimetype entry first,
+The current writer uses **format 11, min_reader 11**. Version 0 is the old technical
+JSON snapshot. Versions 1–11 use a ZIP with the uncompressed mimetype entry first,
 manifest.json (format, min_reader, writer) and project.json. The MIME type is
 application/x-cad-craft-project+zip. Image bytes introduced in version 3 are stored
 under assets/; references remain in the project data.
+
+Format 11 (Etapa 35, ADR-0034) adds the optional `single_lines` list: single-line
+links between two representations of a page, with polyline points and a phase
+count. They are documentation only (no connections, networks or wire numbers).
+The v10 → v11 migration converts nothing; files written as 11 need a reader of 11.
 
 read_project detects ZIP versus legacy JSON; read_project_from_slice is the
 in-memory counterpart. write_project validates the complete project before

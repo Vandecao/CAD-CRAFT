@@ -51,7 +51,7 @@ homologação geral de plataforma/hardware.
 | 32 | Conexões e edição confiáveis: junção em T, canto na grade, inspetor estável, Enter aplica X/Y | Implementada (Claude Code) | Sim, 785 Rust + 16 PowerShell; Release | Teste no app no fim da 35 | Commit + push autorizados pelo autor |
 | 33 | Símbolos de fábrica, tipo de função e nomes de pontos | Implementada (Claude Code) | Sim, 795 Rust + 16 PowerShell; Release | Teste no app no fim da 35 | Commit + push autorizados pelo autor |
 | 34 | Peças e funções sem duplicação | Implementada (Claude Code) | Sim, 798 Rust + 16 PowerShell; Release | Teste no app no fim da 35 | Commit + push autorizados pelo autor |
-| 35 | Bornes, coordenadas e unifilar | Planejada; teste no app ao fim | — | — | — |
+| 35 | Bornes de régua pelo símbolo, coordenadas digitadas e conexão unifilar (formato 11) | Implementada (Claude Code) | Sim, 807 Rust + 16 PowerShell; Release | Feito em 2026-11-08 (5 defeitos corrigidos) | Commit + push autorizados pelo autor |
 
 ### Plano Mestre aprovado (2026-11-03)
 

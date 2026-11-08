@@ -182,6 +182,7 @@ impl Project {
         self.validate_markers()?;
         self.validate_connection_drawing()?;
         self.validate_terminal_bridges()?;
+        self.validate_single_lines()?;
         self.check_properties(&self.properties)?;
         for part in self.parts.values() {
             part.validate()?;

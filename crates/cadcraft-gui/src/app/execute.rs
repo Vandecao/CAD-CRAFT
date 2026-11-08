@@ -152,6 +152,13 @@ impl CadApp {
                         .focus_connection(route.connection_id());
                 }
             }
+            C::DrawSingleLine => match self.session.begin_single_line() {
+                Ok(()) => self.log(
+                    Level::Info,
+                    "Conexão unifilar: clique no símbolo de origem, nos cantos e no símbolo de destino; teclas 1–9 escolhem as fases.",
+                ),
+                Err(e) => self.log(Level::Error, e.to_string()),
+            },
             C::DrawConnection | C::InsertConnectionAngle => {
                 if let Err(e) = self.session.begin_connection() {
                     self.log(Level::Error, e.to_string());
@@ -385,6 +392,14 @@ impl CadApp {
             C::ToggleSnap => self.preferences.snap_enabled = !self.preferences.snap_enabled,
             C::ToggleCursorGuides => {
                 self.preferences.cursor_guides = !self.preferences.cursor_guides;
+            }
+            C::CoordinateInput => {
+                self.coordinates.open = !self.coordinates.open;
+                let state = if self.coordinates.open { "ligada" } else { "desligada" };
+                self.log(
+                    Level::Info,
+                    format!("Inserção de coordenadas {state}: X/Y aparecem ao inserir símbolo, conexão ou linha."),
+                );
             }
             C::FitPage | C::FitContent | C::ZoomIn | C::ZoomOut | C::Zoom100 | C::PreviousView => {
                 self.camera_command(id)

@@ -29,6 +29,8 @@ pub enum GraphicEdit {
     Document(DocumentEdit),
     /// Frames, page assignments and metadata.
     Frame(FrameEdit),
+    /// Single-line link created or deleted.
+    SingleLine(SingleLineEdit),
     Undo,
     Redo,
 }

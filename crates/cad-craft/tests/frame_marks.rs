@@ -296,7 +296,8 @@ fn format_10_fixture_keeps_its_generated_divisions() {
     );
     let loaded = persistence::read_project_from_slice(&std::fs::read(path).unwrap()).unwrap();
     assert_eq!(loaded.source_format, 10);
-    assert!(!loaded.migrated());
+    // Since Etapa 35 a v10 file passes through v10 → v11 (no content change).
+    assert!(loaded.migrated());
     let frame = loaded.project.frames().next().unwrap();
     assert!(frame.zones().generated_marks);
     assert_eq!(frame.zones().columns.sizes.len(), 4);

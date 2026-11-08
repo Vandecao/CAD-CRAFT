@@ -173,7 +173,18 @@ impl Session {
                 let definition = symbol.as_ref().ok_or(DomainError::InvalidRelation(
                     crate::strings::SYMBOL_NOT_IN_LIBRARY,
                 ))?;
-                if let DevicePlan::ExistingFunction(function) = plan {
+                if let DevicePlan::StripTerminal(strip) = plan {
+                    inserted = Some(self.history.strip_terminal(
+                        p,
+                        StripTerminalPlacement {
+                            page,
+                            definition: definition.clone(),
+                            transform,
+                            strip: DesignationPart::new(strip.trim())?,
+                        },
+                    )?);
+                    true
+                } else if let DevicePlan::ExistingFunction(function) = plan {
                     inserted = Some(self.history.place_existing_function(
                         p,
                         ExistingFunctionPlacement {
@@ -211,7 +222,9 @@ impl Session {
                             labels = points;
                             PlacementDevice::Existing(id)
                         }
-                        DevicePlan::ExistingFunction(_) => unreachable!(),
+                        DevicePlan::ExistingFunction(_) | DevicePlan::StripTerminal(_) => {
+                            unreachable!()
+                        }
                     };
                     inserted = Some(self.history.place(
                         p,
@@ -229,6 +242,7 @@ impl Session {
             }
             GraphicEdit::Document(edit) => self.history.document(p, edit)?,
             GraphicEdit::Frame(edit) => self.history.frame(p, edit)?,
+            GraphicEdit::SingleLine(edit) => self.history.single_line(p, edit)?,
             GraphicEdit::Undo => self.history.undo(p)?,
             GraphicEdit::Redo => self.history.redo(p)?,
             GraphicEdit::Set(batch) => self.history.commit(p, batch)?,

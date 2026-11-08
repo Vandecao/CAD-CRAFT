@@ -74,3 +74,35 @@ pub fn wire_number_placement(
             .map(|p| (p, TextAlign::MiddleLeft))
     }
 }
+
+/// Stroke width of single-line links in mm.
+pub const SINGLE_LINE_WIDTH: f64 = 0.5;
+
+impl Builder<'_> {
+    /// Single-line links: polyline, phase strokes and, above four phases,
+    /// the phase count. Documentation only; no electrical meaning.
+    pub(super) fn single_lines(&mut self, page: PageId) {
+        self.layer = DisplayLayer::Wires;
+        let project = self.project;
+        for link in project.single_lines().filter(|l| l.page_id() == page) {
+            self.stroke(
+                link.points().to_vec(),
+                false,
+                SINGLE_LINE_WIDTH,
+                DisplayColor::Ink,
+            );
+            let (marks, label) = link.phase_marks();
+            for [a, b] in marks {
+                self.stroke(vec![a, b], false, ZONE_MARK_WIDTH, DisplayColor::Ink);
+            }
+            if let Some(at) = label {
+                self.text(
+                    at,
+                    &link.phases().to_string(),
+                    FrameTextStyle::new(2.5, TextAlign::Center),
+                    DisplayColor::Ink,
+                );
+            }
+        }
+    }
+}

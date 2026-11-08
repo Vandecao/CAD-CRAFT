@@ -238,6 +238,14 @@ impl Project {
             let auxiliaries: Vec<_> = functions
                 .iter()
                 .filter(|f| f.role() == FunctionRole::Auxiliary)
+                // Strip terminals (every point on a terminal) are not
+                // auxiliaries of a missing main function.
+                .filter(|f| {
+                    let points = points_by_function.get(&f.id());
+                    !points.is_some_and(|p| {
+                        !p.is_empty() && p.iter().all(|pt| pt.terminal_id().is_some())
+                    })
+                })
                 .collect();
             if !has_main && !auxiliaries.is_empty() {
                 out.push(CheckMessage::new(
@@ -280,11 +288,20 @@ impl Project {
 
     fn check_connections(&self, out: &mut Vec<CheckMessage>) {
         // Symbol ports whose points have no connections.
+        // Symbols joined by single-line links are documentation of the
+        // single-line diagram; their ports are not wired.
+        let single_line: BTreeSet<RepresentationId> = self
+            .single_lines()
+            .flat_map(|l| [l.source(), l.target()])
+            .collect();
         let mut seen = BTreeSet::new();
         let mut bindings: Vec<_> = self.port_bindings.iter().collect();
         bindings.sort_by_key(|(port, _)| (port.representation_id(), *port));
         for (port, point) in bindings {
-            if self.marker(port.representation_id()).is_some() || !seen.insert(*point) {
+            if self.marker(port.representation_id()).is_some()
+                || single_line.contains(&port.representation_id())
+                || !seen.insert(*point)
+            {
                 continue;
             }
             if self.graph.neighbors(*point).next().is_none() {

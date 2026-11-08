@@ -189,6 +189,7 @@ impl CadApp {
             }
             let camera = tab.camera;
             self.interact_editor(ui, &response, page_id, camera, rect);
+            self.coordinate_bar(ui.ctx(), rect);
             if let Some(project) = self.session.project() {
                 let references =
                     self.navigation
@@ -651,6 +652,9 @@ fn draw_editor_page(
     }
     crate::frame_view::paint_cross_references(painter, references, camera, viewport);
     crate::connection_view::paint_overlay(painter, project, page_id, camera, viewport, editor);
+    crate::single_line_tool::paint_single_lines(
+        painter, project, page_id, camera, viewport, editor,
+    );
 }
 
 fn paint_report_page(

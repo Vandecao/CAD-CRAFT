@@ -36,6 +36,10 @@ impl CadApp {
         }
         let cursor = ui.input(|i| i.pointer.interact_pos());
         let ctrl = ui.input(|i| i.modifiers.ctrl);
+        if self.session.graphics.tool == Tool::DrawSingleLine {
+            self.interact_single_line(ui, response, page, camera, rect);
+            return;
+        }
         if matches!(
             self.session.graphics.tool,
             Tool::InsertGraphic(_) | Tool::InsertText | Tool::Paste | Tool::InsertMacro

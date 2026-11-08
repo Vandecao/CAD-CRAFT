@@ -23,9 +23,9 @@ use std::io::{self, Read, Seek, SeekFrom, Write};
 use zip::{CompressionMethod, ZipArchive, ZipWriter, write::SimpleFileOptions};
 
 /// Format version written by this release.
-pub const FORMAT: u32 = 10;
+pub const FORMAT: u32 = 11;
 /// Oldest reader format that can read files written by this release.
-pub const MIN_READER: u32 = 10;
+pub const MIN_READER: u32 = 11;
 /// Newest format version accepted by this reader.
 pub const SUPPORTED_FORMAT: u32 = FORMAT;
 /// Content type of the native project ZIP container.
@@ -529,6 +529,8 @@ fn migrate(mut value: Value, from: u32) -> Result<Value> {
                 adopt_generated_zone_marks(&mut value)?;
                 10
             }
+            // v10 → v11: single-line links are optional; no content conversion.
+            10 => 11,
             _ => unreachable!("cada formato anterior possui migração"),
         };
     }

@@ -34,6 +34,7 @@ impl PageDisplayList for Project {
         }
         builder.representations(page);
         builder.references(page);
+        builder.single_lines(page);
         builder.junctions(page);
         Ok(DisplayList {
             page,

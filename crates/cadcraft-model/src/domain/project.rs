@@ -113,6 +113,12 @@ pub struct Project {
         skip_serializing_if = "BTreeMap::is_empty"
     )]
     assets: BTreeMap<AssetId, ImageAsset>,
+    // Single-line links (format 11); omitted when empty.
+    #[serde(
+        serialize_with = "snapshot::serialize_entities",
+        skip_serializing_if = "BTreeMap::is_empty"
+    )]
+    single_lines: BTreeMap<SingleLineId, SingleLineLink>,
     #[serde(skip)]
     document_index: DocumentIndex,
     #[serde(skip)]
@@ -158,6 +164,7 @@ impl Project {
             marker_groups: BTreeMap::new(),
             frames: BTreeMap::new(),
             default_frame: None,
+            single_lines: BTreeMap::new(),
             reference_format: ReferenceFormat::default(),
             assets: BTreeMap::new(),
             document_index: DocumentIndex::default(),

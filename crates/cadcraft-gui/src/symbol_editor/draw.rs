@@ -169,6 +169,19 @@ impl CadApp {
             (Some(sel), Some((a, b))) if sel == item => (b.x() - a.x(), b.y() - a.y()),
             _ => (0.0, 0.0),
         };
+        // Point texts show the port identification (13, A1) rather than the port ID.
+        let ports: Vec<(String, String)> = ed
+            .ports()
+            .iter()
+            .map(|p| (p.id().to_owned(), p.identification().to_owned()))
+            .collect();
+        let field_text = |f: &SymbolTextField| match f {
+            SymbolTextField::PortLabel(id) => ports
+                .iter()
+                .find(|(port, _)| port == id)
+                .map_or_else(|| f.placeholder(), |(_, name)| name.clone()),
+            other => other.placeholder(),
+        };
         for (i, p) in ed.primitives().iter().enumerate() {
             let (dx, dy) = shift(SymbolItem::Primitive(i));
             let shown = p.translated(dx, dy).unwrap_or_else(|_| p.clone());
@@ -184,7 +197,7 @@ impl CadApp {
                     if selected { 2.0_f32 } else { 1.2_f32 },
                     if selected { theme::ACCENT } else { theme::INK },
                 ),
-                &symbol_view::placeholder,
+                &field_text,
             );
         }
         for (i, port) in ed.ports().iter().enumerate() {
@@ -220,7 +233,7 @@ impl CadApp {
             painter.text(
                 rect.left_bottom() + egui::vec2(6.0, -6.0),
                 egui::Align2::LEFT_BOTTOM,
-                format!("X {:.1}  Y {:.1} mm", c.x(), c.y()).replace('.', ","),
+                format!("X {:.1}  Y {:.1} mm", c.x() + 0.0, c.y() + 0.0).replace('.', ","),
                 egui::FontId::monospace(12.0),
                 theme::INK,
             );

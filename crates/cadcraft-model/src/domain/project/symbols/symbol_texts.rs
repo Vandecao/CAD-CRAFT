@@ -36,9 +36,20 @@ impl Project {
     pub fn symbol_text(&self, id: RepresentationId, field: &SymbolTextField) -> Option<String> {
         let r = self.representation(id)?;
         match field {
-            SymbolTextField::Designation => self
-                .representation_device(r)
-                .map(|(d, _)| d.designation().to_string()),
+            // A strip terminal shows strip and number: -X1:1.
+            SymbolTextField::Designation => match r.target() {
+                RepresentationTarget::Terminal(t) => {
+                    let terminal = self.terminal(t)?;
+                    let owner = match terminal.owner() {
+                        TerminalOwner::Device(d) => self.device(d)?.designation().to_string(),
+                        TerminalOwner::Component(c) => self.component(c)?.designation().to_string(),
+                    };
+                    Some(format!("{owner}:{}", terminal.designation().as_str()))
+                }
+                _ => self
+                    .representation_device(r)
+                    .map(|(d, _)| d.designation().to_string()),
+            },
             SymbolTextField::FunctionKind => self
                 .representation_device(r)
                 .and_then(|(_, f)| f)

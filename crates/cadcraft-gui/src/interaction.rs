@@ -56,6 +56,8 @@ pub enum Tool {
     Paste,
     /// Insert the macro from Interaction::macro_draft.
     InsertMacro,
+    /// Single-line link between two symbols (Interaction::single_line).
+    DrawSingleLine,
 }
 /// Macro placement state, allowing rotation and mirroring before the click.
 #[derive(Clone, Debug)]
@@ -87,6 +89,8 @@ pub enum DevicePlan {
     /// New function on an existing device with point labels typed in the
     /// insertion centre, one per port.
     ExistingWithPoints(DeviceId, Vec<String>),
+    /// Next terminal of the strip with this name (created when missing).
+    StripTerminal(String),
     /// Registered function without a sheet representation yet.
     ExistingFunction(FunctionId),
 }
@@ -133,6 +137,10 @@ pub struct Interaction {
     pub highlighted_routes: BTreeSet<RepresentationId>,
     pub connection_suggestion: Option<[Point2D; 2]>,
     pub macro_draft: Option<MacroDraft>,
+    /// Single-line link being drawn: source and points so far.
+    pub single_line: Option<(RepresentationId, Vec<Point2D>)>,
+    /// Phases marked on new single-line links (1 to 9).
+    pub single_line_phases: u8,
 }
 impl Interaction {
     pub fn click(&mut self, id: Option<RepresentationId>, additive: bool) {
@@ -148,6 +156,7 @@ impl Interaction {
         self.connection_snap = None;
         self.connection_suggestion = None;
         self.macro_draft = None;
+        self.single_line = None;
         self.tool = Tool::Select;
     }
     pub fn is_active(&self) -> bool {
@@ -167,6 +176,7 @@ impl Interaction {
                     | Tool::InsertText
                     | Tool::Paste
                     | Tool::InsertMacro
+                    | Tool::DrawSingleLine
             )
     }
     pub fn update_insertion(&mut self, cursor: Point2D, spacing: f64, snap: bool) -> Result<()> {

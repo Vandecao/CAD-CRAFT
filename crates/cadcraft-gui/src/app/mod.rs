@@ -71,6 +71,8 @@ pub struct CadApp {
     pub assistant: crate::assistant::AssistantPanel,
     pub edz: crate::edz_import_ui::EdzImportPanel,
     pub reports: crate::reports_ui::ReportWindow,
+    /// Typed X/Y for placement tools.
+    pub coordinates: crate::coordinate_input::CoordinateInput,
 }
 const RECENT_KEY: &str = "cad-craft.recent.v1";
 impl CadApp {

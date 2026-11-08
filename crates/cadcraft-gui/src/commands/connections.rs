@@ -205,3 +205,14 @@ pub(super) const GROUP_CHICOTE: PlannedGroupSpec = (
     I::Connection,
     &["Navegador de chicotes"],
 );
+
+pub(super) const DRAW_SINGLE_LINE: CommandSpec = (
+    C::DrawSingleLine,
+    "Conexão unifilar",
+    "Liga dois símbolos no unifilar com marca de fases (teclas 1–9), sem criar conexões nem redes; Delete sobre a linha a remove",
+    T::Connections,
+    "Desenho",
+    R::ActivePage,
+    I::Connection,
+    "unifilar monofilar fases linha alimentação",
+);

@@ -1,3 +1,11 @@
+## Etapa 35 — bornes de régua, coordenadas digitadas e conexão unifilar implementada e validada (2026-11-08)
+
+- Símbolo de borne com a associação "Borne de régua" cria/usa a régua X1 e o dispositivo -X1 e numera X1:1, X1:2… (um ponto ligado às duas portas; lista de bornes preenchida). Comando "Inserção de coordenadas" (Editar › Opções): X/Y absolutos ou relativos, Enter age como clique para símbolo, canto de fio e linha. Ferramenta "Conexão unifilar" (aba Conexões): liga dois símbolos com marca de fases (teclas 1–9), sem conexões, redes nem números de fio; aparece na tela, no PDF e no DXF. Formato `.cadcraft` 11 (ADR-0034, migração v10 → v11 sem conversão, fixture `etapa35-v11.cadcraft`); saídas `.cadcraft` de referência regravadas só pelo número de formato. Relatório `docs/internal/reports/ETAPA_35_BORNES_COORDENADAS_UNIFILAR.md`.
+- Validação: 807 Rust + 16 PowerShell, exit 0; Release 24.234.496 bytes (após o teste no app).
+- Git: versionamento autorizado pelo autor ("Pode versionar"). Teste no app das 32–35 feito em 2026-11-08 com o projeto "Partida direta - teste etapas 32-35" (5 defeitos corrigidos; detalhes no relatório).
+
+---
+
 ## Etapa 34 — peças e funções sem duplicação implementada e validada (2026-11-08)
 
 - Atribuir peça casa cada função da peça com as do dispositivo (mesmo tipo e pontos contidos; ou pontos idênticos; ou mesmo tipo com renomeação dos pontos para os da peça) e só cria o que falta. Prévia no editor de peças antes de atribuir ("→ usa", "→ usa renomeando 1→A1", "→ nova função"); um passo de Ctrl+Z; pontos renomeados mantêm ID, vínculos e conexões. VER-006 com tipo legível. Relatório `docs/internal/reports/ETAPA_34_PECAS_FUNCOES.md`.

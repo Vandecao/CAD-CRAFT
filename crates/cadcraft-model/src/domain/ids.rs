@@ -64,7 +64,8 @@ typed_ids!(
     TerminalLevelId,
     FrameTemplateId,
     AssetId,
-    ReportId
+    ReportId,
+    SingleLineId
 );
 
 /// Typed structural reference resolved within a project. IDs of different entity kinds cannot be

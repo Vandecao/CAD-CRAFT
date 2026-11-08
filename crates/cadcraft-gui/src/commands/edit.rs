@@ -220,10 +220,19 @@ pub(super) const GROUP_OPCOES: PlannedGroupSpec = (
     I::Settings,
     &[
         "Edição direta",
-        "Inserção relativa de coordenadas",
-        "Inserção de coordenadas",
         "Intervalo",
         "Janela de entrada de dados",
         "Conexão inteligente",
     ],
+);
+
+pub(super) const COORDINATE_INPUT: CommandSpec = (
+    C::CoordinateInput,
+    "Inserção de coordenadas",
+    "Mostra campos X/Y (absolutos ou relativos ao último ponto) ao inserir símbolo, conexão ou linha; Enter aplica",
+    T::Edit,
+    "Opções",
+    R::Always,
+    I::Grid,
+    "coordenadas xy digitar posição relativa absoluta",
 );
