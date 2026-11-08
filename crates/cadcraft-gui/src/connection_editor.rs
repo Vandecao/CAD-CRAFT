@@ -111,6 +111,11 @@ impl ConnectionScene {
                 );
             }
             if let Some((index, position)) = route_hit(points, cursor, tolerance) {
+                let position = if enabled {
+                    on_segment_grid(position, points[index], points[index + 1], grid)
+                } else {
+                    position
+                };
                 offer(
                     4,
                     position,

@@ -4,41 +4,43 @@
 
 use super::*;
 
-/// Zone label positions in mm: centered in the strip of at most 5 mm between
-/// the usable area and sheet border on each enabled side.
+/// Zone label positions in mm: centred in the label strip of each enabled
+/// side (`FrameTemplate::zone_strip`), always inside the frame border.
 pub fn frame_zone_labels(frame: &FrameTemplate) -> Vec<(String, Point2D)> {
     let u = frame.usable();
     let (min, max) = (u.origin(), u.max());
-    let sheet = frame.sheet();
-    let band = |space: f64| space.clamp(0.0, 5.0) / 2.0;
     let pt = |x, y| Point2D::new(x, y).ok();
     let mut out = vec![];
     let columns = &frame.zones().columns;
+    let top = frame.zone_strip(ZoneSide::Top).middle();
+    let bottom = frame.zone_strip(ZoneSide::Bottom).middle();
     for (i, (a, b)) in columns.bounds().into_iter().enumerate() {
         let x = min.x() + (a + b) / 2.0;
         let label = columns.style.label(i);
         if columns.labels_start
-            && let Some(p) = pt(x, max.y() + band(sheet.height() - max.y()))
+            && let Some(p) = pt(x, top)
         {
             out.push((label.clone(), p));
         }
         if columns.labels_end
-            && let Some(p) = pt(x, min.y() - band(min.y()))
+            && let Some(p) = pt(x, bottom)
         {
             out.push((label, p));
         }
     }
     let rows = &frame.zones().rows;
+    let left = frame.zone_strip(ZoneSide::Left).middle();
+    let right = frame.zone_strip(ZoneSide::Right).middle();
     for (i, (a, b)) in rows.bounds().into_iter().enumerate() {
         let y = max.y() - (a + b) / 2.0;
         let label = rows.style.label(i);
         if rows.labels_start
-            && let Some(p) = pt(min.x() - band(min.x()), y)
+            && let Some(p) = pt(left, y)
         {
             out.push((label.clone(), p));
         }
         if rows.labels_end
-            && let Some(p) = pt(max.x() + band(sheet.width() - max.x()), y)
+            && let Some(p) = pt(right, y)
         {
             out.push((label, p));
         }

@@ -123,9 +123,15 @@ impl Ui {
         let out = self.settle(1);
         let right = self.app.symbol_editor.viewport.unwrap().right();
         let all = nodes(&out);
-        let field = all
+        // The leftmost match is the symbol editor panel; the page inspector
+        // further right can have a row with the same label.
+        let mut anchors: Vec<_> = all
             .iter()
             .filter(|n| n.0 == label && n.1.x > right)
+            .collect();
+        anchors.sort_by(|a, b| a.1.x.total_cmp(&b.1.x));
+        let field = anchors
+            .into_iter()
             .find_map(|anchor| {
                 all.iter()
                     .find(|n| n.2 == Role::TextInput && (n.1.y - anchor.1.y).abs() < 8.0)
@@ -432,4 +438,46 @@ fn library_folder_imports_exports_and_updates_project_symbols() {
         cad_craft::persistence::read_symbol_package(&std::fs::read(&export).unwrap()).unwrap();
     assert_eq!(exported.id(), lamp.id());
     assert_eq!(std::fs::read_dir(&lib).unwrap().count(), 3);
+}
+
+#[test]
+fn category_and_port_fields_typed_with_tab_are_saved() {
+    // Star-delta test: "Disjuntor unipolar" was saved with the default
+    // category although "Proteção" had been typed, and a port identification
+    // did not change on the first attempt.
+    let (project, _) = base_project();
+    let mut ui = Ui::new(project);
+    ui.app.execute(CommandId::SymbolNew, &ui.ctx.clone());
+    ui.settle(3);
+    ui.tool(SymbolTool::Line);
+    ui.click_world(p(0.0, 10.0));
+    ui.click_world(p(0.0, -10.0));
+    ui.tool(SymbolTool::Port);
+    ui.click_world(p(0.0, 10.0));
+    ui.click_world(p(0.0, -10.0));
+    ui.type_in_row("Nome", "Disjuntor unipolar");
+    ui.type_in_row("Categoria", "Proteção");
+    ui.key(Key::Tab, Modifiers::NONE);
+    ui.tool(SymbolTool::Select);
+    ui.click_world(p(0.0, -10.0));
+    ui.type_in_row("ID", "A2");
+    ui.key(Key::Tab, Modifiers::NONE);
+    ui.type_in_row("Identificação", "A2");
+    ui.key(Key::Tab, Modifiers::NONE);
+    ui.press("Salvar na biblioteca");
+    let def = ui
+        .app
+        .session
+        .symbol_library
+        .iter()
+        .find(|d| d.name() == "Disjuntor unipolar")
+        .expect("símbolo salvo")
+        .clone();
+    assert_eq!(def.category(), "Proteção");
+    let port = def
+        .ports()
+        .iter()
+        .find(|q| q.id() == "A2")
+        .expect("porta renomeada");
+    assert_eq!(port.identification(), "A2");
 }

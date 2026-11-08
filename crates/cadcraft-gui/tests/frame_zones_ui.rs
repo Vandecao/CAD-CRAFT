@@ -282,3 +282,37 @@ fn overflowing_zones_are_refused_with_the_numbers() {
         "mensagem com os números no painel Mensagens"
     );
 }
+
+#[test]
+fn the_frame_editor_draws_the_generated_divisions() {
+    let mut ui = Ui::a4();
+    let out = ui.settle(2);
+    let frame = ui.editing();
+    let marks = frame.zone_marks();
+    assert_eq!(marks.len(), 4);
+    let camera = ui.app.frame_editor.camera;
+    let viewport = ui.app.frame_editor.viewport.unwrap();
+    let segments: Vec<[Pos2; 2]> = out
+        .shapes
+        .iter()
+        .filter_map(|c| match &c.shape {
+            egui::Shape::LineSegment { points, stroke } if stroke.color == cad_gui::theme::INK => {
+                Some(*points)
+            }
+            _ => None,
+        })
+        .collect();
+    let near = |a: Pos2, b: Pos2| a.distance(b) < 1.0;
+    for (a, b) in marks {
+        let (a, b) = (
+            camera.world_to_screen(a, viewport).unwrap(),
+            camera.world_to_screen(b, viewport).unwrap(),
+        );
+        assert!(
+            segments
+                .iter()
+                .any(|[p, q]| (near(*p, a) && near(*q, b)) || (near(*p, b) && near(*q, a))),
+            "divisão de zona desenhada no editor entre {a:?} e {b:?}"
+        );
+    }
+}

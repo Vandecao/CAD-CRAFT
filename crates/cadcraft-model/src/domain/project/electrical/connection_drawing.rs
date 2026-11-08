@@ -420,15 +420,22 @@ impl Project {
                 mut routes,
             } => {
                 routes.sort_unstable();
-                if routes.len() < 2 || routes.windows(2).any(|w| w[0] == w[1]) {
-                    return Err(drawing_error());
+                if routes.windows(2).any(|w| w[0] == w[1]) {
+                    return Err(DomainError::InvalidRelation("conexão repetida na junção"));
+                }
+                if routes.len() < 2 {
+                    return Err(DomainError::InvalidRelation(
+                        "a junção precisa de pelo menos duas conexões passando pelo ponto",
+                    ));
                 }
                 if self
                     .connection_junctions
                     .values()
                     .any(|j| j.page_id() == page && j.position() == position)
                 {
-                    return Err(drawing_error());
+                    return Err(DomainError::InvalidRelation(
+                        "já existe uma junção neste ponto",
+                    ));
                 }
                 // Build a deterministic spanning tree over participant routes.
                 // Auxiliary edges are owned exclusively by the new junction.
@@ -437,7 +444,9 @@ impl Project {
                 for id in &routes {
                     let r = self.connection_route(*id).ok_or(drawing_error())?;
                     if r.page_id() != page || !r.contains(position) {
-                        return Err(drawing_error());
+                        return Err(DomainError::InvalidRelation(
+                            "uma das conexões não passa pelo ponto da junção",
+                        ));
                     }
                     let edge = self.connection(r.connection_id()).ok_or(drawing_error())?;
                     graph.insert(edge)?;

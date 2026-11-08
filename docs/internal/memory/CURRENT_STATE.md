@@ -1,3 +1,12 @@
+## Etapa 32 — conexões e edição confiáveis implementada e validada (2026-11-07)
+
+- Junção em T aceita portas a um fio da grade (tolerância do domínio em `point_on_segment`) e explica a recusa ("a junção precisa de pelo menos duas conexões passando pelo ponto", etc.). Canto clicado perto de um fio cai na grade ao longo dele. Inspetor não pula para a aba ativa depois de editar outra página. X/Y/ângulo do símbolo aplicam com Enter (um passo de Desfazer). Editor de símbolos: perda de campo não reproduzida, teste adicionado. Diálogos nativos com janela-mãe adiados (exigiria `unsafe` ou reestruturar 15 chamadas). Relatório `docs/internal/reports/ETAPA_32_CONEXOES_EDICAO.md`.
+- Correções do editor de moldura (divisões no editor e na prévia; rótulos de linha dentro da moldura) versionadas num commit separado, antes deste.
+- Validação: 785 Rust + 16 PowerShell, exit 0; Release 23.932.416 bytes.
+- Git: versionamento autorizado pelo autor ("Pode versionar"). Próximo: Etapa 33 (plano `docs/internal/plans/PLANO_ETAPAS_32_35.md`), só depois do OK.
+
+---
+
 ## Etapa 31 — área de trabalho implementada e validada (2026-11-07)
 
 - Fundo branco uniforme; com moldura, só a moldura; sem moldura, contorno fino; X/Y continuam fora da moldura (negativos). A folha segue a moldura: escolher moldura adota o tamanho num passo de Desfazer; botão "Ajustar folha à moldura" (FrameEdit::FitPageToFrame, delta PageSize). Grade no espaçamento real em toda a área, some abaixo de 6 px. Linhas-guia do cursor (Visualização › Grade e barra de status), ligadas por padrão. Relatório `docs/internal/reports/ETAPA_31_AREA_TRABALHO.md`.

@@ -45,3 +45,9 @@ Regravadas com `CAD_CRAFT_WRITE_BASELINE=1`:
 ## Pendente
 
 Teste no app ao fim da Etapa 31 (editar a moldura A4 do autor: remover coluna, 8 linhas, rótulos à esquerda e à direita).
+
+## Correção após o teste do autor (2026-11-07)
+
+O autor viu que o editor de moldura não mostrava mais as divisões de colunas e linhas. Desde esta etapa as divisões são geradas pelas zonas, e só a vista da página as desenhava; o editor e a prévia de importação desenhavam só os rótulos. Agora as três vistas usam `frame_view::paint_zones` (divisões e rótulos). Teste: `frame_zones_ui::the_frame_editor_draws_the_generated_divisions`.
+
+Na mesma revisão, o autor pediu que a identificação das linhas fique dentro da moldura. A faixa dos rótulos agora é medida até a borda da moldura (o menor retângulo em volta da área útil; sem ele, a borda da folha), e não até a borda da folha. Quando a área útil já encosta na borda, como nas laterais das molduras de fábrica, a faixa de 5 mm fica do lado de dentro, com uma linha separadora gerada; rótulos, divisões e separadora usam `FrameTemplate::zone_strip`. A faixa das colunas no alto das molduras de fábrica não muda. Saídas de referência regravadas só para `etapa30-v10.cadcraft` (tela, PDF e DXF), a única com rótulos de linha. Teste: `frame_marks::row_labels_stay_inside_the_frame_border`.

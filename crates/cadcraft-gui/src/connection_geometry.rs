@@ -207,3 +207,25 @@ fn interpolate(a: f64, b: f64, t: f64) -> f64 {
         a * (1.0 - t) + b * t
     }
 }
+
+/// A point snapped onto an axis-aligned route segment, moved along the
+/// segment to the nearest grid value so clicked corners stay on the grid
+/// (without it a corner lands on the raw projection, e.g. 75.947 mm). The
+/// point is returned unchanged when no grid value falls on the segment.
+pub fn on_segment_grid(position: Point2D, a: Point2D, b: Point2D, grid: f64) -> Point2D {
+    if !grid.is_finite() || grid <= 0.0 {
+        return position;
+    }
+    let along = |value: f64, lo: f64, hi: f64| {
+        let snapped = (value / grid).round() * grid;
+        (snapped >= lo.min(hi) && snapped <= lo.max(hi)).then_some(snapped)
+    };
+    let moved = if a.x() == b.x() {
+        along(position.y(), a.y(), b.y()).and_then(|y| Point2D::new(a.x(), y).ok())
+    } else if a.y() == b.y() {
+        along(position.x(), a.x(), b.x()).and_then(|x| Point2D::new(x, a.y()).ok())
+    } else {
+        None
+    };
+    moved.unwrap_or(position)
+}

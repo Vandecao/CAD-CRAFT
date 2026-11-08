@@ -679,4 +679,4 @@ mod editing;
 mod factory;
 mod marks;
 pub use editing::FrameDraft;
-pub use marks::ZONE_MARK_WIDTH;
+pub use marks::{ZONE_MARK_WIDTH, ZoneSide, ZoneStrip};

@@ -159,7 +159,7 @@ impl CadApp {
                             for element in frame.elements() {
                                 crate::frame_view::paint_element(ui.painter(), &preview_project, None, element, camera, rect, None);
                             }
-                            crate::frame_view::paint_zone_labels(ui.painter(), frame, camera, rect);
+                            crate::frame_view::paint_zones(ui.painter(), frame, camera, rect);
                         }
                     }
                     if ui.button("Atualizar prévia").clicked() {

@@ -115,6 +115,17 @@ pub(crate) fn paint_frame(
             None,
         );
     }
+    paint_zones(painter, frame, camera, viewport);
+}
+
+/// Zone division marks and labels, generated from the zones. Every frame
+/// view (page, frame editor, import preview) draws them through here.
+pub(crate) fn paint_zones(
+    painter: &egui::Painter,
+    frame: &FrameTemplate,
+    camera: Camera,
+    viewport: Rect,
+) {
     for (a, b) in frame.zone_marks() {
         segment(
             painter,
@@ -125,15 +136,6 @@ pub(crate) fn paint_frame(
             stroke(camera, cad_craft::domain::ZONE_MARK_WIDTH),
         );
     }
-    paint_zone_labels(painter, frame, camera, viewport);
-}
-
-pub(crate) fn paint_zone_labels(
-    painter: &egui::Painter,
-    frame: &FrameTemplate,
-    camera: Camera,
-    viewport: Rect,
-) {
     for (text, origin) in zone_labels(frame) {
         paint_text(
             painter,

@@ -305,3 +305,51 @@ fn format_10_fixture_keeps_its_generated_divisions() {
     // where the A4 sheet leaves a strip.
     assert!(frame.zone_marks().len() >= 3 * 2);
 }
+
+#[test]
+fn row_labels_stay_inside_the_frame_border() {
+    // Factory A4: the usable area touches the border on the left and right.
+    let mut frame = FrameTemplate::factory_a4();
+    let mut zones = frame.zones().clone();
+    zones.rows = ZoneAxis::uniform(8, 252.0 / 8.0, ZoneLabelStyle::Letters { start: 0 });
+    zones.rows.labels_start = true;
+    zones.rows.labels_end = true;
+    frame = FrameTemplate::new(
+        "A4 com linhas",
+        frame.sheet(),
+        frame.usable(),
+        zones,
+        frame.elements().to_vec(),
+    )
+    .unwrap();
+    // Border rectangle 5..205 mm: labels and marks inside it.
+    let left = frame.zone_strip(ZoneSide::Left);
+    let right = frame.zone_strip(ZoneSide::Right);
+    assert!(left.inward && right.inward);
+    assert_eq!((left.edge, left.far), (5.0, 10.0));
+    assert_eq!((right.edge, right.far), (205.0, 200.0));
+    let labels = cad_craft::display::frame_zone_labels(&frame);
+    let rows: Vec<_> = labels
+        .iter()
+        .filter(|(text, _)| text.chars().all(|c| c.is_ascii_uppercase()))
+        .collect();
+    assert_eq!(rows.len(), 16, "8 linhas dos dois lados");
+    assert!(
+        rows.iter().all(|(_, at)| at.x() > 5.0 && at.x() < 205.0),
+        "rótulos das linhas dentro da moldura: {rows:?}"
+    );
+    let marks = frame.zone_marks();
+    // Separator lines of the inward strips, across the usable height.
+    assert!(marks.contains(&(p(10.0, 35.0), p(10.0, 287.0))));
+    assert!(marks.contains(&(p(200.0, 35.0), p(200.0, 287.0))));
+    // Row divisions inside the strips; column marks stay in the top band.
+    assert!(marks.contains(&(p(5.0, 287.0 - 31.5), p(10.0, 287.0 - 31.5))));
+    assert!(marks.contains(&(p(200.0, 287.0 - 31.5), p(205.0, 287.0 - 31.5))));
+    assert!(marks.contains(&(p(45.0, 287.0), p(45.0, 292.0))));
+    assert!(
+        marks
+            .iter()
+            .all(|(a, b)| [a, b].iter().all(|q| q.x() >= 5.0 && q.x() <= 205.0)),
+        "nenhuma divisão fora da moldura"
+    );
+}

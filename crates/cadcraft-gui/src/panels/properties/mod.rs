@@ -139,6 +139,18 @@ fn number_row(ui: &mut Ui, query: &str, label: &str, value: &mut f64) -> bool {
     ui.end_row();
     changed
 }
+/// Number field that reports a typed value: typing and pressing Enter (or
+/// leaving the field) applies it without the separate confirm button.
+/// Dragging still only previews until "Aplicar transformação".
+fn number_enter_row(ui: &mut Ui, query: &str, label: &str, value: &mut f64) -> bool {
+    if !label.to_lowercase().contains(query) {
+        return false;
+    }
+    ui.label(label);
+    let response = ui.add(egui::DragValue::new(value).speed(0.1).max_decimals(3));
+    ui.end_row();
+    response.changed() && !response.is_pointer_button_down_on()
+}
 fn read_row(ui: &mut Ui, query: &str, label: &str, value: impl ToString) {
     let value = value.to_string();
     if !label.to_lowercase().contains(query) && !value.to_lowercase().contains(query) {
@@ -275,10 +287,10 @@ impl CadApp {
                         }
                     },
                     Draft::Representation{id,page,x,y,angle,mx,my,visible,layer,label}=>{
-                        number_row(ui,&query,"X (mm)",x);number_row(ui,&query,"Y (mm)",y);number_row(ui,&query,"Ângulo CCW (°)",angle);
+                        let entered=[number_enter_row(ui,&query,"X (mm)",x),number_enter_row(ui,&query,"Y (mm)",y),number_enter_row(ui,&query,"Ângulo CCW (°)",angle)].contains(&true);
                         bool_row(ui,&query,"Espelhar X local",mx);bool_row(ui,&query,"Espelhar Y local",my);
                         if let Some(t)=self.session.graphics.preview(*id){read_row(ui,&query,"Prévia X / Y (mm)",format!("{:.3} / {:.3}",t.translation().x(),t.translation().y()));}
-                        if ui.button("Aplicar transformação").on_hover_text("Confirma X/Y, ângulo e espelhos em uma operação reversível; pivô na âncora").clicked(){match Point2D::new(*x,*y).and_then(|p|Transform2D::new(p,*angle,*mx,*my)){Ok(t)=>edits.push(Edit::RepresentationTransform(*id,*page,t)),Err(e)=>error=Some(e.to_string())}}ui.end_row();
+                        if ui.button("Aplicar transformação").on_hover_text("Confirma X/Y, ângulo e espelhos em uma operação reversível; pivô na âncora (Enter nos campos também aplica)").clicked()||entered{match Point2D::new(*x,*y).and_then(|p|Transform2D::new(p,*angle,*mx,*my)){Ok(t)=>edits.push(Edit::RepresentationTransform(*id,*page,t)),Err(e)=>error=Some(e.to_string())}}ui.end_row();
                         bool_row(ui,&query,"Visível",visible);
                         if "camada".contains(&query){ui.label("Camada");ui.add(egui::DragValue::new(layer));ui.end_row();}
                         text_row(ui,&query,"Rótulo",label);

@@ -231,3 +231,20 @@ fn representation_edit_preserves_electrical_target() {
     assert_eq!(r.transform().translation().y(), 400.0);
     s.project().unwrap().validate().unwrap();
 }
+#[test]
+fn editing_a_page_that_is_not_the_open_tab_keeps_it_in_the_inspector() {
+    // Star-delta test: renaming page 2 while page 4 was open moved the
+    // inspector to page 4, and the next edit renumbered the wrong page.
+    let mut s = session();
+    let ids: Vec<_> = s.project().unwrap().pages().take(2).map(Page::id).collect();
+    s.open_page(ids[0]).unwrap();
+    s.select(Selection::Page(ids[1]));
+    s.apply(Edit::PageName(ids[1], "Diagrama unifilar".into()))
+        .unwrap();
+    assert_eq!(s.selection, Selection::Page(ids[1]));
+    s.apply(Edit::PageNumber(ids[1], "2".into())).unwrap();
+    let p = s.project().unwrap();
+    assert_eq!(p.page(ids[1]).unwrap().number().as_str(), "2");
+    assert_ne!(p.page(ids[0]).unwrap().number().as_str(), "2");
+    assert_eq!(s.active, Some(ids[0]));
+}

@@ -795,3 +795,35 @@ fn real_segment_drag_has_transient_preview_and_one_transaction() {
     app.execute(CommandId::Undo, &ctx);
     assert_eq!(app.session.snapshot().unwrap(), before);
 }
+
+#[test]
+fn a_corner_clicked_near_a_wire_lands_on_the_grid_along_that_wire() {
+    // The star-delta test left a corner at y = 75.947 mm: the raw projection
+    // of the cursor onto a nearby wire. With snap on it must stay on the grid.
+    let (mut app, ctx) = setup(false, 2., 1.);
+    app.execute(CommandId::DrawConnection, &ctx);
+    click_world(&mut app, &ctx, p(80., 100.));
+    click_world(&mut app, &ctx, p(160.3, 121.3));
+    click_world(&mut app, &ctx, p(240., 200.));
+    let project = app.session.project().unwrap();
+    let route = project
+        .connection_routes()
+        .find(|r| r.points().contains(&p(160., 120.)))
+        .unwrap_or_else(|| {
+            panic!(
+                "{:?}",
+                project
+                    .connection_routes()
+                    .map(|r| r.points().to_vec())
+                    .collect::<Vec<_>>()
+            )
+        });
+    assert!(
+        route
+            .points()
+            .iter()
+            .all(|q| (q.x() / 4.).fract() == 0. && (q.y() / 4.).fract() == 0.),
+        "{:?}",
+        route.points()
+    );
+}

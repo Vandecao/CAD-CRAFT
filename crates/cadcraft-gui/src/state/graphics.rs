@@ -275,8 +275,18 @@ impl Session {
                 .map(|id| vec![id])
                 .unwrap_or_else(|| self.graphics.selection.ids().iter().copied().collect());
             self.select_graphics(ids);
+            // Inspector edits on a page, document, project or electrical
+            // entity keep that entity selected; falling back to the active
+            // tab's page sent the next edit to the wrong page.
             if inserted.is_none()
-                && (keeps_selection || matches!(previous_selection, Selection::Electrical(_)))
+                && (keeps_selection
+                    || matches!(
+                        previous_selection,
+                        Selection::Electrical(_)
+                            | Selection::Page(_)
+                            | Selection::Document(_)
+                            | Selection::Project
+                    ))
             {
                 self.select(previous_selection);
             }

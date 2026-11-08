@@ -459,12 +459,13 @@ fn repair_endpoints(old: &[Point2D], a: Point2D, b: Point2D) -> Result<Vec<Point
 fn collinear_axis(a: Point2D, b: Point2D, c: Point2D) -> bool {
     (a.x() == b.x() && b.x() == c.x()) || (a.y() == b.y() && b.y() == c.y())
 }
+/// Point on an axis-aligned segment, within the domain tolerance: port
+/// positions come from symbol transforms (f64), clicked points from the grid.
 pub(in crate::domain) fn point_on_segment(p: Point2D, a: Point2D, b: Point2D) -> bool {
-    (a.x() == b.x() && p.x() == a.x() && p.y() >= a.y().min(b.y()) && p.y() <= a.y().max(b.y()))
-        || (a.y() == b.y()
-            && p.y() == a.y()
-            && p.x() >= a.x().min(b.x())
-            && p.x() <= a.x().max(b.x()))
+    use crate::domain::tolerance::EPS_MM as EPS;
+    let within = |v: f64, lo: f64, hi: f64| v >= lo.min(hi) - EPS && v <= lo.max(hi) + EPS;
+    (a.x() == b.x() && (p.x() - a.x()).abs() <= EPS && within(p.y(), a.y(), b.y()))
+        || (a.y() == b.y() && (p.y() - a.y()).abs() <= EPS && within(p.x(), a.x(), b.x()))
 }
 pub(in crate::domain) fn validate_route_points(points: &[Point2D]) -> Result<()> {
     if points.len() < 2

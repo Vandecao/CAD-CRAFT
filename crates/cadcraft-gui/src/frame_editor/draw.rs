@@ -151,7 +151,7 @@ impl CadApp {
                 selected.then_some(theme::ACCENT),
             );
         }
-        frame_view::paint_zone_labels(&painter, frame, camera, rect);
+        frame_view::paint_zones(&painter, frame, camera, rect);
         // Pending points and preview.
         let cursor = response.hover_pos().and_then(world);
         let mut preview = self.frame_editor.pending.clone();
