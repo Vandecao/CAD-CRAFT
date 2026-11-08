@@ -140,6 +140,23 @@ fn part_window_assigns_library_part_and_undo_restores_project() {
     frame(&mut app, &ctx, vec![]);
     click(&mut app, &ctx, "Dispositivo -K1");
     click(&mut app, &ctx, "Peça ACME.K1");
+    // The preview lists what the assignment creates before anything changes.
+    let out = frame(&mut app, &ctx, vec![]);
+    let shown: Vec<String> = out
+        .platform_output
+        .accesskit_update
+        .as_ref()
+        .unwrap()
+        .nodes
+        .iter()
+        .filter_map(|(_, n)| n.label().or(n.value()).map(str::to_owned))
+        .collect();
+    assert!(
+        shown.iter().any(|t| t == "Bobina (A1, A2) → nova função"),
+        "{:?}",
+        shown.iter().filter(|t| t.contains('→')).collect::<Vec<_>>()
+    );
+    assert_eq!(app.session.project().unwrap().functions().count(), 0);
     click(&mut app, &ctx, "Atribuir peça");
     assert_eq!(app.session.project().unwrap().bom_rows()[0].quantity, 1);
     assert_eq!(app.session.project().unwrap().functions().count(), 5);

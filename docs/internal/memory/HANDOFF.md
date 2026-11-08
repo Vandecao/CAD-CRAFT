@@ -1,3 +1,11 @@
+## Etapa 34 — peças e funções sem duplicação implementada e validada (2026-11-08)
+
+- Atribuir peça casa cada função da peça com as do dispositivo (mesmo tipo e pontos contidos; ou pontos idênticos; ou mesmo tipo com renomeação dos pontos para os da peça) e só cria o que falta. Prévia no editor de peças antes de atribuir ("→ usa", "→ usa renomeando 1→A1", "→ nova função"); um passo de Ctrl+Z; pontos renomeados mantêm ID, vínculos e conexões. VER-006 com tipo legível. Relatório `docs/internal/reports/ETAPA_34_PECAS_FUNCOES.md`.
+- Validação: 798 Rust + 16 PowerShell, exit 0; Release 24.082.432 bytes.
+- Git: versionamento autorizado pelo autor ("Pode versionar"). Próximo: Etapa 35 (bornes, coordenadas e unifilar, com o teste no app no fim), só depois do OK.
+
+---
+
 ## Etapa 33 — símbolos de fábrica, tipo de função e nomes de pontos implementada e validada (2026-11-08)
 
 - Símbolos de fábrica v2 no estilo IEC, com designação e portas A1-A2 / 13-14 / 21-22 (IDs e posições da v1 mantidos; projetos antigos ficam na v1 até "Atualizar símbolos do projeto", que agora inclui os de fábrica). Tipo de função e prefixo no `metadata` do símbolo (sem mudança de formato), editáveis no editor de símbolos. Função em dispositivo existente recebe os próximos pontos IEC 60947 (13-14, 23-24, 95-96, 15-18, A1-A2…), editáveis no centro de inserção. Nova verificação VER-021 (ponto repetido no dispositivo). Seletores "-K1 · Bobina (A1, A2)" com filtro por tag. Editor de símbolos: X/Y do cursor, campos numéricos dos pontos, zoom mantido. Saídas de referência inalteradas. Relatório `docs/internal/reports/ETAPA_33_SIMBOLOS_FUNCOES.md`.

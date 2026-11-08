@@ -12,6 +12,8 @@ pub struct PartAssignmentDelta {
     component: Component,
     functions: Vec<Function>,
     points: Vec<ConnectionPoint>,
+    /// Device points renamed to the part's names, as (before, after).
+    renamed: Vec<(ConnectionPoint, ConnectionPoint)>,
 }
 /// Before and after copies of an updated project catalog part.
 #[derive(Clone, Debug, PartialEq)]
@@ -33,7 +35,7 @@ impl PartAssignmentDelta {
     }
     /// Return the number of contained entries or entity changes recorded by this value.
     pub fn len(&self) -> usize {
-        2 + self.functions.len() + self.points.len()
+        2 + self.functions.len() + self.points.len() + self.renamed.len()
     }
     /// Whether this collection or recorded edit contains no effective entries or changes.
     pub fn is_empty(&self) -> bool {
@@ -311,55 +313,65 @@ impl Project {
         .with_properties(part.properties().clone());
         let mut functions = Vec::new();
         let mut points = Vec::new();
-        let mut matched = BTreeSet::new();
+        let mut renamed = Vec::new();
         let mut has_main = self.main_function(device_id)?.is_some();
-        for model in part.functions() {
-            let desired: BTreeSet<&str> = model.points().iter().map(Text::as_str).collect();
-            let existing = self
-                .functions
-                .values()
-                .filter(|f| {
-                    f.device_id() == device_id
-                        && f.kind() == model.kind()
-                        && !matched.contains(&f.id())
-                })
-                .filter_map(|f| {
-                    let labels: BTreeSet<_> = self
-                        .connection_points
-                        .values()
-                        .filter(|p| p.function_id() == f.id())
-                        .map(|p| p.designation().as_str())
-                        .collect();
-                    labels.is_subset(&desired).then_some((f, labels.len()))
-                })
-                .max_by_key(|(_, matched_points)| *matched_points)
-                .map(|(function, _)| function);
-            let function_id = if let Some(existing) = existing {
-                matched.insert(existing.id());
-                existing.id()
-            } else {
-                let role = if model.role() == FunctionRole::Main && !has_main {
-                    has_main = true;
-                    FunctionRole::Main
-                } else {
-                    FunctionRole::Auxiliary
-                };
-                let function = Function::new(
-                    self.id,
-                    device_id,
-                    device.designation().clone(),
-                    model.kind().clone(),
-                )
-                .with_role(role);
-                let id = function.id();
-                matched.insert(id);
-                functions.push(function);
-                id
+        let preview = self.part_assignment_preview(device_id, &part);
+        for (model, row) in part.functions().iter().zip(&preview) {
+            let function_id = match &row.decision {
+                PartFunctionMatch::Existing(id) => *id,
+                PartFunctionMatch::Rename {
+                    function,
+                    points: renames,
+                } => {
+                    for (point, label) in renames {
+                        let before = self
+                            .connection_point(*point)
+                            .ok_or(DomainError::MissingEntity(EntityRef::ConnectionPoint(
+                                *point,
+                            )))?
+                            .clone();
+                        let mut after = before.clone();
+                        after.designation = DesignationPart::new(label.as_str())?;
+                        renamed.push((before, after));
+                    }
+                    *function
+                }
+                PartFunctionMatch::New => {
+                    let role = if model.role() == FunctionRole::Main && !has_main {
+                        has_main = true;
+                        FunctionRole::Main
+                    } else {
+                        FunctionRole::Auxiliary
+                    };
+                    let function = Function::new(
+                        self.id,
+                        device_id,
+                        device.designation().clone(),
+                        model.kind().clone(),
+                    )
+                    .with_role(role);
+                    let id = function.id();
+                    functions.push(function);
+                    id
+                }
             };
+            // Labels the function will have after the renames.
+            let current: BTreeSet<String> = self
+                .connection_points
+                .values()
+                .filter(|p| p.function_id() == function_id)
+                .map(|p| {
+                    renamed
+                        .iter()
+                        .find(|(before, _)| before.id() == p.id())
+                        .map_or(p.designation().as_str(), |(_, after)| {
+                            after.designation().as_str()
+                        })
+                        .to_owned()
+                })
+                .collect();
             for label in model.points() {
-                if !self.connection_points.values().any(|p| {
-                    p.function_id() == function_id && p.designation().as_str() == label.as_str()
-                }) {
+                if !current.contains(label.as_str()) {
                     points.push(ConnectionPoint::new(
                         self.id,
                         function_id,
@@ -374,6 +386,7 @@ impl Project {
             component,
             functions,
             points,
+            renamed,
         };
         self.restore_part_assignment(&delta, true)?;
         Ok(delta)
@@ -403,6 +416,14 @@ impl Project {
             for function in &delta.functions {
                 candidate.insert_function(function.clone())?;
             }
+            for (before, after) in &delta.renamed {
+                if candidate.connection_points.get(&before.id()) != Some(before) {
+                    return Err(DomainError::InvalidRelation("atribuição de peça alterada"));
+                }
+                candidate
+                    .connection_points
+                    .insert(after.id(), after.clone());
+            }
             for point in &delta.points {
                 candidate.insert_connection_point(point.clone())?;
             }
@@ -417,6 +438,10 @@ impl Project {
                     .points
                     .iter()
                     .any(|p| candidate.connection_points.get(&p.id()) != Some(p))
+                || delta
+                    .renamed
+                    .iter()
+                    .any(|(_, after)| candidate.connection_points.get(&after.id()) != Some(after))
             {
                 return Err(DomainError::InvalidRelation("atribuição de peça alterada"));
             }
@@ -426,6 +451,11 @@ impl Project {
             }
             for function in &delta.functions {
                 candidate.functions.remove(&function.id());
+            }
+            for (before, _) in &delta.renamed {
+                candidate
+                    .connection_points
+                    .insert(before.id(), before.clone());
             }
             if delta.introduced_part
                 && !candidate

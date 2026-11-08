@@ -3,6 +3,7 @@
 //! Physical Project operations; start with the subject modules and delta types below.
 use super::*;
 pub(in crate::domain::project) mod connectors;
+pub(in crate::domain::project) mod part_matching;
 pub(in crate::domain::project) mod parts;
 pub(in crate::domain::project) mod physical_edit;
 pub(in crate::domain::project) mod physical_integrity;
@@ -10,6 +11,7 @@ pub(in crate::domain::project) mod physical_lists;
 pub(in crate::domain::project) mod physical_queries;
 pub(in crate::domain::project) mod physical_wiring;
 pub use connectors::ContactStatus;
+pub use part_matching::{PartFunctionMatch, PartFunctionPreview};
 pub use parts::{BomRow, PartAssignmentDelta, PartRemovalDelta, PartUpdateDelta};
 pub use physical_edit::{PhysicalDelta, PhysicalEdit};
 pub use physical_lists::{

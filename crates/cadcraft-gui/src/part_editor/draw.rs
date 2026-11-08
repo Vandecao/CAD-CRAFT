@@ -395,6 +395,13 @@ impl PartEditor {
                 *action = Some(Action::UpdateProject);
             }
         });
+        if let Some(part) = self
+            .selected_part
+            .as_ref()
+            .and_then(|id| self.catalog.get(id))
+        {
+            assignment_preview(ui, project, device.id(), part);
+        }
         for part in self.catalog.values() {
             if ui
                 .selectable_label(
@@ -594,5 +601,36 @@ impl PartEditor {
                 *action = Some(Action::ExportBom);
             }
         });
+    }
+}
+
+/// What "Atribuir peça" will do with each function of the part: reuse,
+/// rename points or create, so nothing is created without being shown.
+fn assignment_preview(ui: &mut Ui, project: &Project, device: DeviceId, part: &Part) {
+    ui.label("Prévia da atribuição");
+    for row in project.part_assignment_preview(device, part) {
+        let model = &part.functions()[row.index];
+        let points: Vec<&str> = model.points().iter().map(Text::as_str).collect();
+        let source = format!("{} ({})", kind_text(model.kind()), points.join(", "));
+        let label = |f: FunctionId| project.function_label(f).unwrap_or_default();
+        let text = match &row.decision {
+            PartFunctionMatch::Existing(f) => format!("{source} → usa {}", label(*f)),
+            PartFunctionMatch::Rename { function, points } => {
+                let renames: Vec<String> = points
+                    .iter()
+                    .filter_map(|(id, new)| {
+                        let old = project.connection_point(*id)?.designation().as_str();
+                        Some(format!("{old}→{new}"))
+                    })
+                    .collect();
+                format!(
+                    "{source} → usa {} renomeando {}",
+                    label(*function),
+                    renames.join(", ")
+                )
+            }
+            PartFunctionMatch::New => format!("{source} → nova função"),
+        };
+        ui.small(text);
     }
 }

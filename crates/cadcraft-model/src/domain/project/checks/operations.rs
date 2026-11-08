@@ -257,9 +257,9 @@ impl Project {
                         out.push(CheckMessage::new(
                             "VER-006",
                             format!(
-                                "{}: função {:?} da peça não representada",
+                                "{}: função {} da peça não representada",
                                 device.designation(),
-                                f.kind()
+                                f.kind().label()
                             ),
                             vec![
                                 CheckTarget::Device(device.id()),
