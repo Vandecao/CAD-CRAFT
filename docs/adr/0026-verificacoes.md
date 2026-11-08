@@ -36,6 +36,7 @@ Estado: implementado e testado automaticamente na Etapa 24. Homologação manual
 | VER-017 | Contato acoplado sem ponto associado (sem continuidade) | Aviso |
 | VER-018 | Dispositivo sem peça | Informação |
 | VER-020 | Relatório desatualizado (Etapa 23) | Aviso |
+| VER-021 | Designação de ponto repetida no mesmo dispositivo (Etapa 33), por exemplo dois contatos 13-14 em -K1 | Aviso |
 
 **Garantidas pela integridade, sem regra própria:**
 - VER-005 (duas funções principais): `validate_function_roles` recusa;

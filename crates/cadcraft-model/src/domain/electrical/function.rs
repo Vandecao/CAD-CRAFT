@@ -15,6 +15,17 @@ pub enum FunctionKind {
     /// User-defined documentary category.
     Other(Text),
 }
+impl FunctionKind {
+    /// Return the pt-BR display label (the user text for `Other`).
+    pub fn label(&self) -> &str {
+        match self {
+            Self::Coil => "Bobina",
+            Self::AuxiliaryContact => "Contato auxiliar",
+            Self::MainContact => "Contato principal",
+            Self::Other(t) => t.as_str(),
+        }
+    }
+}
 /// Explicitly assigned role independent of geometry and function kind.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub enum FunctionRole {

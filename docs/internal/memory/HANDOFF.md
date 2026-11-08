@@ -1,3 +1,11 @@
+## Etapa 33 — símbolos de fábrica, tipo de função e nomes de pontos implementada e validada (2026-11-08)
+
+- Símbolos de fábrica v2 no estilo IEC, com designação e portas A1-A2 / 13-14 / 21-22 (IDs e posições da v1 mantidos; projetos antigos ficam na v1 até "Atualizar símbolos do projeto", que agora inclui os de fábrica). Tipo de função e prefixo no `metadata` do símbolo (sem mudança de formato), editáveis no editor de símbolos. Função em dispositivo existente recebe os próximos pontos IEC 60947 (13-14, 23-24, 95-96, 15-18, A1-A2…), editáveis no centro de inserção. Nova verificação VER-021 (ponto repetido no dispositivo). Seletores "-K1 · Bobina (A1, A2)" com filtro por tag. Editor de símbolos: X/Y do cursor, campos numéricos dos pontos, zoom mantido. Saídas de referência inalteradas. Relatório `docs/internal/reports/ETAPA_33_SIMBOLOS_FUNCOES.md`.
+- Validação: 795 Rust + 16 PowerShell, exit 0; Release 24.028.160 bytes.
+- Git: versionamento autorizado pelo autor ("Pode versionar"). Próximo: Etapa 34 (peças e funções sem duplicação), só depois do OK.
+
+---
+
 ## Etapa 32 — conexões e edição confiáveis implementada e validada (2026-11-07)
 
 - Junção em T aceita portas a um fio da grade (tolerância do domínio em `point_on_segment`) e explica a recusa ("a junção precisa de pelo menos duas conexões passando pelo ponto", etc.). Canto clicado perto de um fio cai na grade ao longo dele. Inspetor não pula para a aba ativa depois de editar outra página. X/Y/ângulo do símbolo aplicam com Enter (um passo de Desfazer). Editor de símbolos: perda de campo não reproduzida, teste adicionado. Diálogos nativos com janela-mãe adiados (exigiria `unsafe` ou reestruturar 15 chamadas). Relatório `docs/internal/reports/ETAPA_32_CONEXOES_EDICAO.md`.

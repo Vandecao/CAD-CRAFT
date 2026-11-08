@@ -39,6 +39,14 @@ struct SymbolBrowserState {
     prefix: String,
     device: Option<DeviceId>,
     function: Option<FunctionId>,
+    /// Tag filter for the device and function selectors.
+    entity_query: String,
+    /// Point labels for a function on an existing device, one per port.
+    points: Vec<String>,
+    /// Suggestion the labels came from: device, symbol and project revision.
+    points_source: Option<(DeviceId, SymbolDefinitionId, u64)>,
+    /// Whether the user typed over the suggested labels.
+    points_edited: bool,
     target: Option<RepresentationTarget>,
     angle: f64,
     mirror_x: bool,
@@ -473,6 +481,8 @@ impl CadApp {
                     });
                 }
                 Association::ExistingDevice => {
+                    entity_filter(ui, &mut browser.entity_query);
+                    let query = browser.entity_query.trim().to_lowercase();
                     let label = browser
                         .device
                         .and_then(|id| self.session.project()?.device(id))
@@ -483,27 +493,51 @@ impl CadApp {
                         .show_ui(ui, |ui| {
                             if let Some(p) = self.session.project() {
                                 for d in p.devices() {
-                                    ui.selectable_value(
-                                        &mut browser.device,
-                                        Some(d.id()),
-                                        d.designation().to_string(),
-                                    );
+                                    let tag = d.designation().to_string();
+                                    if tag.to_lowercase().contains(&query) {
+                                        ui.selectable_value(&mut browser.device, Some(d.id()), tag);
+                                    }
                                 }
                             }
                         });
+                    if let (Some(device), Some(definition), Some(p)) = (
+                        browser.device,
+                        selected_definition.as_deref(),
+                        self.session.project(),
+                    ) {
+                        let source = (device, definition.id().clone(), self.session.revision);
+                        if browser.points_source.as_ref() != Some(&source) {
+                            browser.points = p.suggested_point_labels(device, definition);
+                            browser.points_source = Some(source);
+                            browser.points_edited = false;
+                        }
+                        ui.horizontal_wrapped(|ui| {
+                            ui.label("Pontos");
+                            for (port, label) in definition.ports().iter().zip(&mut browser.points) {
+                                let edit = ui
+                                    .add(egui::TextEdit::singleline(label).desired_width(36.0))
+                                    .on_hover_text(format!("Porta {}", port.identification()));
+                                browser.points_edited |= edit.changed();
+                            }
+                        });
+                        ui.small("Sugestão IEC 60947 com os próximos pontos livres; edite antes de inserir.");
+                    }
                 }
                 Association::ExistingFunction => {
+                    entity_filter(ui, &mut browser.entity_query);
+                    let query = browser.entity_query.trim().to_lowercase();
                     let label = browser.function
-                        .and_then(|id| self.session.project()?.function(id))
-                        .map(|f| format!("{} · {:?}", f.designation(), f.kind()))
+                        .and_then(|id| self.session.project()?.function_label(id))
                         .unwrap_or_else(|| "Escolha a função".into());
                     egui::ComboBox::from_id_salt("symbol_existing_function")
                         .selected_text(label).show_ui(ui, |ui| {
                             if let Some(p) = self.session.project() {
                                 for f in p.functions() {
-                                    if p.function_references(f.id()).is_ok_and(|v| v.is_empty()) {
-                                        ui.selectable_value(&mut browser.function, Some(f.id()),
-                                            format!("{} · {:?}", f.designation(), f.kind()));
+                                    let text = p.function_label(f.id()).unwrap_or_default();
+                                    if p.function_references(f.id()).is_ok_and(|v| v.is_empty())
+                                        && text.to_lowercase().contains(&query)
+                                    {
+                                        ui.selectable_value(&mut browser.function, Some(f.id()), text);
                                     }
                                 }
                             }
@@ -542,7 +576,7 @@ impl CadApp {
                             ui.selectable_value(
                                 &mut browser.target,
                                 Some(RepresentationTarget::Function(f.id())),
-                                format!("Função {}", f.id()),
+                                format!("Função {}", p.function_label(f.id()).unwrap_or_default()),
                             );
                         }
                         for d in p.devices() {
@@ -653,6 +687,15 @@ impl CadApp {
                         t,
                     ),
                     Association::ExistingDevice => match browser.device {
+                        // Untouched suggestions are recomputed at each click;
+                        // typed labels are used as entered.
+                        Some(device) if browser.points_edited => {
+                            self.session.begin_device_insertion(
+                                id,
+                                DevicePlan::ExistingWithPoints(device, browser.points.clone()),
+                                t,
+                            )
+                        }
                         Some(device) => {
                             self.session
                                 .begin_device_insertion(id, DevicePlan::Existing(device), t)
@@ -684,6 +727,15 @@ impl CadApp {
             }
         }
     }
+}
+
+/// Tag filter shown above the device and function selectors.
+fn entity_filter(ui: &mut egui::Ui, query: &mut String) {
+    ui.add(
+        egui::TextEdit::singleline(query)
+            .hint_text("Filtrar por tag (ex.: K1)")
+            .desired_width(160.0),
+    );
 }
 
 #[cfg(test)]

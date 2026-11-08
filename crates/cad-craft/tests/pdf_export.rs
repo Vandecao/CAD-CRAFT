@@ -64,12 +64,13 @@ fn display_list_reproduces_the_sheet() {
             .iter()
             .any(|i| matches!(i, DisplayItem::Image { .. }))
     );
-    // The principal coil shows contact points and the page-2 reference in its mirror.
+    // The principal coil shows contact points (IEC 13-14 since the factory
+    // symbols v2) and the page-2 reference in its mirror.
     let contact_ref = f.project.short_reference(f.pages[1], p(60.0, 160.0));
     assert!(
         first
             .iter()
-            .any(|t| t.contains(&contact_ref) && t.contains("1-2")),
+            .any(|t| t.contains(&contact_ref) && t.contains("13-14")),
         "{first:?}"
     );
     let second = texts(&f.project, f.pages[1]);

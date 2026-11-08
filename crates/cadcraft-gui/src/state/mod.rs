@@ -211,8 +211,12 @@ impl Session {
     }
 }
 
-/// Suggested designation prefix per symbol, editable in the insertion centre.
-pub fn default_prefix(definition: &SymbolDefinition) -> &'static str {
+/// Suggested designation prefix per symbol, editable in the insertion centre:
+/// the prefix recorded in the symbol, else the one for the factory ID.
+pub fn default_prefix(definition: &SymbolDefinition) -> &str {
+    if let Some(prefix) = definition.designation_prefix() {
+        return prefix;
+    }
     match definition.id().as_str() {
         "cad-craft.contact-no" | "cad-craft.contact-nc" | "cad-craft.coil" => "K",
         "cad-craft.motor" => "M",
@@ -224,8 +228,12 @@ pub fn default_prefix(definition: &SymbolDefinition) -> &'static str {
         _ => "D",
     }
 }
-/// Function type for a new function; untyped symbols use their name.
+/// Function type for a new function: the kind recorded in the symbol, else
+/// the one for the factory ID; untyped symbols use their name.
 pub fn function_kind(definition: &SymbolDefinition) -> Result<FunctionKind> {
+    if let Some(kind) = definition.function_kind_hint() {
+        return Ok(kind);
+    }
     Ok(match definition.id().as_str() {
         "cad-craft.coil" => FunctionKind::Coil,
         "cad-craft.contact-no" | "cad-craft.contact-nc" => FunctionKind::AuxiliaryContact,

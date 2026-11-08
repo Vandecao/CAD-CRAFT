@@ -270,6 +270,17 @@ impl Project {
 
     /// Validate and register everything atomically; generate new IDs here.
     pub fn place_symbol(&mut self, placement: SymbolPlacement) -> Result<PlacementDelta> {
+        self.place_symbol_with_point_labels(placement, &[])
+    }
+
+    /// Like [`Project::place_symbol`], naming the new points with `labels`
+    /// (one per port, in port order) instead of the port identifications;
+    /// an empty slice keeps the identifications.
+    pub fn place_symbol_with_point_labels(
+        &mut self,
+        placement: SymbolPlacement,
+        labels: &[String],
+    ) -> Result<PlacementDelta> {
         let SymbolPlacement {
             page,
             definition,
@@ -317,9 +328,17 @@ impl Project {
             Some(RepresentationTarget::Function(function.id())),
             transform,
         )?;
-        for port in definition.ports() {
-            let label = if used.insert(port.identification().to_owned()) {
-                port.identification()
+        if !labels.is_empty() && labels.len() != definition.ports().len() {
+            return Err(DomainError::InvalidRelation(
+                "informe um ponto para cada porta do símbolo",
+            ));
+        }
+        for (index, port) in definition.ports().iter().enumerate() {
+            let wanted = labels
+                .get(index)
+                .map_or(port.identification(), |l| l.trim());
+            let label = if used.insert(wanted.to_owned()) {
+                wanted
             } else {
                 port.id()
             };

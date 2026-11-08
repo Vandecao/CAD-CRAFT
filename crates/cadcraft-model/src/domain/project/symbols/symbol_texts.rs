@@ -17,12 +17,7 @@ fn property_text(value: &PropertyValue) -> String {
 }
 
 fn kind_text(kind: &FunctionKind) -> String {
-    match kind {
-        FunctionKind::Coil => "Bobina".into(),
-        FunctionKind::AuxiliaryContact => "Contato auxiliar".into(),
-        FunctionKind::MainContact => "Contato principal".into(),
-        FunctionKind::Other(t) => t.as_str().to_owned(),
-    }
+    kind.label().to_owned()
 }
 
 impl Project {
@@ -69,4 +64,40 @@ impl Project {
             }
         }
     }
+}
+
+impl Project {
+    /// Readable function label for selectors: device designation, kind and
+    /// point labels, such as "-K1 · Bobina (A1, A2)"; points are listed in
+    /// natural order and a long run is shortened to "1…6".
+    pub fn function_label(&self, id: FunctionId) -> Option<String> {
+        let f = self.function(id)?;
+        let device = self.device(f.device_id()).map_or_else(
+            || f.designation().to_string(),
+            |d| d.designation().to_string(),
+        );
+        let mut points: Vec<&str> = self
+            .connection_points()
+            .filter(|p| p.function_id() == id)
+            .map(|p| p.designation().as_str())
+            .collect();
+        points.sort_by_key(|a| natural_key(a));
+        let points = match points.as_slice() {
+            [] => String::new(),
+            list if list.len() > 4 => {
+                format!(" ({}…{})", list[0], list[list.len() - 1])
+            }
+            list => format!(" ({})", list.join(", ")),
+        };
+        Some(format!("{device} · {}{points}", f.kind().label()))
+    }
+}
+
+/// Sort key comparing the numeric part of point labels by value ("2" < "13").
+fn natural_key(label: &str) -> (String, u64, String) {
+    let letters: String = label.chars().take_while(|c| !c.is_ascii_digit()).collect();
+    let rest = &label[letters.len()..];
+    let digits: String = rest.chars().take_while(char::is_ascii_digit).collect();
+    let number = digits.parse().unwrap_or(0);
+    (letters, number, rest[digits.len()..].to_owned())
 }

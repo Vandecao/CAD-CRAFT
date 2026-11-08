@@ -201,8 +201,39 @@ impl Project {
             .filter(|c| c.part_id().is_some())
             .filter_map(Component::device_id)
             .collect();
+        let mut points_by_function: BTreeMap<FunctionId, Vec<&ConnectionPoint>> = BTreeMap::new();
+        for point in self.connection_points() {
+            points_by_function
+                .entry(point.function_id())
+                .or_default()
+                .push(point);
+        }
         for device in self.devices() {
             let functions = by_device.remove(&device.id()).unwrap_or_default();
+            // VER-021: two points of one device with the same designation
+            // (two contacts numbered 13-14 on -K1).
+            let mut labels: BTreeMap<&str, Vec<ConnectionPointId>> = BTreeMap::new();
+            for f in &functions {
+                for point in points_by_function.get(&f.id()).into_iter().flatten() {
+                    labels
+                        .entry(point.designation().as_str())
+                        .or_default()
+                        .push(point.id());
+                }
+            }
+            for (label, ids) in labels.into_iter().filter(|(_, ids)| ids.len() > 1) {
+                let mut targets = vec![CheckTarget::Device(device.id())];
+                targets.extend(ids.iter().map(|id| CheckTarget::ConnectionPoint(*id)));
+                out.push(CheckMessage::new(
+                    "VER-021",
+                    format!(
+                        "{}: ponto {label} aparece {} vezes; renumere os contatos",
+                        device.designation(),
+                        ids.len()
+                    ),
+                    targets,
+                ));
+            }
             let has_main = functions.iter().any(|f| f.role() == FunctionRole::Main);
             let auxiliaries: Vec<_> = functions
                 .iter()

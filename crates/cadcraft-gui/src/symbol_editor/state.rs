@@ -95,6 +95,10 @@ pub(in crate::symbol_editor) struct Draft {
     pub(in crate::symbol_editor) primitives: Vec<SymbolPrimitive>,
     pub(in crate::symbol_editor) styles: BTreeMap<usize, PrimitiveStyle>,
     pub(in crate::symbol_editor) ports: Vec<SymbolPort>,
+    /// Function kind recorded in the symbol for new functions.
+    pub(in crate::symbol_editor) kind: SymbolFunctionKind,
+    /// Designation prefix recorded in the symbol (K, KT, Q…).
+    pub(in crate::symbol_editor) prefix: String,
 }
 
 /// Field chosen for new dynamic text.
@@ -119,6 +123,8 @@ pub struct SymbolEditor {
     pub selection: Option<SymbolItem>,
     pub camera: Camera,
     pub needs_fit: bool,
+    /// The camera was fitted once; reopening keeps its zoom and position.
+    pub(in crate::symbol_editor) fitted: bool,
     /// Drawing area of the latest frame, for tests and automation.
     pub viewport: Option<Rect>,
     pub(in crate::symbol_editor) pending: Vec<Point2D>,
@@ -186,7 +192,12 @@ impl SymbolEditor {
             )
             .and_then(|s| s.with_styles(d.styles.clone())),
         };
-        result.map_err(|e| e.to_string())
+        result
+            .map(|s| {
+                let metadata = s.metadata_with_hints(d.kind, &d.prefix);
+                s.with_metadata(metadata)
+            })
+            .map_err(|e| e.to_string())
     }
     pub(in crate::symbol_editor) fn snapshot(&mut self) {
         if let Some(d) = &self.draft {

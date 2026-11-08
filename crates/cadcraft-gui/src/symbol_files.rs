@@ -332,11 +332,14 @@ impl CadApp {
         let mut compatible = Vec::new();
         let mut refused = Vec::new();
         for current in project.symbol_definitions() {
+            // External library and factory symbols; the highest version wins.
             let Some(newer) = self
                 .session
                 .symbol_library
                 .iter()
-                .find(|d| d.id() == current.id() && d.version() > current.version())
+                .chain(cad_craft::domain::SymbolLibrary::builtin().definitions())
+                .filter(|d| d.id() == current.id() && d.version() > current.version())
+                .max_by_key(|d| d.version())
             else {
                 continue;
             };

@@ -5,6 +5,7 @@ use super::*;
 pub(in crate::domain::project) mod macros;
 pub(in crate::domain::project) mod operations;
 pub(in crate::domain::project) mod placement;
+pub(in crate::domain::project) mod point_numbering;
 pub(in crate::domain::project) mod symbol_texts;
 pub use macros::{MacroInsertDelta, MacroPlacement, MacroReport};
 pub use operations::SymbolUpdateDelta;

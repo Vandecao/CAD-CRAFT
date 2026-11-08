@@ -235,8 +235,9 @@ impl History {
         &mut self,
         p: &mut Project,
         placement: SymbolPlacement,
+        point_labels: &[String],
     ) -> Result<RepresentationId> {
-        let delta = p.place_symbol(placement)?;
+        let delta = p.place_symbol_with_point_labels(placement, point_labels)?;
         let id = delta.representation_id();
         self.record(Transaction::Placement(Box::new(delta)));
         Ok(id)

@@ -12,6 +12,7 @@ use eframe::egui::{self, Key, PointerButton, Rect, Sense, Stroke, Ui};
 use std::collections::BTreeMap;
 
 mod draw;
+mod fields;
 mod input;
 mod state;
 

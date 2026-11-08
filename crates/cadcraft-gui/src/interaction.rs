@@ -81,8 +81,12 @@ impl MacroDraft {
 pub enum DevicePlan {
     /// New device with an available prefix-and-number designation at click time.
     New { prefix: String },
-    /// New function with connection points on an existing device.
+    /// New function on an existing device; its points get the next free IEC
+    /// numbers at click time.
     Existing(DeviceId),
+    /// New function on an existing device with point labels typed in the
+    /// insertion centre, one per port.
+    ExistingWithPoints(DeviceId, Vec<String>),
     /// Registered function without a sheet representation yet.
     ExistingFunction(FunctionId),
 }

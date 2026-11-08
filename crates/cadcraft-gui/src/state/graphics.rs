@@ -186,6 +186,7 @@ impl Session {
                     )?);
                     true
                 } else {
+                    let mut labels = Vec::new();
                     let device = match plan {
                         DevicePlan::New { prefix } => {
                             let prefix = if prefix.trim().is_empty() {
@@ -202,7 +203,14 @@ impl Session {
                                 classification: definition.name().to_owned(),
                             }
                         }
-                        DevicePlan::Existing(id) => PlacementDevice::Existing(id),
+                        DevicePlan::Existing(id) => {
+                            labels = p.suggested_point_labels(id, definition);
+                            PlacementDevice::Existing(id)
+                        }
+                        DevicePlan::ExistingWithPoints(id, points) => {
+                            labels = points;
+                            PlacementDevice::Existing(id)
+                        }
                         DevicePlan::ExistingFunction(_) => unreachable!(),
                     };
                     inserted = Some(self.history.place(
@@ -214,6 +222,7 @@ impl Session {
                             device,
                             function_kind: function_kind(definition)?,
                         },
+                        &labels,
                     )?);
                     true
                 }
@@ -343,7 +352,7 @@ impl Session {
         plan: DevicePlan,
         transform: Transform2D,
     ) -> Result<()> {
-        if let DevicePlan::Existing(id) = plan
+        if let DevicePlan::Existing(id) | DevicePlan::ExistingWithPoints(id, _) = plan
             && self.project().and_then(|p| p.device(id)).is_none()
         {
             return Err(DomainError::MissingEntity(EntityRef::Device(id)));
@@ -392,6 +401,12 @@ impl Session {
             .expect("insertion selects the new representation");
         // Repeated insertion is explicit: only Esc / context changes end the tool.
         self.graphics.tool = crate::interaction::Tool::InsertSymbol;
+        let mut draft = draft;
+        // Typed point labels apply to the first click; later clicks take the
+        // next free numbers instead of repeating them.
+        if let Some(crate::interaction::DevicePlan::ExistingWithPoints(device, _)) = draft.device {
+            draft.device = Some(crate::interaction::DevicePlan::Existing(device));
+        }
         self.graphics.insertion = Some(draft);
         Ok(id)
     }

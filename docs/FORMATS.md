@@ -66,6 +66,14 @@ read_*_package / write_*_package APIs in cad_craft::persistence.
 | .cadpart | part.json | part+zip | One Part, including technical properties and function templates |
 | .cadframe | frame.json plus assets/ image bytes | frame+zip | FramePackage: template and referenced images |
 
+Since Etapa 33 a symbol may record, in its existing `metadata` map (no format
+change), the kind of function it creates and the designation prefix of a new
+device: `function-kind` = `coil`, `main-contact` or `auxiliary-contact`, and
+`designation-prefix` = for example `K`, `KT`, `Q`. Symbols without them keep
+the previous behaviour (function named after the symbol, prefix `D`). The
+factory symbols v2 carry both and name their ports by IEC 60947 (A1-A2, 13-14,
+21-22) while keeping the port IDs `1`/`2` of version 1.
+
 Native packages are the interchange for CAD-CRAFT libraries. They do not contain
 a vendor library or promise that external-format export can reproduce all fields.
 

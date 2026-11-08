@@ -126,6 +126,7 @@ impl CadApp {
                 });
             ed.camera.fit(bounds, rect.shrink(24.0));
             ed.needs_fit = false;
+            ed.fitted = true;
         }
         if response.hovered() {
             let scroll = ui.input(|i| i.smooth_scroll_delta.y);
@@ -215,6 +216,15 @@ impl CadApp {
         }
         // Tool preview.
         let cursor = response.hover_pos().and_then(world);
+        if let Some(c) = cursor {
+            painter.text(
+                rect.left_bottom() + egui::vec2(6.0, -6.0),
+                egui::Align2::LEFT_BOTTOM,
+                format!("X {:.1}  Y {:.1} mm", c.x(), c.y()).replace('.', ","),
+                egui::FontId::monospace(12.0),
+                theme::INK,
+            );
+        }
         let mut preview = ed.pending.clone();
         if let Some(c) = cursor
             && ed.tool != SymbolTool::Select
@@ -317,6 +327,8 @@ impl CadApp {
         };
         let mut name = draft.name.clone();
         let mut category = draft.category.clone();
+        let mut kind = draft.kind;
+        let mut prefix = draft.prefix.clone();
         egui::Grid::new("symbol_props")
             .num_columns(2)
             .show(ui, |ui| {
@@ -325,6 +337,22 @@ impl CadApp {
                 ui.end_row();
                 ui.label("Categoria");
                 ui.add(egui::TextEdit::singleline(&mut category).desired_width(150.0));
+                ui.end_row();
+                ui.label("Tipo de função");
+                egui::ComboBox::from_id_salt("symbol_function_kind")
+                    .selected_text(kind.label())
+                    .show_ui(ui, |ui| {
+                        for k in SymbolFunctionKind::ALL {
+                            ui.selectable_value(&mut kind, k, k.label());
+                        }
+                    });
+                ui.end_row();
+                ui.label("Prefixo");
+                ui.add(
+                    egui::TextEdit::singleline(&mut prefix)
+                        .hint_text("K, KT, Q, F, S…")
+                        .desired_width(60.0),
+                );
                 ui.end_row();
                 ui.label("ID");
                 ui.small(
@@ -338,10 +366,16 @@ impl CadApp {
                 ui.label(draft.ports.len().to_string());
                 ui.end_row();
             });
-        if name != draft.name || category != draft.category {
+        if name != draft.name
+            || category != draft.category
+            || kind != draft.kind
+            || prefix != draft.prefix
+        {
             ed.change(|d| {
                 d.name = name;
                 d.category = category;
+                d.kind = kind;
+                d.prefix = prefix;
             });
         }
         ui.separator();
@@ -412,6 +446,7 @@ impl CadApp {
                     });
                 }
                 let mut edited = p.clone();
+                fields::primitive_point_fields(ui, &mut edited);
                 match &mut edited {
                     SymbolPrimitive::Text { text, height, .. } => {
                         ui.add(egui::TextEdit::singleline(text).desired_width(180.0));

@@ -49,7 +49,7 @@ homologação geral de plataforma/hardware.
 | 30 | Colunas e linhas da moldura: redistribuição, mensagens claras, divisões geradas, formato 10 | Implementada (Claude Code) | Sim, 762 Rust + 6 exemplos + 16 PowerShell; Release | Feito em 2026-11-07 (relatório da 31) | Commit cad3ca2 (privado) / f5cd476 (público) |
 | 31 | Área de trabalho como no EPLAN: fundo uniforme, folha segue a moldura, grade que some, linhas-guia do cursor | Implementada (Claude Code) | Sim, 776 Rust + 16 PowerShell; Release | Feito em 2026-11-07 | Commit + push autorizados pelo autor |
 | 32 | Conexões e edição confiáveis: junção em T, canto na grade, inspetor estável, Enter aplica X/Y | Implementada (Claude Code) | Sim, 785 Rust + 16 PowerShell; Release | Teste no app no fim da 35 | Commit + push autorizados pelo autor |
-| 33 | Símbolos de fábrica, tipo de função e nomes de pontos | Planejada (`PLANO_ETAPAS_32_35.md`) | — | — | — |
+| 33 | Símbolos de fábrica, tipo de função e nomes de pontos | Implementada (Claude Code) | Sim, 795 Rust + 16 PowerShell; Release | Teste no app no fim da 35 | Commit + push autorizados pelo autor |
 | 34 | Peças e funções sem duplicação | Planejada | — | — | — |
 | 35 | Bornes, coordenadas e unifilar | Planejada; teste no app ao fim | — | — | — |
 

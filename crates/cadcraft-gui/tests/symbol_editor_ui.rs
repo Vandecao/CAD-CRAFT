@@ -481,3 +481,44 @@ fn category_and_port_fields_typed_with_tab_are_saved() {
         .expect("porta renomeada");
     assert_eq!(port.identification(), "A2");
 }
+
+#[test]
+fn function_kind_and_prefix_are_saved_and_the_zoom_carries_over() {
+    let (project, _) = base_project();
+    let mut ui = Ui::new(project);
+    ui.app.execute(CommandId::SymbolNew, &ui.ctx.clone());
+    ui.settle(3);
+    ui.tool(SymbolTool::Line);
+    ui.click_world(p(0.0, 10.0));
+    ui.click_world(p(0.0, -10.0));
+    ui.tool(SymbolTool::Port);
+    ui.click_world(p(0.0, 10.0));
+    ui.click_world(p(0.0, -10.0));
+    ui.type_in_row("Nome", "Bobina temporizada");
+    ui.type_in_row("Prefixo", "KT");
+    ui.key(Key::Tab, Modifiers::NONE);
+    ui.press("Outro");
+    ui.press("Bobina");
+    ui.press("Salvar na biblioteca");
+    let def = ui
+        .app
+        .session
+        .symbol_library
+        .iter()
+        .find(|d| d.name() == "Bobina temporizada")
+        .expect("símbolo salvo")
+        .clone();
+    assert_eq!(def.designation_prefix(), Some("KT"));
+    assert_eq!(def.function_kind_hint(), Some(FunctionKind::Coil));
+    // A zoom chosen for one symbol stays when the next one opens.
+    ui.app.symbol_editor.camera.zoom_at(
+        2.0,
+        Pos2::new(700., 500.),
+        ui.app.symbol_editor.viewport.unwrap(),
+    );
+    let camera = ui.app.symbol_editor.camera;
+    ui.press("Fechar editor");
+    ui.app.open_symbol_editor(def);
+    ui.settle(3);
+    assert_eq!(ui.app.symbol_editor.camera, camera);
+}

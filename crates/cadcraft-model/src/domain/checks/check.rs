@@ -113,6 +113,11 @@ pub const CHECK_RULES: &[CheckRule] = &[
     ),
     rule("VER-018", "Dispositivo sem peça", CheckSeverity::Info),
     rule("VER-020", "Relatório desatualizado", CheckSeverity::Warning),
+    rule(
+        "VER-021",
+        "Designação de ponto repetida no dispositivo",
+        CheckSeverity::Warning,
+    ),
 ];
 
 /// Look up a consistency rule by its stable code; unknown codes return None.

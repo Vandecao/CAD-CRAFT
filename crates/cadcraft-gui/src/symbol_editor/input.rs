@@ -210,12 +210,16 @@ impl CadApp {
         if self.frame_editor.is_open() {
             self.close_frame_editor();
         }
+        // Zoom and position carry over from the previous symbol once fitted.
+        let (camera, fitted) = (self.symbol_editor.camera, self.symbol_editor.fitted);
         self.symbol_editor = SymbolEditor {
             open: true,
+            camera,
+            fitted,
             base,
             id: Some(id),
             draft: Some(draft),
-            needs_fit: true,
+            needs_fit: !fitted,
             new_text: "Texto".into(),
             ..Default::default()
         };
@@ -234,6 +238,8 @@ impl CadApp {
                 primitives: vec![],
                 styles: BTreeMap::new(),
                 ports: vec![],
+                kind: SymbolFunctionKind::Other,
+                prefix: String::new(),
             },
         );
     }
@@ -245,12 +251,22 @@ impl CadApp {
             primitives: definition.primitives().to_vec(),
             styles: definition.styles().clone(),
             ports: definition.ports().to_vec(),
+            kind: definition.symbol_function_kind(),
+            prefix: definition
+                .designation_prefix()
+                .unwrap_or_default()
+                .to_owned(),
         };
         let id = definition.id().clone();
         self.start_symbol_editor(Some(definition), id, draft);
     }
     pub fn close_symbol_editor(&mut self) {
-        self.symbol_editor = SymbolEditor::default();
+        let (camera, fitted) = (self.symbol_editor.camera, self.symbol_editor.fitted);
+        self.symbol_editor = SymbolEditor {
+            camera,
+            fitted,
+            ..SymbolEditor::default()
+        };
     }
     /// Save the symbol to the directory or in-memory library.
     pub fn save_symbol_to_library(&mut self) -> bool {
